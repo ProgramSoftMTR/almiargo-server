@@ -355,8 +355,9 @@ export class WorldScene extends Phaser.Scene {
     const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.9).setScale(size);
     const handItem = e?.equipment?.mano ?? null;
     const weaponKey = handTextureKey(handItem);
+    const isTool = weaponKey === 'tool_axe' || weaponKey === 'tool_pickaxe';
     const weaponSprite = (weaponKey && this.textures.exists(weaponKey))
-      ? this.add.image(0, 2, weaponKey).setOrigin(0.5, 0.9).setScale(size)
+      ? this.add.image(isTool ? 10 * size : 0, 2, weaponKey).setOrigin(0.5, 0.9).setScale(size)
       : null;
     // Sprite legacy de hacha: desactivado para evitar duplicados.
     const axeSprite = null;
@@ -417,11 +418,14 @@ export class WorldScene extends Phaser.Scene {
       if (this.localWeapon) { this.localWeapon.destroy(); this.localWeapon = null; }
       return;
     }
+    const isTool = key === 'tool_axe' || key === 'tool_pickaxe';
+    const ox = isTool ? 10 : 0;
     if (!this.localWeapon) {
-      this.localWeapon = this.add.image(0, 2, key).setOrigin(0.5, 0.9);
+      this.localWeapon = this.add.image(ox, 2, key).setOrigin(0.5, 0.9);
       if (this.localContainer) this.localContainer.add(this.localWeapon);
     } else {
       if (this.localWeapon.texture && this.localWeapon.texture.key !== key) this.localWeapon.setTexture(key);
+      this.localWeapon.setPosition(ox, 2);
       this.localWeapon.setVisible(true);
     }
   }
@@ -447,6 +451,8 @@ export class WorldScene extends Phaser.Scene {
     if (view.weaponSprite) {
       if (weaponKey && this.textures.exists(weaponKey)) {
         if (view.weaponSprite.texture.key !== weaponKey) view.weaponSprite.setTexture(weaponKey);
+        const isTool = weaponKey === 'tool_axe' || weaponKey === 'tool_pickaxe';
+        view.weaponSprite.setPosition(isTool ? 10 * (view.size ?? 1) : 0, 2);
         view.weaponSprite.setVisible(true);
       } else {
         view.weaponSprite.setVisible(false);
