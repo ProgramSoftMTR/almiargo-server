@@ -11,7 +11,7 @@ test('el personaje nuevo empieza como caballero con espada y equipo básico', ()
   assert.equal(player.classId, 'knight');
   assert.equal(player.level, 1);
   assert.equal(player.gold, 100);
-  assert.equal(player.equipment.weapon.itemId, 'sword_wood');
+  assert.equal(player.equipment.mano.itemId, 'sword_wood');
   assert.ok(player.countItem('bow_wood') >= 1);
   assert.ok(player.countItem('staff_wood') >= 1);
   assert.ok(player.countItem('potion_hp') >= 1);
@@ -25,7 +25,7 @@ test('cambiar de clase equipa el mejor arma y respeta el cooldown de 1s', () => 
   const archer = player.switchClass('archer', now);
   assert.equal(archer.ok, true);
   assert.equal(player.classId, 'archer');
-  assert.equal(player.equipment.weapon.itemId, 'bow_wood');
+  assert.equal(player.equipment.mano.itemId, 'bow_wood');
 
   const blocked = player.switchClass('mage', now + 500);
   assert.equal(blocked.ok, false);
@@ -34,7 +34,7 @@ test('cambiar de clase equipa el mejor arma y respeta el cooldown de 1s', () => 
   const mage = player.switchClass('mage', now + 1100);
   assert.equal(mage.ok, true);
   assert.equal(player.classId, 'mage');
-  assert.equal(player.equipment.weapon.itemId, 'staff_wood');
+  assert.equal(player.equipment.mano.itemId, 'staff_wood');
   assert.ok(player.countItem('bow_wood') >= 1, 'el arco anterior vuelve a la mochila');
 });
 
@@ -104,6 +104,6 @@ test('el perfil serializado incluye skills, equipo y tienda', () => {
   assert.equal(profile.inStall, false);
   assert.equal(profile.stall, null);
   assert.equal(profile.skills.melee.level, 1);
-  assert.equal(profile.equipment.weapon.itemId, 'sword_wood');
+  assert.equal(profile.equipment.mano.itemId, 'sword_wood');
   assert.equal(profile.inventory.length, 30);
 });

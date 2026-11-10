@@ -997,7 +997,7 @@ export class GameServer {
       this.sendError(session, result.error);
       return;
     }
-    if (result.slot === 'weapon') {
+    if (result.slot === 'mano') {
       this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.mano });
     }
     this.sendProfile(player);
@@ -1012,7 +1012,7 @@ export class GameServer {
       this.sendError(session, result.error);
       return;
     }
-    if (msg.slot === 'weapon') {
+    if (msg.slot === 'mano') {
       this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.mano });
     }
     this.sendProfile(player);

@@ -159,13 +159,13 @@ test('matar a un PK con calavera roja pierde equipo y más XP/oro', () => {
   pk.hp = 1;
   pk.xp = 1000;
   pk.gold = 1000;
-  assert.ok(pk.equipment.weapon);
+  assert.ok(pk.equipment.mano);
 
   killPlayer(game, pk, killer, now);
 
   assert.equal(pk.xp, 800);
   assert.equal(pk.gold, 700);
-  assert.equal(pk.equipment.weapon, null);
+  assert.equal(pk.equipment.mano, null);
   assert.equal(game.bags.length, 1);
   assert.equal(game.bags[0].items.length, 1);
   assert.equal(killer.skull, 'none', 'matar a un PK no da calavera roja');

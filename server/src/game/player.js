@@ -294,7 +294,7 @@ export class PlayerState {
     for (const inst of this.inventory) {
       if (!inst) continue;
       const def = getItemDef(inst.itemId);
-      if (def?.slot !== 'weapon' || def.weaponClass !== classId) continue;
+      if (def?.slot !== 'mano' || def.weaponClass !== classId) continue;
       if (this.level < (def.levelReq ?? 1)) continue;
       if ((def.tier ?? 0) > bestTier) { best = inst; bestTier = def.tier ?? 0; }
     }

@@ -113,7 +113,7 @@ function grantOpWeapon(game, player) {
   for (const itemId of OP_WEAPONS) {
     if (!ITEMS[itemId]) continue;
     if (player.countItem(itemId) > 0) continue;
-    if (player.equipment?.weapon?.itemId === itemId) continue;
+    if (player.equipment?.mano?.itemId === itemId) continue;
     if (player.addItem(itemId, 1).added > 0) granted += 1;
   }
   // El arco necesita munición para atacar.

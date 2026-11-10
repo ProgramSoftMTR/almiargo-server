@@ -101,17 +101,7 @@ export class WorldScene extends Phaser.Scene {
     const localTexture = ensurePlayerTexture(this, 'base', p.outfit);
     this.localSprite = this.add.sprite(0, 0, localTexture);
     this.localSprite.setOrigin(0.5, 0.9);
-    const handItem = p?.equipment?.mano ?? null;
-    // render dinámico por spriteId/id sin filtro de clase
-    if (handItem) {
-      const key = handItem.spriteId || handItem.id;
-      this.localWeapon = key && this.textures.exists(key)
-        ? this.add.image(0, 2, key).setOrigin(0.5, 0.9)
-        : null;
-    } else {
-      if (this.localWeapon) { this.localWeapon.destroy(); }
-      this.localWeapon = null;
-    }
+    this.localWeapon = null;
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
 
     // Name tag + barra de vida del jugador local (mismo diseño que enemigos).
@@ -134,6 +124,7 @@ export class WorldScene extends Phaser.Scene {
       shadow, this.localSprite, this.localAxe, this.localBarBg, this.localBarFill, this.localNameText,
     ].filter(Boolean));
     this.localContainer.setDepth(1000);
+    this.updateLocalWeapon();
     this.updateLocalAxe();
     this.localKey = `player_${p.classId ?? 'adventurer'}`;
     this.localMoving = false;
@@ -395,13 +386,17 @@ export class WorldScene extends Phaser.Scene {
       if (this.localWeapon) { this.localWeapon.destroy(); this.localWeapon = null; }
       return;
     }
-    if (!this.localWeapon) return;
     const key = handItem.spriteId || handItem.id;
-    if (key && this.textures.exists(key)) {
+    if (!key || !this.textures.exists(key)) {
+      if (this.localWeapon) { this.localWeapon.destroy(); this.localWeapon = null; }
+      return;
+    }
+    if (!this.localWeapon) {
+      this.localWeapon = this.add.image(0, 2, key).setOrigin(0.5, 0.9);
+      if (this.localContainer) this.localContainer.add(this.localWeapon);
+    } else {
       if (this.localWeapon.texture && this.localWeapon.texture.key !== key) this.localWeapon.setTexture(key);
       this.localWeapon.setVisible(true);
-    } else {
-      this.localWeapon.setVisible(false);
     }
   }
 
