@@ -37,12 +37,20 @@ export class Monster {
     return !this.alive || this.hp <= 0;
   }
 
-  reset(now, spawn = this.spawn) {
+  reset(now, spawn = this.spawn, world = null) {
     this.hp = this.maxHp;
-    this.x = spawn.x;
-    this.y = spawn.y;
-    this.homeX = spawn.x;
-    this.homeY = spawn.y;
+    let sx = spawn?.x ?? this.x;
+    let sy = spawn?.y ?? this.y;
+    if (world) {
+      const free = world.findFreeTile(sx, sy, this.id);
+      sx = free.x;
+      sy = free.y;
+    }
+    this.x = sx;
+    this.y = sy;
+    this.homeX = sx;
+    this.homeY = sy;
+    this.spawn = { x: sx, y: sy };
     this.alive = true;
     this.targetId = null;
     this.patrolTarget = null;

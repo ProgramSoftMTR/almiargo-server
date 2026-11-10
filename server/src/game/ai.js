@@ -9,7 +9,7 @@ export function updateMonsters(game, now) {
   for (const monster of game.world.monsters.values()) {
     if (!monster.alive) {
       if (now >= monster.respawnAt) {
-        monster.reset(now);
+        monster.reset(now, monster.spawn, game.world);
         game.world.refreshEntity?.(monster);
         monster.dir = 'down';
         game.broadcastNear(monster.x, monster.y, game.config?.aoiRadius ?? 20, {
@@ -67,6 +67,7 @@ function moveMonster(world, monster, dx, dy, now) {
     const nx = monster.x + ox;
     const ny = monster.y + oy;
     if (!world.canWalk(nx, ny)) continue;
+    if (world.isTileOccupied(nx, ny, monster.id)) continue;
     world.moveEntity(monster, nx, ny);
     monster.dir = Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? 'right' : 'left') : (oy > 0 ? 'down' : 'up');
     const diagonal = ox !== 0 && oy !== 0;

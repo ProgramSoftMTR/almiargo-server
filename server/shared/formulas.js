@@ -62,7 +62,7 @@ export function computeStats({ level, skills, equipmentDefs = [] }) {
     maxMp += item.stats.maxMp ?? 0;
     defense += item.stats.defense ?? 0;
     // El arma ya aporta su daño base en rollAttack; aquí sólo cuentan anillos/amuletos.
-    if (item.slot !== 'weapon') {
+    if (item.slot !== 'weapon' && item.slot !== 'mano') {
       bonusAtk += (item.stats.atkMin ?? 0) * 0.5 + (item.stats.atkMax ?? 0) * 0.5;
     }
     speedBonus += item.stats.speed ?? 0;

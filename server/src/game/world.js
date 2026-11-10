@@ -75,6 +75,41 @@ export class World {
     return isWalkable(this.map, tx, ty);
   }
 
+  /** Indica si una casilla está ocupada por otro mob o jugador activo. */
+  isTileOccupied(x, y, excludeId = null) {
+    const tx = Math.round(x);
+    const ty = Math.round(y);
+    for (const [id, player] of this.players) {
+      if (id === excludeId || !player || player.isDead) continue;
+      if (Math.round(player.x) === tx && Math.round(player.y) === ty) return true;
+    }
+    for (const [id, monster] of this.monsters) {
+      if (id === excludeId || !monster || !monster.alive) continue;
+      if (Math.round(monster.x) === tx && Math.round(monster.y) === ty) return true;
+    }
+    return false;
+  }
+
+  /** Busca una casilla libre (transitable y no ocupada) cerca de (x,y). */
+  findFreeTile(x, y, excludeId = null, radius = 3) {
+    const tx = Math.round(x);
+    const ty = Math.round(y);
+    if (this.canWalk(tx, ty) && !this.isTileOccupied(tx, ty, excludeId)) return { x: tx, y: ty };
+    for (let r = 1; r <= radius; r += 1) {
+      for (let oy = -r; oy <= r; oy += 1) {
+        for (let ox = -r; ox <= r; ox += 1) {
+          if (Math.max(Math.abs(ox), Math.abs(oy)) !== r) continue;
+          const nx = tx + ox;
+          const ny = ty + oy;
+          if (!this.canWalk(nx, ny)) continue;
+          if (this.isTileOccupied(nx, ny, excludeId)) continue;
+          return { x: nx, y: ny };
+        }
+      }
+    }
+    return { x: tx, y: ty };
+  }
+
   addPlayer(player) {
     this.players.set(player.id, player);
     this.entities.set(player.id, player);
@@ -133,7 +168,7 @@ export class World {
       for (let i = 0; i < zone.count; i += 1) {
         let tile = findSpawnTile(this.map, zone.x, zone.y, zone.radius);
         let guard = 0;
-        while ((used.has(tileKey(tile.x, tile.y)) || this.blocked.has(tileKey(tile.x, tile.y))) && guard < 50) {
+        while ((used.has(tileKey(tile.x, tile.y)) || this.blocked.has(tileKey(tile.x, tile.y)) || this.isTileOccupied(tile.x, tile.y)) && guard < 50) {
           tile = findSpawnTile(this.map, zone.x, zone.y, zone.radius);
           guard += 1;
         }
