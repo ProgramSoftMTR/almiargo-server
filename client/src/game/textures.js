@@ -354,6 +354,13 @@ export function createToolTextures(scene) {
     g.fillStyle(0xd8dde6, 1); g.fillRect(4, 1, 8, 4);
     g.fillStyle(0x8f99a8, 1); g.fillRect(5, 2, 6, 2);
   });
+  makeTexture(scene, 'tool_pickaxe', 16, 24, (g) => {
+    g.fillStyle(0x8a6034, 1); g.fillRect(7, 4, 2, 18);
+    g.fillStyle(0xb8874e, 1); g.fillRect(7, 4, 1, 18);
+    g.fillStyle(0x9aa0a6, 1); g.fillRect(2, 0, 12, 6);
+    g.fillStyle(0xc9cdd1, 1); g.fillRect(3, 1, 10, 4);
+    g.fillStyle(0x7a7f85, 1); g.fillRect(4, 2, 8, 2);
+  });
 }
 
 

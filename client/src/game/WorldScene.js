@@ -10,15 +10,40 @@ import {
   generateWorld,
   isWalkable,
   tileAt,
+  ITEMS,
 } from '@almiargo/shared';
 import { store } from '../core/store.js';
 import { socket } from '../net/socket.js';
 import { uiBus } from '../core/uiBus.js';
-import { createEntityTextures, createWorldTexture, addZoneLabels, ensurePlayerTexture, createResourceTextures, createToolTextures } from './textures.js';
+import { createEntityTextures, createWorldTexture, addZoneLabels, ensurePlayerTexture, createResourceTextures, createToolTextures, createWeaponTextures } from './textures.js';
 import { VirtualJoystick } from '../input/Joystick.js';
 
 const TILE_CENTER = TILE_SIZE / 2;
 const toWorld = (tile) => tile * TILE_SIZE + TILE_CENTER;
+
+function handTextureKey(handItem) {
+  if (!handItem) return null;
+  const direct = handItem.spriteId || handItem.textureKey || handItem.texture || null;
+  if (direct) return direct;
+  const id = handItem.itemId || handItem.id || null;
+  if (!id) return null;
+  const directMap = {
+    axe: 'tool_axe',
+    pickaxe: 'tool_pickaxe',
+  };
+  if (directMap[id]) return directMap[id];
+  const catalog = (typeof window !== 'undefined' && window.__ITEMS__) ? window.__ITEMS__ : ITEMS;
+  const def = (catalog && catalog[id]) || ITEMS?.[id] || null;
+  const wc = def?.weaponClass ?? null;
+  if (wc === 'knight') return 'weapon_knight';
+  if (wc === 'archer') return 'weapon_archer';
+  if (wc === 'mage') return 'weapon_mage';
+  if (wc === 'adventurer') return id === 'pickaxe' ? 'tool_pickaxe' : 'tool_axe';
+  if (id.startsWith('sword')) return 'weapon_knight';
+  if (id.startsWith('bow')) return 'weapon_archer';
+  if (id.startsWith('staff')) return 'weapon_mage';
+  return null;
+}
 
 /**
  * Escena única del mundo. El servidor manda posiciones; aquí sólo se
@@ -54,7 +79,7 @@ export class WorldScene extends Phaser.Scene {
     createEntityTextures(this);
     createResourceTextures(this);
     createToolTextures(this);
-    // createWeaponTextures desactivado en rollback
+    createWeaponTextures(this);
     createWorldTexture(this, this.worldMap);
     this.syncResourceStumps();
 
@@ -329,13 +354,12 @@ export class WorldScene extends Phaser.Scene {
     const shadow = this.add.ellipse(0, 8, 24 * size, 9 * size, 0x000000, 0.33);
     const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.9).setScale(size);
     const handItem = e?.equipment?.mano ?? null;
-    const weaponKey = handItem ? (handItem.spriteId || handItem.id) : null;
+    const weaponKey = handTextureKey(handItem);
     const weaponSprite = (weaponKey && this.textures.exists(weaponKey))
       ? this.add.image(0, 2, weaponKey).setOrigin(0.5, 0.9).setScale(size)
       : null;
-    const handItemInit = e?.equipment?.mano ?? null;
-    const handKeyInit = handItemInit ? (handItemInit.spriteId || handItemInit.id) : null;
-    const axeSprite = this.add.image(10 * size, 2, (handKeyInit && this.textures.exists(handKeyInit)) ? handKeyInit : 'tool_axe').setOrigin(0.5, 0.9).setScale(size).setVisible(!!(handKeyInit && this.textures.exists(handKeyInit)));
+    // Sprite legacy de hacha: desactivado para evitar duplicados.
+    const axeSprite = null;
     const barBg = this.add.rectangle(0, -30, 30, 4, 0x05070a, 0.7).setOrigin(0.5);
     const barFill = this.add.rectangle(-15, -30, 30, 2.5, 0xd85a5a).setOrigin(0, 0.5);
     const nameText = this.add.text(0, -35, e.name ?? '', {
@@ -388,7 +412,7 @@ export class WorldScene extends Phaser.Scene {
       if (this.localWeapon) { this.localWeapon.destroy(); this.localWeapon = null; }
       return;
     }
-    const key = handItem.spriteId || handItem.id;
+    const key = handTextureKey(handItem);
     if (!key || !this.textures.exists(key)) {
       if (this.localWeapon) { this.localWeapon.destroy(); this.localWeapon = null; }
       return;
@@ -403,16 +427,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   updateLocalAxe() {
-    if (!this.localAxe) return;
-    const handItem = store.player?.equipment?.mano ?? null;
-    if (!handItem) { this.localAxe.setVisible(false); return; }
-    const key = handItem.spriteId || handItem.id;
-    if (key && this.textures.exists(key)) {
-      if (this.localAxe.texture.key !== key) this.localAxe.setTexture(key);
-      this.localAxe.setVisible(true);
-    } else {
-      this.localAxe.setVisible(false);
-    }
+    // El render de la mano se centraliza en updateLocalWeapon/localWeapon.
+    if (this.localAxe) this.localAxe.setVisible(false);
   }
 
   updateEntityVisual(view, e) {
@@ -427,7 +443,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (view.sprite.texture.key !== texture) view.sprite.setTexture(texture);
     const handItem = e?.equipment?.mano ?? view?.data?.equipment?.mano ?? null;
-    const weaponKey = handItem ? (handItem.spriteId || handItem.id) : null;
+    const weaponKey = handTextureKey(handItem);
     if (view.weaponSprite) {
       if (weaponKey && this.textures.exists(weaponKey)) {
         if (view.weaponSprite.texture.key !== weaponKey) view.weaponSprite.setTexture(weaponKey);
@@ -436,16 +452,7 @@ export class WorldScene extends Phaser.Scene {
         view.weaponSprite.setVisible(false);
       }
     }
-    if (view.axeSprite) {
-      const handItemV = e?.equipment?.mano ?? view?.data?.equipment?.mano ?? null;
-      const handKeyV = handItemV ? (handItemV.spriteId || handItemV.id) : null;
-      if (handKeyV && this.textures.exists(handKeyV)) {
-        if (view.axeSprite.texture.key !== handKeyV) view.axeSprite.setTexture(handKeyV);
-        view.axeSprite.setVisible(true);
-      } else {
-        view.axeSprite.setVisible(false);
-      }
-    }
+    if (view.axeSprite) view.axeSprite.setVisible(false);
     const name = e.kind === ENTITY_KIND.PLAYER ? `${e.name}` : e.name;
     view.nameText.setText(name ?? '');
     if (e.kind === ENTITY_KIND.PLAYER) {
