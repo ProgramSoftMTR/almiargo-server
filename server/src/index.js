@@ -1,0 +1,25 @@
+import { config } from './config.js';
+import { createStore } from './db/index.js';
+import { GameServer } from './net/gameServer.js';
+
+const store = await createStore();
+const game = new GameServer({ store, config });
+await game.start();
+
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`\n[server] ${signal} recibido, guardando y cerrando…`);
+  try {
+    await game.stop();
+  } catch (err) {
+    console.error('[server] error al cerrar:', err);
+  }
+  process.exit(0);
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('unhandledRejection', (err) => console.error('[unhandled]', err));
+process.on('uncaughtException', (err) => console.error('[uncaught]', err));
