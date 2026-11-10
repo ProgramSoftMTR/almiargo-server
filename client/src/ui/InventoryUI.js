@@ -235,7 +235,7 @@ export class InventoryUI {
     const use = def.use?.healHp ? `Cura ${def.use.healHp} HP` : def.use?.healMp ? `Restaura ${def.use.healMp} MP` : '';
     $('itemDetailDesc').textContent = [stats.join(' \u00b7 '), use, def.description].filter(Boolean).join('\n');
 
-    const canEquip = def.slot && EQUIP_SLOTS.includes(def.slot);
+    const canEquip = def.slot === 'mano' || def.slot === 'weapon' || def.type === 'weapon' || def.type === 'tool' || EQUIP_SLOTS.includes(def.slot);
     $('btnEquip').classList.toggle('hidden', !canEquip);
     $('btnUse').classList.toggle('hidden', !def.use);
     $('btnSell').classList.toggle('hidden', !def.sell);
