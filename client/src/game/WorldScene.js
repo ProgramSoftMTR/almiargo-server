@@ -102,6 +102,7 @@ export class WorldScene extends Phaser.Scene {
     this.localSprite = this.add.sprite(0, 0, localTexture);
     this.localSprite.setOrigin(0.5, 0.9);
     const handItem = p?.equipment?.mano ?? null;
+    // render dinámico por spriteId/id sin filtro de clase
     if (handItem) {
       const key = handItem.spriteId || handItem.id;
       this.localWeapon = key && this.textures.exists(key)
