@@ -101,7 +101,15 @@ export class WorldScene extends Phaser.Scene {
     const localTexture = ensurePlayerTexture(this, 'base', p.outfit);
     this.localSprite = this.add.sprite(0, 0, localTexture);
     this.localSprite.setOrigin(0.5, 0.9);
-    this.localWeapon = null;
+    const handItem = p?.equipment?.mano ?? null;
+    if (handItem) {
+      const key = p.classId === 'adventurer' ? null : `weapon_${p.classId ?? 'knight'}`;
+      this.localWeapon = key && this.textures.exists(key)
+        ? this.add.image(0, 2, key).setOrigin(0.5, 0.9)
+        : null;
+    } else {
+      this.localWeapon = null;
+    }
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
 
     // Name tag + barra de vida del jugador local (mismo diseño que enemigos).
@@ -327,8 +335,10 @@ export class WorldScene extends Phaser.Scene {
     const ring = this.add.ellipse(0, 3, 32, 17).setStrokeStyle(2, 0xf2c94c, 0.95).setVisible(false);
     const shadow = this.add.ellipse(0, 8, 24 * size, 9 * size, 0x000000, 0.33);
     const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.9).setScale(size);
-    const weaponKey = null;
-    const weaponSprite = null;
+    const weaponKey = (e?.equipment?.mano && e.classId && e.classId !== 'adventurer') ? `weapon_${e.classId}` : null;
+    const weaponSprite = (weaponKey && this.textures.exists(weaponKey))
+      ? this.add.image(0, 2, weaponKey).setOrigin(0.5, 0.9).setScale(size)
+      : null;
     const axeSprite = this.add.image(10 * size, 2, 'tool_axe').setOrigin(0.5, 0.9).setScale(size).setVisible(e.hasAxe === true);
     const barBg = this.add.rectangle(0, -30, 30, 4, 0x05070a, 0.7).setOrigin(0.5);
     const barFill = this.add.rectangle(-15, -30, 30, 2.5, 0xd85a5a).setOrigin(0, 0.5);
@@ -347,7 +357,7 @@ export class WorldScene extends Phaser.Scene {
     barFill.y = top - 1;
 
     const container = this.add.container(toWorld(e.x), toWorld(e.y), [
-      ring, shadow, sprite, axeSprite, barBg, barFill, nameText,
+      ring, shadow, sprite, weaponSprite, axeSprite, barBg, barFill, nameText,
     ].filter(Boolean));
     container.setDepth(100 + e.y * 10);
 
@@ -364,6 +374,7 @@ export class WorldScene extends Phaser.Scene {
       displayHeight,
       buffer: quiet ? [] : [{ t: Date.now(), x: toWorld(e.x), y: toWorld(e.y) }],
       axeSprite,
+      weaponSprite,
       data: e,
       lastX: toWorld(e.x),
       lastY: toWorld(e.y),
@@ -378,13 +389,13 @@ export class WorldScene extends Phaser.Scene {
   updateLocalWeapon() {
     if (!this.localWeapon) return;
     const cls = store.player?.classId ?? 'adventurer';
-    const key = cls === 'adventurer' ? null : `weapon_${cls}`;
-    let weaponTexture = key;
-    if (typeof weaponTexture !== 'undefined' && weaponTexture && key && this.textures.exists(key)) {
-      if (this.localWeapon && this.localWeapon.texture && this.localWeapon.texture.key !== key) this.localWeapon.setTexture(key);
-      if (this.localWeapon) this.localWeapon.setVisible(true);
+    const hasHand = !!store.player?.equipment?.mano;
+    const key = (hasHand && cls !== 'adventurer') ? `weapon_${cls}` : null;
+    if (key && this.textures.exists(key)) {
+      if (this.localWeapon.texture && this.localWeapon.texture.key !== key) this.localWeapon.setTexture(key);
+      this.localWeapon.setVisible(true);
     } else {
-      if (this.localWeapon) this.localWeapon.setVisible(false);
+      this.localWeapon.setVisible(false);
     }
   }
 
@@ -405,7 +416,15 @@ export class WorldScene extends Phaser.Scene {
       texture = ensurePlayerTexture(this, e.classId || 'knight', e.outfit);
     }
     if (view.sprite.texture.key !== texture) view.sprite.setTexture(texture);
-    // Arma desactivada para evitar crash de texturas experimentales.
+    const weaponKey = (view?.data?.equipment?.mano && e.classId && e.classId !== 'adventurer') ? `weapon_${e.classId}` : null;
+    if (view.weaponSprite) {
+      if (weaponKey && this.textures.exists(weaponKey)) {
+        if (view.weaponSprite.texture.key !== weaponKey) view.weaponSprite.setTexture(weaponKey);
+        view.weaponSprite.setVisible(true);
+      } else {
+        view.weaponSprite.setVisible(false);
+      }
+    }
     if (view.axeSprite) view.axeSprite.setVisible(e.hasAxe === true);
     const name = e.kind === ENTITY_KIND.PLAYER ? `${e.name}` : e.name;
     view.nameText.setText(name ?? '');

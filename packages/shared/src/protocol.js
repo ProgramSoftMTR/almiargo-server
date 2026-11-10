@@ -103,6 +103,7 @@ export function decodeEntity(arr) {
     id: arr[0], kind: arr[1], x: arr[2], y: arr[3], dir: arr[4],
     hpPct: arr[5], name: arr[6], skull: arr[7], classId: arr[8], level: arr[9],
     nameColor: arr[10] ?? null, outfit: arr[11] ?? null, hasAxe: !!arr[12],
+    equipment: arr[13] ? { mano: { itemId: arr[13] } } : null,
   };
 }
 

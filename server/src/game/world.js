@@ -270,6 +270,7 @@ export class World {
           entity.dir, Math.max(0, Math.round((entity.hp / entity.maxHp) * 100)),
           entity.name, entity.skullActive ? entity.skull : 'none',
           entity.classId, entity.level, entity.nameColor ?? null, entity.outfit ?? null, entity.hasAxe ? 1 : 0,
+          entity.equipment?.mano?.itemId ?? null,
         ]);
       } else {
         entities.push([
