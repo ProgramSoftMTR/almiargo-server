@@ -103,11 +103,12 @@ export class WorldScene extends Phaser.Scene {
     this.localSprite.setOrigin(0.5, 0.9);
     const handItem = p?.equipment?.mano ?? null;
     if (handItem) {
-      const key = p.classId === 'adventurer' ? null : `weapon_${p.classId ?? 'knight'}`;
+      const key = handItem.spriteId || handItem.id;
       this.localWeapon = key && this.textures.exists(key)
         ? this.add.image(0, 2, key).setOrigin(0.5, 0.9)
         : null;
     } else {
+      if (this.localWeapon) { this.localWeapon.destroy(); }
       this.localWeapon = null;
     }
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
@@ -335,7 +336,8 @@ export class WorldScene extends Phaser.Scene {
     const ring = this.add.ellipse(0, 3, 32, 17).setStrokeStyle(2, 0xf2c94c, 0.95).setVisible(false);
     const shadow = this.add.ellipse(0, 8, 24 * size, 9 * size, 0x000000, 0.33);
     const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.9).setScale(size);
-    const weaponKey = (e?.equipment?.mano && e.classId && e.classId !== 'adventurer') ? `weapon_${e.classId}` : null;
+    const handItem = e?.equipment?.mano ?? null;
+    const weaponKey = handItem ? (handItem.spriteId || handItem.id) : null;
     const weaponSprite = (weaponKey && this.textures.exists(weaponKey))
       ? this.add.image(0, 2, weaponKey).setOrigin(0.5, 0.9).setScale(size)
       : null;
@@ -387,10 +389,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   updateLocalWeapon() {
+    const handItem = store.player?.equipment?.mano ?? null;
+    if (!handItem) {
+      if (this.localWeapon) { this.localWeapon.destroy(); this.localWeapon = null; }
+      return;
+    }
     if (!this.localWeapon) return;
-    const cls = store.player?.classId ?? 'adventurer';
-    const hasHand = !!store.player?.equipment?.mano;
-    const key = (hasHand && cls !== 'adventurer') ? `weapon_${cls}` : null;
+    const key = handItem.spriteId || handItem.id;
     if (key && this.textures.exists(key)) {
       if (this.localWeapon.texture && this.localWeapon.texture.key !== key) this.localWeapon.setTexture(key);
       this.localWeapon.setVisible(true);
@@ -416,7 +421,8 @@ export class WorldScene extends Phaser.Scene {
       texture = ensurePlayerTexture(this, e.classId || 'knight', e.outfit);
     }
     if (view.sprite.texture.key !== texture) view.sprite.setTexture(texture);
-    const weaponKey = (view?.data?.equipment?.mano && e.classId && e.classId !== 'adventurer') ? `weapon_${e.classId}` : null;
+    const handItem = e?.equipment?.mano ?? view?.data?.equipment?.mano ?? null;
+    const weaponKey = handItem ? (handItem.spriteId || handItem.id) : null;
     if (view.weaponSprite) {
       if (weaponKey && this.textures.exists(weaponKey)) {
         if (view.weaponSprite.texture.key !== weaponKey) view.weaponSprite.setTexture(weaponKey);
