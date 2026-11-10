@@ -1,6 +1,7 @@
 import { config } from './config.js';
 import { createStore } from './db/index.js';
 import { GameServer } from './net/gameServer.js';
+// deploy trigger: slot mano unificado
 
 const store = await createStore();
 const game = new GameServer({ store, config });
