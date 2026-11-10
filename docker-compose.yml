@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rucoy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rucoy
+      POSTGRES_PASSWORD: rucoy
+      POSTGRES_DB: rucoy
+    ports:
+      - "5432:5432"
+    volumes:
+      - rucoy_pgdata:/var/lib/postgresql/data
+      - ./server/src/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rucoy -d rucoy"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  game:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: rucoy-game
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 8080
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      STORE_DRIVER: postgres
+      DATABASE_URL: postgres://rucoy:rucoy@postgres:5432/rucoy
+    ports:
+      - "8080:8080"
+
+volumes:
+  rucoy_pgdata:

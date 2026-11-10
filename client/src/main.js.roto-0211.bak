@@ -1,0 +1,156 @@
+import { socket } from './net/socket.js';
+import { WorldScene } from './game/WorldScene.js';
+import { store } from './core/store.js';
+import { Hud } from './ui/Hud.js';
+
+// ── Configuración global ─────────────────────────────────────
+const CONFIG = {
+  // Email del administrador (cualquier coincidencia o flag isAdmin concede acceso)
+  adminEmails: ['admin@rucoy.com'],
+  // Flag adicional de admin en el paquete del jugador
+  isAdminFlag: 'isAdmin',
+  // Siempre mostrar pantalla de login (no entrar al mapa automáticamente)
+  alwaysForceLogin: true,
+  // Time-out de despawneado de bolsas (segundos)
+  bagDespawnSeconds: 60,
+};
+
+// Estado del juego
+let player = null;
+let worldScene = null;
+let hud = null;
+let bags = new Map(); // bagId → {sprite, timer}
+
+// Elementos del DOM
+const loginScreen = $('#login');
+const gameScreen = $('#game');
+const loginError = $('loginError');
+const logoutBtn = $('#logoutBtn');
+const adminBtn = $('#adminBtn');
+const loginStatus = $('loginStatus');
+const hudEl = $('#hud');
+
+// ── Manejo de logout ────────────────────────────────────────
+function handleLogout() {
+  localStorage.clear();
+  location.reload();
+}
+
+// ── Visibilidad del panel de admin ──────────────────────────
+function updateAdminVisibility() {
+  const isAdmin =
+    CONFIG.adminEmails.includes(player?.email) ||
+    player?.flags?.[CONFIG.isAdminFlag] === true;
+  if (adminBtn) adminBtn.style.display = isAdmin ? 'block' : 'none';
+}
+
+// ── Conectar al servidor y empezar ──────────────────────────
+async function connectAndStart() {
+  try {
+    await socket.connect({ provider: 'session' });
+  } catch (err) {
+    loginError.textContent = 'No se pudo conectar al servidor: ' + (err?.message || 'error desconocido');
+    return;
+  }
+
+  // Mostrar pantalla de juego y ocultar login
+  showScreen('game');
+  loginStatus.classList.add('hidden');
+
+  // Mostrar HUD y crear instancia si no existe
+  if (hudEl) hudEl.classList.remove('hidden');
+  if (!hud) {
+    hud = new Hud({
+      onInventory: () => {
+        const p = $('#inventoryPanel');
+        if (p) p.classList.toggle('hidden');
+      },
+      onChat: () => {
+        const p = $('#chatPanel');
+        if (p) p.classList.toggle('hidden');
+      },
+      onStall: () => {
+        const p = $('#stallPanel');
+        if (p) p.classList.toggle('hidden');
+      },
+    });
+  }
+
+  // Crear escena del mundo si no existe
+  if (!worldScene) {
+    const canvas = $('#game');
+    if (!canvas) throw new Error('No se encontró el canvas del juego');
+    worldScene = new WorldScene(canvas);
+    await worldScene.init();
+
+    // Escuchar despawn de bolsas desde el servidor
+    socket.on('drop_despawn', (bagId) => {
+      removeBag(bagId);
+    });
+  }
+}
+
+// ── Eliminar bolsa del escenario ────────────────────────────
+function removeBag(bagId) {
+  const bagInfo = bags.get(bagId);
+  if (bagInfo && bagInfo.sprite) {
+    bagInfo.sprite.destroy();
+    bags.delete(bagId);
+  }
+}
+
+// ── Entrar al juego (después de login) ──────────────────────
+function enterGame(accountInfo) {
+  player = accountInfo;
+  updateAdminVisibility();
+
+  // Configurar timeout de despawneado de bolsas
+  setTimeout(() => {
+    // El servidor ya nos avisa vía drop_despawn, pero podemos limpiar localmente
+    console.log('Time-out de 60s para bolsas activado');
+  }, CONFIG.bagDespawnSeconds * 1000);
+
+  showScreen('game');
+  loginStatus.classList.add('hidden');
+}
+
+// ── Mostrar u ocultar pantalla ──────────────────────────────
+function showScreen(screen) {
+  ['login', 'game'].forEach(s => {
+    const el = $(s === 'login' ? 'login' : 'game');
+    if (el) el.classList[screen === s ? 'remove' : 'add']('hidden');
+  });
+}
+
+// ── Inicialización al arrancar ──────────────────────────────
+async function initAppOnStart() {
+  // Siempre eliminar tokens yforzar login al inicio
+  // (a menos que se configure alwaysForceLogin = false)
+  localStorage.removeItem('rucoy.token');
+  localStorage.removeItem('rucoy.account');
+
+  if (CONFIG.alwaysForceLogin) {
+    showScreen('login');
+    loginError.textContent = '';
+    loginStatus.textContent = 'Conectando al servidor...';
+    loginStatus.classList.remove('hidden');
+
+    // Intentar conectar de todos modos para recuperar estado
+    try {
+      await connectAndStart();
+    } catch (err) {
+      loginError.textContent = 'Error al conectar: ' + (err?.message || '');
+    }
+  } else {
+    // Entrar directamente al mapa (modo desarrollo)
+    await connectAndStart();
+  }
+}
+
+// Conectar al iniciar
+initAppOnStart();
+
+// Exportar para uso externo si es necesario
+window.handleLogout = handleLogout;
+window.updateAdminVisibility = updateAdminVisibility;
+window.enterGame = enterGame;

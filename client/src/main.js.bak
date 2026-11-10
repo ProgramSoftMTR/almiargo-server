@@ -1,0 +1,520 @@
+import Phaser from 'phaser';
+import { CLASSES, SKILLS } from '@rucoy/shared';
+import './styles.css';
+import { store } from './core/store.js';
+import { socket } from './net/socket.js';
+import { signInWithGoogle, signInWithApple, googleOAuthConfigured } from './auth/oauth.js';
+import { WorldScene } from './game/WorldScene.js';
+import { Hud } from './ui/Hud.js';
+import { ChatUI } from './ui/ChatUI.js';
+import { InventoryUI } from './ui/InventoryUI.js';
+import { ShopUI } from './ui/ShopUI.js';
+import { StallUI } from './ui/StallUI.js';
+
+const $ = (id) => document.getElementById(id);
+
+// ── Paneles ───────────────────────────────────────────────────
+const shopUI = new ShopUI();
+const stallUI = new StallUI();
+const chatUI = new ChatUI();
+const inventoryUI = new InventoryUI({ onStall: () => stallUI.openEditor() });
+const hud = new Hud({
+  onInventory: () => inventoryUI.toggle(),
+  onChat: () => chatUI.toggle(),
+  onStall: () => stallUI.openEditor(),
+});
+
+let game = null;
+
+// ── Login OAuth (Google / Apple) ───────────────────────────────
+const loginScreen = $('login');
+const googleSignInBtn = $('googleSignInBtn');
+const appleSignInBtn = $('appleSignInBtn');
+const loginError = $('loginError');
+const loginStatus = $('loginStatus');
+
+const characterModal = $('characterModal');
+const characterForm = $('characterForm');
+const characterName = $('characterName');
+const createCharacterBtn = $('createCharacterBtn');
+const characterError = $('characterError');
+const characterStatus = $('characterStatus');
+
+// ── Ajustes (Settings) ────────────────────────────────────────
+const btnToggleControls = $('btnToggleControls');
+const btnLogout = $('btnLogout');
+let controlMode = localStorage.getItem('rucoy.controls') || 'joystick';
+btnToggleControls.textContent = controlMode === 'joystick'
+  ? '🎮 Controles: Joystick'
+  : '👆 Controles: Tocar pantalla';
+
+// Settings gear button and dropdown (top-right, next to minimap)
+const btnSettingsGear = $('btnSettings');
+const settingsMenu = $('settingsMenu');
+let isAdmin = false;
+let adminState = { invisible: false, godMode: false };
+
+let loginBusy = false;
+
+function setLoginStatus(text) {
+  loginStatus.textContent = text || '';
+  loginStatus.classList.toggle('hidden', !text);
+}
+
+function setLoginBusy(busy, text = null) {
+  loginBusy = busy;
+  for (const button of [googleSignInBtn, appleSignInBtn]) {
+    if (button) button.disabled = busy;
+  }
+  if (text !== null) setLoginStatus(text);
+}
+
+function showLogin(message = '') {
+  hideCharacterCreator();
+  loginScreen.classList.remove('hidden');
+  loginError.textContent = message;
+  setLoginBusy(false);
+}
+
+function hideLogin() {
+  loginScreen.classList.add('hidden');
+  loginError.textContent = '';
+  setLoginBusy(false);
+}
+
+async function handleOAuth(provider) {
+  if (loginBusy) return;
+  loginError.textContent = '';
+  setLoginBusy(true, provider === 'google' ? 'Abriendo cuentas de Google…' : 'Abriendo Apple…');
+
+  try {
+    const result = provider === 'google'
+      ? await signInWithGoogle()
+      : await signInWithApple();
+    setLoginStatus('Token verificado. Conectando al servidor…');
+    // Abre el WebSocket inmediatamente; el JWT viaja en el primer payload.
+    socket.connect({ provider: result.provider, token: result.token });
+  } catch (err) {
+    setLoginBusy(false);
+    if (err?.cancelled) {
+      setLoginStatus('');
+      return;
+    }
+    loginError.textContent = err?.message || 'No se pudo iniciar sesión';
+  }
+}
+
+googleSignInBtn.addEventListener('click', () => handleOAuth('google'));
+appleSignInBtn.addEventListener('click', () => handleOAuth('apple'));
+
+// ── Creación de personaje ─────────────────────────────────────
+function setCharacterBusy(busy) {
+  createCharacterBtn.disabled = busy;
+  createCharacterBtn.textContent = busy ? 'CREANDO…' : 'ENTRAR AL MUNDO';
+  characterStatus.textContent = busy ? 'Creando personaje…' : '';
+  characterStatus.classList.toggle('hidden', !busy);
+}
+
+function showCharacterCreator() {
+  hideLogin();
+  characterError.textContent = '';
+  setCharacterBusy(false);
+  characterModal.classList.remove('hidden');
+  setTimeout(() => characterName.focus(), 120);
+}
+
+function hideCharacterCreator() {
+  if (!characterModal) return;
+  characterModal.classList.add('hidden');
+  setCharacterBusy(false);
+  characterError.textContent = '';
+  characterName.value = '';
+  characterName.readOnly = false;
+}
+
+characterForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const name = characterName.value.trim().replace(/\s+/g, ' ');
+  if (!/^[A-Za-z0-9_ ]{3,16}$/.test(name)) {
+    characterError.textContent = 'Nombre inválido: 3-16 letras, números, espacios o _';
+    return;
+  }
+  characterError.textContent = '';
+  setCharacterBusy(true);
+  const sent = socket.send('create_character', { name });
+  if (!sent) {
+    setCharacterBusy(false);
+    characterError.textContent = 'Sin conexión con el servidor';
+  }
+});
+
+// ── Estado de conexión ────────────────────────────────────────
+socket.on('status', (status) => {
+  hud.setConnectionBadge(status.state);
+  const loginVisible = !loginScreen.classList.contains('hidden');
+
+  if (status.state === 'connecting') {
+    if (loginVisible) setLoginBusy(true, 'Conectando al servidor…');
+  } else if (status.state === 'connected') {
+    if (loginVisible) setLoginBusy(true, 'Autenticando…');
+  } else if (status.state === 'error') {
+    if (loginVisible) {
+      setLoginBusy(false);
+      loginError.textContent = status.message || 'No se pudo conectar al servidor';
+    }
+  } else if (status.state === 'offline') {
+    if (status.code === 4001) {
+      showLogin(status.reason || 'Desconectado por nueva sesión.');
+      return;
+    }
+    if (!socket.authenticated && store.authenticated) {
+      // Se perdió una sesión ya establecida: la reconexión la gestiona socket.
+      return;
+    }
+    if (loginVisible) {
+      setLoginBusy(false);
+      loginError.textContent = 'No se pudo conectar al servidor. Inténtalo de nuevo.';
+    }
+  } else if (status.state === 'failed') {
+    store.authenticated = false;
+    showLogin('No se pudo reconectar. Vuelve a entrar.');
+  }
+});
+
+socket.on('auth_error', (msg) => {
+  const text = msg?.message === 'Sesión expirada'
+    ? 'Tu sesión expiró. Vuelve a entrar.'
+    : (msg?.message || 'No se pudo iniciar sesión');
+  showLogin(text);
+});
+
+socket.on('account_ready', (msg) => {
+  // Determinar si esta cuenta es el admin por defecto
+  const isAdminEmail = msg.accountEmail === 'alejoargumedo.edu@gmail.com';
+  
+  // Si el servidor indica que necesita crear personaje
+  if (msg.needsCharacter) {
+    if (isAdminEmail) {
+      // Para el admin por correo: crear personaje automáticamente con nombre ChiwiADMIN
+      hideLogin();
+      setLoginBusy(true, 'Creando personaje administrador…');
+      // Usar nombre reservado y color morado
+      socket.send('create_character', { name: 'ChiwiADMIN' });
+    } else if (msg.admin) {
+      // Admin flag ya establecido por el servidor
+      hideLogin();
+      setLoginBusy(true, 'Creando personaje de administrador…');
+      socket.send('create_character', { name: 'ChiwiADMIN' });
+    } else {
+      // Primera vez que esta cuenta entra: mostrar selector de nombre
+      // Marcar como visto para que no vuelva a mostrarse
+      accountSeen = '1';
+      localStorage.setItem(accountSeenKey, '1');
+      showCharacterCreator();
+    }
+  } else {
+    // El personaje ya existe: entrar directo al mundo (omitir pantalla de nombre)
+    hideLogin();
+    setLoginBusy(true, 'Conectando al mundo…');
+  }
+});
+
+socket.on('character_error', (msg) => {
+  setCharacterBusy(false);
+  characterError.textContent = msg?.message || 'No se pudo crear el personaje';
+});
+
+socket.on('session_replaced', (msg) => {
+  store.authenticated = false;
+  store.connected = false;
+  store.player = null;
+  store.self = null;
+  store.entities.clear();
+  if (game) {
+    game.destroy(true);
+    game = null;
+  }
+  showLogin(msg?.message || 'Desconectado por nueva sesión');
+});
+
+socket.on('hello', (msg) => {
+  if (msg?.version && !loginScreen.classList.contains('hidden')) {
+    setLoginStatus(`Servidor v${msg.version}`);
+    setTimeout(() => {
+      if (!loginScreen.classList.contains('hidden') && !loginBusy) setLoginStatus('');
+    }, 1400);
+  }
+});
+
+// ── Entrada al mundo ──────────────────────────────────────────
+store.on('auth', (msg) => {
+  hideCharacterCreator();
+  hideLogin();
+  hud.setOnline(msg.online ?? 1);
+
+  // Detectar si el jugador es admin y actualizar botón
+  const player = msg.player;
+  const accountEmail = msg.account?.email ?? '';
+  updateAdminButton(accountEmail);
+
+  if (player?.isAdmin) {
+    isAdmin = true;
+    btnAdmin.classList.remove('hidden');
+    if (player.nameColor) {
+      $('playerName').style.color = player.nameColor;
+    }
+  } else {
+    isAdmin = false;
+    btnAdmin.classList.add('hidden');
+    const playerName = $('playerName');
+    if (playerName) {
+      playerName.style.color = '';
+    }
+  }
+
+  startGame();
+  requestWakeLock();
+});
+
+// Mantiene la pantalla encendida durante la partida (usa WAKE_LOCK en Android).
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch {
+    // Algunos WebViews no permiten wake lock; el juego sigue funcionando.
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && store.authenticated) requestWakeLock();
+});
+
+function startGame() {
+  if (game) return;
+  game = new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: 'game',
+    backgroundColor: '#0b0e14',
+    banner: false,
+    audio: { noAudio: true },
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+    render: {
+      pixelArt: true,
+      antialias: false,
+      roundPixels: true,
+      powerPreference: 'high-performance',
+    },
+    input: { activePointers: 3 },
+    scene: [WorldScene],
+  });
+  window.__rucoyGame = game;
+}
+
+// ── Avisos de juego ───────────────────────────────────────────
+store.on('game-event', (msg) => {
+  switch (msg.event) {
+    case 'error':
+      hud.toast(msg.message || 'Acción rechazada', 'error');
+      break;
+    case 'notice':
+      hud.toast(msg.text || '', '');
+      break;
+    case 'death':
+      hud.showDeathInfo(msg);
+      break;
+    case 'respawn':
+      hud.hideDeath();
+      break;
+    case 'level_up':
+      hud.toast(`¡Subiste al nivel ${msg.level}!`, 'good');
+      break;
+    case 'skill_up': {
+      const skill = SKILLS[msg.skill]?.name ?? msg.skill;
+      hud.toast(`${skill} subió a nivel ${msg.level}`, 'good');
+      break;
+    }
+    case 'pvp':
+      if (msg.action === 'kill') {
+        if (msg.targetId && msg.attackerId === store.player?.id) {
+          hud.toast('Mataste a un jugador. Ahora tienes calavera roja.', 'error');
+        } else if (msg.targetId && msg.skull === 'red') {
+          hud.toast('Un PK ha matado a un jugador cerca de ti.', 'error');
+        }
+      }
+      break;
+    case 'class_switch':
+      if (msg.classId && CLASSES[msg.classId]) {
+        hud.toast(`Clase: ${CLASSES[msg.classId].name}`, '');
+      }
+      break;
+    default:
+      break;
+  }
+});
+
+// ── Eventos de administrador ──────────────────────────────────
+store.on('game-event', (msg) => {
+  if (msg.event === 'admin_state') {
+    adminState = { invisible: !!msg.invisible, godMode: !!msg.godMode };
+    const btnInvis = $('btnInvisible');
+    const btnGod = $('btnGodMode');
+    if (btnInvis) btnInvis.classList.toggle('active', adminState.invisible);
+    if (btnGod) btnGod.classList.toggle('active', adminState.godMode);
+  }
+  if (msg.event === 'admin_result') {
+    if (msg.ok && msg.message) {
+      adminStatus.textContent = msg.message;
+      hud.toast(msg.message, 'good');
+      setTimeout(() => { adminStatus.textContent = ''; }, 3000);
+    }
+  }
+});
+
+// Configurar visibilidad del botón admin basándose en cuenta + flag
+function updateAdminButton(accountEmail) {
+  const isAdminEmail = accountEmail === 'alejoargumedo.edu@gmail.com';
+  if (isAdminEmail || isAdmin) {
+    btnAdmin.classList.remove('hidden');
+    // Aplicar nombre color morado para admin
+    const playerName = $('playerName');
+    if (playerName) {
+      if (isAdminEmail) {
+        playerName.style.color = '#800080'; // morado admin
+      } else if (isAdmin && playerName.style.color !== '#800080') {
+        // Ya estaba morado por otra razón, mantener
+      }
+    }
+  } else {
+    btnAdmin.classList.add('hidden');
+    const playerName = $('playerName');
+    if (playerName) {
+      playerName.style.color = '';
+    }
+  }
+}
+
+// ── Menú de ajustes (engrane arriba a la derecha) ────────────────────────
+btnSettingsGear.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const open = settingsDropdown.classList.contains('hidden');
+  settingsDropdown.classList.toggle('hidden', open);
+  btnSettingsGear.classList.toggle('open', open);
+});
+
+// Cerrar menú de ajustes al tocar fuera
+document.addEventListener('click', (e) => {
+  if (!settingsDropdown.classList.contains('hidden')
+    && !settingsDropdown.contains(e.target)
+    && e.target !== btnSettingsGear) {
+    settingsDropdown.classList.add('hidden');
+    btnSettingsGear.classList.remove('open');
+  }
+});
+
+// Alternar entre joystick y táctil
+btnToggleControls.addEventListener('click', () => {
+  controlMode = controlMode === 'joystick' ? 'touch' : 'joystick';
+  localStorage.setItem('rucoy.controls', controlMode);
+  btnToggleControls.textContent = controlMode === 'joystick'
+    ? '🎮 Controles: Joystick'
+    : '👆 Controles: Tocar pantalla';
+  hud.toast(
+    controlMode === 'joystick'
+      ? 'Controles: Joystick activado'
+      : 'Controles: Tocar pantalla activado',
+    '',
+  );
+  // Publicar el cambio para que WorldScene lo aplique
+  store.emit('control-mode', controlMode);
+});
+
+// Cerrar sesión: borrar datos locales yforzar recarga a login
+btnLogout.addEventListener('click', () => {
+  // Borrar sesión local (token y cuenta)
+  localStorage.removeItem('rucoy.token');
+  localStorage.removeItem('rucoy.account');
+  // Forzar recarga a la pantalla de login
+  window.location.href = '/';
+  // Desconectar socket
+  socket.disconnect();
+  socket.token = null;
+  store.authenticated = false;
+  store.connected = false;
+  store.player = null;
+  store.self = null;
+  store.entities.clear();
+  // Limpiar admin
+  isAdmin = false;
+  btnAdmin.classList.add('hidden');
+  adminPanel.classList.add('hidden');
+  adminState = { invisible: false, godMode: false };
+  // Destruir juego
+  if (game) {
+    game.destroy(true);
+    game = null;
+  }
+  // Reset HUD
+  hud.hide();
+  $('playerName').style.color = '';
+  showLogin('Sesión cerrada correctamente');
+});
+
+// ── Panel de Administrador ────────────────────────────────────
+btnAdmin.addEventListener('click', () => {
+  adminPanel.classList.toggle('hidden');
+});
+
+// Admin action buttons
+for (const btn of document.querySelectorAll('.admin-action-btn')) {
+  btn.addEventListener('click', () => {
+    if (!isAdmin) return;
+    const action = btn.dataset.action;
+    const sent = socket.send('admin_action', { action });
+    if (!sent) {
+      hud.toast('Sin conexión con el servidor', 'error');
+    }
+  });
+}
+
+// Cerrar admin panel con su botón de cierre
+for (const btn of document.querySelectorAll('[data-close]')) {
+  btn.addEventListener('click', () => {
+    const target = $(btn.dataset.close);
+    if (target) target.classList.add('hidden');
+  });
+}
+
+// ── Arranque: SIEMPRE eliminar token guardado y forzar login ───────────────
+// La app nunca debe entrar automáticamente al mapa si se cerró antes.
+// El jugador debe pasar siempre por la pantalla de "Sign in with Google / Apple".
+localStorage.removeItem('rucoy.token');
+localStorage.removeItem('rucoy.account');
+
+// Track whether we've already shown the character creator for this account session
+// We use a per-account flag to only show the name picker once per account creation
+const accountSeenKey = `rucoy.accountSeen_${location.hostname}`;
+let accountSeen = localStorage.getItem(accountSeenKey);
+
+// Para accounts nuevas (nunca han entrado al juego), mostrar creator de personaje
+// Para accounts que ya tienen personaje, entrar directo con el nombre asignado
+// Para "alejoargumedo.edu@gmail.com", asignar automáticamente "ChiwiADMIN" en morado
+
+async function initAppOnStart() {
+  // Marcar esta cuenta como vista para esta sesión (se establecerá después del login)
+  // Por ahora, mantener vacío para permitir que el creator se muestre la primera vez
+  setLoginBusy(false);
+  if (!googleOAuthConfigured) {
+    loginError.textContent = 'Google Sign-In no está configurado en este APK. Recompila con -GoogleClientId.';
+  }
+  setTimeout(() => googleSignInBtn.focus(), 120);
+}
+
+initAppOnStart();

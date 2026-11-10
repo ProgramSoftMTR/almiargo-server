@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+client/dist
+client/android
+artifacts
+data
+.git
+.github
+.env
+*.log
+*.apk
+*.aab
+*.jks

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0e14" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Rucoy Like — MMORPG</title>
+</head>
+<body>
+  <div id="app">
+    <div id="game" aria-label="Mundo del juego"></div>
+
+    <!-- ── HUD móvil ─────────────────────────────────────── -->
+    <div id="hud" class="hidden">
+      <!-- Estado arriba izquierda (diseño píxel clásico) -->
+      <div class="status-card">
+        <div class="status-head">
+          <div class="level-badge" id="levelBadge">1</div>
+          <div class="status-name">
+            <strong id="playerName">Aventurero</strong>
+            <span id="classLabel">Caballero</span>
+          </div>
+        </div>
+        <div class="bar hp"><div class="bar-fill" id="hpFill"></div><span id="hpText">100 / 100</span></div>
+        <div class="bar mp"><div class="bar-fill" id="mpFill"></div><span id="mpText">50 / 50</span></div>
+        <div class="status-foot">
+          <span class="gold">◈ <b id="goldText">100</b></span>
+          <span class="online" id="onlineText">● 1 · --ms</span>
+        </div>
+      </div>
+
+      <button id="btnAdmin" class="admin-toggle-btn" style="position: absolute; top: calc(50px + var(--safe-top)); left: calc(6px + var(--safe-left));" aria-label="Panel de administrador" title="Panel de administrador"><span class="admin-icon">🛡️</span></button>
+
+      <!-- Top right: minimapa y botones de menú -->
+      <div class="top-right">
+        <div class="minimap-wrap">
+          <canvas id="minimap" width="148" height="148"></canvas>
+          <span class="zone-label" id="zoneLabel">Ciudad</span>
+        </div>
+        <div class="menu-buttons">
+          <button id="btnInventory" class="icon-btn" aria-label="Inventario">🎒</button>
+          <button id="btnChat" class="icon-btn" aria-label="Chat">💬<span class="btn-badge" id="chatBadge">24</span></button>
+          <button id="btnStall" class="icon-btn" aria-label="Tienda de jugador">🏪</button>
+        </div>
+      </div>
+
+      <div id="chatFeed" class="chat-feed"></div>
+
+      <div id="targetPlate" class="target-plate hidden">
+        <span id="targetName">Objetivo</span>
+        <div class="target-bar"><div id="targetFill"></div></div>
+      </div>
+
+      <!-- Joystick abajo izquierda -->
+      <div id="joystick" class="joystick" aria-label="Joystick de movimiento">
+        <div id="joystickKnob" class="joystick-knob"></div>
+        <span class="joystick-hint">MOVER</span>
+      </div>
+
+      <!-- Acciones abajo derecha (CAB / ARQ / MAG + habilidades) -->
+      <div class="actions">
+        <div class="class-row">
+          <button class="class-btn" data-class="knight" aria-label="Caballero">⚔<span>CAB</span></button>
+          <button class="class-btn" data-class="archer" aria-label="Arquero">➶<span>ARQ</span></button>
+          <button class="class-btn" data-class="mage" aria-label="Mago">✦<span>MAG</span><span class="btn-badge" id="mageBadge">24</span></button>
+        </div>
+        <div class="action-row">
+          <button id="btnHp" class="potion-btn hp" aria-label="Poción de vida">✚<b id="hpPotCount">0</b></button>
+          <button id="btnSpecial" class="special-btn" aria-label="Habilidad especial">★</button>
+          <button id="btnMp" class="potion-btn mp" aria-label="Poción de maná">◆<b id="mpPotCount">0</b></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Login ─────────────────────────────────────────── -->
+    <div id="login" class="login-screen">
+      <div class="login-card">
+        <div class="logo-mark">⚔</div>
+        <h1>RUCOY<span>LIKE</span></h1>
+        <p class="tagline">MMORPG 2D · mundo persistente · PvP</p>
+        <div class="oauth-actions">
+          <button id="googleSignInBtn" class="oauth-btn google" type="button">
+            <span class="oauth-icon" aria-hidden="true">G</span>
+            <span>Sign in with Google</span>
+          </button>
+          <button id="appleSignInBtn" class="oauth-btn apple" type="button">
+            <span class="oauth-icon" aria-hidden="true"></span>
+            <span>Sign in with Apple</span>
+          </button>
+        </div>
+        <p id="loginError" class="login-error"></p>
+        <p id="loginStatus" class="login-status hidden">Conectando…</p>
+        <div class="login-tips">
+          <span>🎮 Toca el suelo para moverte</span>
+          <span>⚔ Toca un enemigo para atacar</span>
+          <span>🔄 Cambia de clase en cualquier momento</span>
+        </div>
+      </div>
+      <div class="version">v0.1.0 · servidor autoritativo</div>
+    </div>
+
+    <!-- ── Creación de personaje (cuentas nuevas) ────────── -->
+    <div id="characterModal" class="character-modal hidden" role="dialog" aria-modal="true" aria-labelledby="characterTitle">
+      <div class="character-card">
+        <div class="logo-mark">⚔</div>
+        <h2 id="characterTitle">CREA TU PERSONAJE</h2>
+        <p class="character-lead">Tu cuenta está lista. Elige el nombre con el que te verán los demás jugadores.</p>
+        <form id="characterForm" autocomplete="off">
+          <label>Nombre del personaje
+            <input id="characterName" name="characterName" minlength="3" maxlength="16" placeholder="Aventurero" required />
+          </label>
+          <button id="createCharacterBtn" class="primary-btn" type="submit">ENTRAR AL MUNDO</button>
+          <p id="characterError" class="login-error"></p>
+          <p id="characterStatus" class="login-status hidden">Creando personaje…</p>
+        </form>
+      </div>
+    </div>
+
+    <!-- ── Panel de inventario / personaje ───────────────── -->
+    <div id="inventoryPanel" class="sheet hidden" role="dialog" aria-label="Inventario">
+      <div class="sheet-head">
+        <h2>Personaje</h2>
+        <button class="close-btn" data-close="inventoryPanel">✕</button>
+      </div>
+      <div class="char-summary">
+        <div class="summary-block"><span>Nivel</span><b id="invLevel">1</b></div>
+        <div class="summary-block"><span>Defensa</span><b id="invDef">0</b></div>
+        <div class="summary-block"><span>Ataque</span><b id="invAtk">0</b></div>
+        <div class="summary-block"><span>Clase</span><b id="invClass">Caballero</b></div>
+      </div>
+      <h3 class="section-title">Equipamiento</h3>
+      <div id="equipmentGrid" class="equipment-grid"></div>
+      <h3 class="section-title">Mochila <small id="invFree">30 libres</small></h3>
+      <div id="inventoryGrid" class="inventory-grid"></div>
+      <div id="itemDetail" class="item-detail hidden">
+        <div class="item-detail-head">
+          <canvas id="itemDetailIcon" width="40" height="40"></canvas>
+          <div><strong id="itemDetailName"></strong><small id="itemDetailInfo"></small></div>
+        </div>
+        <p id="itemDetailDesc"></p>
+        <div class="item-actions">
+          <button id="btnEquip" class="small-btn">Equipar</button>
+          <button id="btnUse" class="small-btn">Usar</button>
+          <button id="btnSell" class="small-btn">Vender</button>
+          <button id="btnDrop" class="small-btn danger">Tirar</button>
+        </div>
+      </div>
+      <div class="sheet-footer">
+        <button id="btnOpenStall" class="small-btn">🏪 Abrir tienda AFK</button>
+        <span id="stallHint" class="muted">Sólo en la ciudad</span>
+      </div>
+    </div>
+
+    <!-- ── Chat ──────────────────────────────────────────── -->
+    <div id="chatPanel" class="sheet chat-sheet hidden" role="dialog" aria-label="Chat">
+      <div class="sheet-head">
+        <h2>Chat</h2>
+        <button class="close-btn" data-close="chatPanel">✕</button>
+      </div>
+      <div class="chat-tabs" id="chatTabs">
+        <button data-channel="global" class="active">Global</button>
+        <button data-channel="local">Local</button>
+        <button data-channel="clan">Clan</button>
+        <button data-channel="private">Privado</button>
+      </div>
+      <div id="chatLog" class="chat-log"></div>
+      <div class="chat-compose">
+        <input id="chatTo" class="hidden" maxlength="16" placeholder="Para…" />
+        <input id="chatInput" maxlength="140" placeholder="Escribe un mensaje…" />
+        <button id="chatSend" class="send-btn">➤</button>
+      </div>
+    </div>
+
+    <!-- ── Tienda NPC ────────────────────────────────────── -->
+    <div id="shopPanel" class="sheet hidden" role="dialog" aria-label="Tienda">
+      <div class="sheet-head">
+        <h2 id="shopTitle">Mercader</h2>
+        <button class="close-btn" data-close="shopPanel">✕</button>
+      </div>
+      <div id="shopItems" class="shop-list"></div>
+      <div class="sheet-footer"><span class="muted" id="shopGold">Oro: 0</span><span class="muted">Compra y venta validadas por el servidor</span></div>
+    </div>
+
+    <!-- ── Tienda de jugador ─────────────────────────────── -->
+    <div id="stallPanel" class="sheet hidden" role="dialog" aria-label="Tienda de jugador">
+      <div class="sheet-head">
+        <h2 id="stallTitle">Tienda</h2>
+        <button class="close-btn" data-close="stallPanel">✕</button>
+      </div>
+      <div id="stallInfo" class="muted"></div>
+      <div id="stallItems" class="shop-list"></div>
+      <div id="stallEditor" class="stall-editor hidden">
+        <h3 class="section-title">Elige ítems y precio</h3>
+        <div id="stallListEditor" class="stall-editor-list"></div>
+      </div>
+      <div class="sheet-footer">
+        <button id="btnPublishStall" class="primary-btn small hidden">Publicar tienda</button>
+        <button id="btnCloseStall" class="small-btn hidden">Cerrar mi tienda</button>
+        <span class="muted">El precio es por lote completo</span>
+      </div>
+    </div>
+
+    <!-- ── Panel de Administrador ────────────────────────── -->
+    <div id="adminPanel" class="admin-panel hidden">
+      <div class="admin-panel-head">
+        <div class="admin-panel-title">
+          <span class="admin-crown">👑</span>
+          <h3>Panel de Administrador</h3>
+        </div>
+        <button class="close-btn" data-close="adminPanel">✕</button>
+      </div>
+      <div class="admin-panel-status" id="adminStatus"></div>
+      <div class="admin-actions-grid">
+        <button class="admin-action-btn" data-action="level_up">
+          <span class="admin-icon">⬆</span>
+          <span>Subir de Nivel</span>
+        </button>
+        <button class="admin-action-btn" data-action="invisible" id="btnInvisible">
+          <span class="admin-icon">👻</span>
+          <span>Invisibilidad</span>
+        </button>
+        <button class="admin-action-btn" data-action="god" id="btnGodMode">
+          <span class="admin-icon">🛡</span>
+          <span>Modo Dios</span>
+        </button>
+        <button class="admin-action-btn" data-action="summon">
+          <span class="admin-icon">🐉</span>
+          <span>Invocar Mob</span>
+        </button>
+        <button class="admin-action-btn" data-action="op_weapon">
+          <span class="admin-icon">⚔</span>
+          <span>Obtener Arma OP</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Muerte ────────────────────────────────────────── -->
+    <div id="deathOverlay" class="death-overlay hidden">
+      <div class="death-card">
+        <h2>HAS CAÍDO</h2>
+        <p id="deathInfo">Regresando a la ciudad…</p>
+        <div class="death-timer" id="deathTimer">4</div>
+      </div>
+    </div>
+
+    <!-- ── Avisos ────────────────────────────────────────── -->
+    <div id="toasts" class="toasts"></div>
+    <div id="connectionBadge" class="connection-badge hidden">Reconectando…</div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

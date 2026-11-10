@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Almiargo Online</string>
+    <string name="title_activity_main">Almiargo Online</string>
+    <string name="package_name">com.rucoylike.game</string>
+    <string name="custom_url_scheme">com.rucoylike.game</string>
+    <string name="server_client_id">196590783383-3796k1hnlns2dkmjiq5rt634hbmm6k8b.apps.googleusercontent.com</string>
+    <string name="default_web_client_id">196590783383-3796k1hnlns2dkmjiq5rt634hbmm6k8b.apps.googleusercontent.com</string>
+</resources>

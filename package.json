@@ -1,0 +1,29 @@
+{
+  "name": "almiargo-online",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MMORPG 2D mobile-first autoritativo (Phaser + Node.js + WebSockets)",
+  "workspaces": [
+    "packages/*",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev:server & npm run dev:client",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "start": "npm --workspace server start",
+    "build": "npm --workspace client run build",
+    "test": "node --test",
+    "smoke": "node server/tools/smoke-test.js",
+    "check:dom": "node scripts/check-dom.mjs",
+    "android:init": "npm --workspace client run android:init",
+    "android:sync": "npm --workspace client run android:sync",
+    "android:apk": "npm --workspace client run android:apk",
+    "db:init": "npm --workspace server run db:init"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

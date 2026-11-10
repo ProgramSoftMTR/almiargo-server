@@ -1,0 +1,21 @@
+{
+  "appId": "com.rucoylike.game",
+  "appName": "Almiargo Online",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#10131a"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#10131a",
+      "showSpinner": false
+    }
+  }
+}
