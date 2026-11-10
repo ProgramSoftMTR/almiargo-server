@@ -127,7 +127,7 @@ export class InventoryUI {
 
     const eq = $('equipmentGrid');
     eq.textContent = '';
-    const EQUIP_ORDER = ['weapon','shield','helmet','armor','legs','boots','ring','amulet'];
+    const EQUIP_ORDER = ['mano','shield','helmet','armor','legs','boots','ring','amulet'];
     for (const slot of EQUIP_ORDER) {
       const inst = p.equipment?.[slot];
       const div = document.createElement('div');
@@ -142,7 +142,7 @@ export class InventoryUI {
         name.className = 'slot-name';
         name.textContent = slotLabel(slot);
         div.appendChild(name);
-        if (slot === 'weapon') {
+        if (slot === 'mano') {
           const lvl = document.createElement('span');
           lvl.className = 'qty';
           lvl.textContent = 'Lv. ' + (store.player?.level ?? 1);
@@ -187,7 +187,7 @@ export class InventoryUI {
         if (def?.slot && EQUIP_SLOTS.includes(def.slot)) {
           const dot = document.createElement('span');
           dot.className = 'rarity';
-          dot.style.background = def.slot === 'weapon' ? '#e07b5a' : '#8fbf6a';
+          dot.style.background = def.slot === 'mano' ? '#e07b5a' : '#8fbf6a';
           btn.appendChild(dot);
         }
         btn.title = def?.name ?? inst.itemId;

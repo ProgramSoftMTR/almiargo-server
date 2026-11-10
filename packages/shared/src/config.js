@@ -144,14 +144,14 @@ export const ITEMS = Object.freeze({
 
   // Herramientas y recursos (tala)
   axe: {
-    id: 'axe', name: 'Hacha', slot: 'weapon', weaponClass: 'adventurer', stackable: false,
+    id: 'axe', name: 'Hacha', slot: 'mano', weaponClass: 'adventurer', stackable: false,
     price: 45, sell: 15, tier: 1, levelReq: 1,
     stats: { atkMin: 2, atkMax: 4, defense: 0 }, cooldownMs: 900,
     icon: { shape: 'axe', color: 0xb8874e },
     description: 'Permite talar arboles para obtener madera.',
   },
   pickaxe: {
-    id: 'pickaxe', name: 'Pico', slot: 'weapon', weaponClass: 'adventurer', stackable: false,
+    id: 'pickaxe', name: 'Pico', slot: 'mano', weaponClass: 'adventurer', stackable: false,
     price: 50, sell: 18, tier: 1, levelReq: 1,
     stats: { atkMin: 3, atkMax: 5, defense: 0 }, cooldownMs: 900,
     icon: { shape: 'pickaxe', color: 0x9aa0a6 },
@@ -165,19 +165,19 @@ export const ITEMS = Object.freeze({
 
   // Armas — Caballero
   sword_wood: {
-    id: 'sword_wood', name: 'Espada de Madera', slot: 'weapon', weaponClass: 'knight',
+    id: 'sword_wood', name: 'Espada de Madera', slot: 'mano', weaponClass: 'knight',
     stackable: false, price: 30, sell: 10, tier: 1, levelReq: 1,
     stats: { atkMin: 4, atkMax: 8, defense: 1 }, cooldownMs: 900,
     icon: { shape: 'sword', color: 0xc8a165 }, description: 'Un arma humilde pero letal.',
   },
   sword_iron: {
-    id: 'sword_iron', name: 'Espada de Hierro', slot: 'weapon', weaponClass: 'knight',
+    id: 'sword_iron', name: 'Espada de Hierro', slot: 'mano', weaponClass: 'knight',
     stackable: false, price: 180, sell: 60, tier: 2, levelReq: 4,
     stats: { atkMin: 9, atkMax: 16, defense: 2 }, cooldownMs: 850,
     icon: { shape: 'sword', color: 0xd8dde6 }, description: 'Forjada para la guerra.',
   },
   sword_flame: {
-    id: 'sword_flame', name: 'Espada Flamígera', slot: 'weapon', weaponClass: 'knight',
+    id: 'sword_flame', name: 'Espada Flamígera', slot: 'mano', weaponClass: 'knight',
     stackable: false, price: 950, sell: 320, tier: 3, levelReq: 10,
     stats: { atkMin: 18, atkMax: 28, defense: 3 }, cooldownMs: 800,
     icon: { shape: 'sword', color: 0xff8a3d }, description: 'Arde con furia eterna.',
@@ -185,19 +185,19 @@ export const ITEMS = Object.freeze({
 
   // Armas — Arquero
   bow_wood: {
-    id: 'bow_wood', name: 'Arco de Madera', slot: 'weapon', weaponClass: 'archer',
+    id: 'bow_wood', name: 'Arco de Madera', slot: 'mano', weaponClass: 'archer',
     stackable: false, price: 30, sell: 10, tier: 1, levelReq: 1,
     stats: { atkMin: 3, atkMax: 7, defense: 0 }, cooldownMs: 720, ammo: 'arrow',
     icon: { shape: 'bow', color: 0xc8a165 }, description: 'Ligero y preciso.',
   },
   bow_oak: {
-    id: 'bow_oak', name: 'Arco de Roble', slot: 'weapon', weaponClass: 'archer',
+    id: 'bow_oak', name: 'Arco de Roble', slot: 'mano', weaponClass: 'archer',
     stackable: false, price: 170, sell: 55, tier: 2, levelReq: 4,
     stats: { atkMin: 8, atkMax: 15, defense: 0 }, cooldownMs: 680, ammo: 'arrow',
     icon: { shape: 'bow', color: 0x9b6b3f }, description: 'Equilibrio perfecto.',
   },
   bow_storm: {
-    id: 'bow_storm', name: 'Arco Tormenta', slot: 'weapon', weaponClass: 'archer',
+    id: 'bow_storm', name: 'Arco Tormenta', slot: 'mano', weaponClass: 'archer',
     stackable: false, price: 900, sell: 300, tier: 3, levelReq: 10,
     stats: { atkMin: 16, atkMax: 26, defense: 0 }, cooldownMs: 620, ammo: 'arrow',
     icon: { shape: 'bow', color: 0x5dd98a }, description: 'Cada flecha es un relámpago.',
@@ -205,19 +205,19 @@ export const ITEMS = Object.freeze({
 
   // Armas — Mago
   staff_wood: {
-    id: 'staff_wood', name: 'Báculo de Madera', slot: 'weapon', weaponClass: 'mage',
+    id: 'staff_wood', name: 'Báculo de Madera', slot: 'mano', weaponClass: 'mage',
     stackable: false, price: 30, sell: 10, tier: 1, levelReq: 1,
     stats: { atkMin: 4, atkMax: 9, defense: 0 }, cooldownMs: 1000, manaCost: 4,
     icon: { shape: 'staff', color: 0x6f8ce8 }, description: 'Canaliza energía arcana.',
   },
   staff_emerald: {
-    id: 'staff_emerald', name: 'Báculo Esmeralda', slot: 'weapon', weaponClass: 'mage',
+    id: 'staff_emerald', name: 'Báculo Esmeralda', slot: 'mano', weaponClass: 'mage',
     stackable: false, price: 190, sell: 62, tier: 2, levelReq: 4,
     stats: { atkMin: 9, atkMax: 17, defense: 0 }, cooldownMs: 950, manaCost: 6,
     icon: { shape: 'staff', color: 0x38d996 }, description: 'Poder contenido en jade.',
   },
   staff_void: {
-    id: 'staff_void', name: 'Báculo del Vacío', slot: 'weapon', weaponClass: 'mage',
+    id: 'staff_void', name: 'Báculo del Vacío', slot: 'mano', weaponClass: 'mage',
     stackable: false, price: 980, sell: 330, tier: 3, levelReq: 10,
     stats: { atkMin: 18, atkMax: 30, defense: 0 }, cooldownMs: 900, manaCost: 8,
     icon: { shape: 'staff', color: 0xb06fe8 }, description: 'El vacío susurra tu nombre.',
@@ -225,19 +225,19 @@ export const ITEMS = Object.freeze({
 
   // Armas de administrador (no se venden ni se dropean; sólo las otorga el panel admin).
   sword_admin: {
-    id: 'sword_admin', name: 'Espada del Administrador', slot: 'weapon', weaponClass: 'knight',
+    id: 'sword_admin', name: 'Espada del Administrador', slot: 'mano', weaponClass: 'knight',
     stackable: false, price: 0, sell: 0, tier: 99, levelReq: 1, adminOnly: true,
     stats: { atkMin: 90, atkMax: 140, defense: 40 }, cooldownMs: 450,
     icon: { shape: 'sword', color: 0xffd479 }, description: 'Sólo el administrador puede empuñarla.',
   },
   bow_admin: {
-    id: 'bow_admin', name: 'Arco del Administrador', slot: 'weapon', weaponClass: 'archer',
+    id: 'bow_admin', name: 'Arco del Administrador', slot: 'mano', weaponClass: 'archer',
     stackable: false, price: 0, sell: 0, tier: 99, levelReq: 1, adminOnly: true,
     stats: { atkMin: 80, atkMax: 130, defense: 0 }, cooldownMs: 380, ammo: 'arrow',
     icon: { shape: 'bow', color: 0xffd479 }, description: 'Sólo el administrador puede tensarlo.',
   },
   staff_admin: {
-    id: 'staff_admin', name: 'Báculo del Administrador', slot: 'weapon', weaponClass: 'mage',
+    id: 'staff_admin', name: 'Báculo del Administrador', slot: 'mano', weaponClass: 'mage',
     stackable: false, price: 0, sell: 0, tier: 99, levelReq: 1, adminOnly: true,
     stats: { atkMin: 90, atkMax: 150, defense: 0 }, cooldownMs: 450, manaCost: 0,
     icon: { shape: 'staff', color: 0xffd479 }, description: 'Sólo el administrador puede canalizarlo.',

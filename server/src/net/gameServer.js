@@ -826,7 +826,7 @@ export class GameServer {
   // ---- Recoleccion de madera (arboles en memoria) ----
   hasAxe(player) {
     // Estricto: solo cuenta si el hacha esta equipada en la ranura tool.
-    return player?.equipment?.weapon?.itemId === 'axe';
+    return player?.equipment?.mano?.itemId === 'axe';
   }
 
   async handleChopTree(session, msg) {
@@ -964,7 +964,7 @@ export class GameServer {
       this.sendError(session, result.error);
       return;
     }
-    this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.weapon });
+    this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.mano });
     this.sendProfile(player);
     this.savePlayer(player);
   }
@@ -998,7 +998,7 @@ export class GameServer {
       return;
     }
     if (result.slot === 'weapon') {
-      this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.weapon });
+      this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.mano });
     }
     this.sendProfile(player);
     this.savePlayer(player);
@@ -1013,7 +1013,7 @@ export class GameServer {
       return;
     }
     if (msg.slot === 'weapon') {
-      this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.weapon });
+      this.sendEvent(player, 'class_switch', { classId: player.classId, weapon: player.equipment.mano });
     }
     this.sendProfile(player);
     this.savePlayer(player);

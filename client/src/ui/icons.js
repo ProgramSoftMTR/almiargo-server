@@ -134,6 +134,6 @@ export function makeItemIcon(def, size = 32) {
 export function slotLabel(slot) {
   return {
     helmet: 'Casco', armor: 'Armadura', legs: 'Pantalón', boots: 'Botas',
-    weapon: 'Mano', shield: 'Escudo', ring: 'Anillo', amulet: 'Collar', tool: 'Herramienta',
+    mano: 'Mano', shield: 'Escudo', ring: 'Anillo', amulet: 'Collar', tool: 'Herramienta',
   }[slot] ?? slot;
 }

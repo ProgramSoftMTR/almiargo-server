@@ -47,7 +47,7 @@ export function createCharacterState(name, id) {
   const sword = swordIdx >= 0 ? inventory[swordIdx] : null;
   if (swordIdx >= 0) inventory[swordIdx] = null;
   const equipment = Object.fromEntries(EQUIP_SLOTS.map((slot) => [slot, null]));
-  equipment.weapon = sword;
+  equipment.mano = sword;
 
   const player = new PlayerState({
     id,
@@ -165,17 +165,17 @@ export class PlayerState {
   }
 
   get hasAxe() {
-    return this.equipment?.weapon?.itemId === 'axe';
+    return this.equipment?.mano?.itemId === 'axe';
   }
 
   get classId() {
-    const weapon = getItemDef(this.equipment?.weapon?.itemId);
+    const weapon = getItemDef(this.equipment?.mano?.itemId);
     if (!weapon) return 'adventurer';
     return weapon.weaponClass ?? 'knight';
   }
 
   get weapon() {
-    return getItemDef(this.equipment?.weapon?.itemId);
+    return getItemDef(this.equipment?.mano?.itemId);
   }
 
   get weaponDef() {
@@ -246,7 +246,7 @@ export class PlayerState {
     if (!EQUIP_SLOTS.includes(def.slot)) return { ok: false, error: 'Este ítem no se puede equipar' };
     if (this.level < (def.levelReq ?? 1)) return { ok: false, error: `Requiere nivel ${def.levelReq}` };
 
-    if (def.slot === 'weapon' && now < this.nextSwitchAt) {
+    if (def.slot === 'mano' && now < this.nextSwitchAt) {
       return { ok: false, error: 'Cambio de arma en enfriamiento' };
     }
 
@@ -254,7 +254,7 @@ export class PlayerState {
     this.inventory[idx] = null;
     if (previous) this.inventory[idx] = previous;
     this.equipment[def.slot] = inst;
-    if (def.slot === 'weapon') this.nextSwitchAt = now + CONSTANTS.CLASS_SWITCH_COOLDOWN_MS;
+    if (def.slot === 'mano') this.nextSwitchAt = now + CONSTANTS.CLASS_SWITCH_COOLDOWN_MS;
     this.recalc();
     this.dirty = true;
     return { ok: true, slot: def.slot };
@@ -264,14 +264,14 @@ export class PlayerState {
     if (!EQUIP_SLOTS.includes(slot)) return { ok: false, error: 'Slot inválido' };
     const inst = this.equipment[slot];
     if (!inst) return { ok: false, error: 'Slot vacío' };
-    if (slot === 'weapon' && now < this.nextSwitchAt) {
+    if (slot === 'mano' && now < this.nextSwitchAt) {
       return { ok: false, error: 'Cambio de arma en enfriamiento' };
     }
     const free = this.inventory.findIndex((s) => s === null);
     if (free < 0) return { ok: false, error: 'Inventario lleno' };
     this.inventory[free] = inst;
     this.equipment[slot] = null;
-    if (slot === 'weapon') this.nextSwitchAt = now + CONSTANTS.CLASS_SWITCH_COOLDOWN_MS;
+    if (slot === 'mano') this.nextSwitchAt = now + CONSTANTS.CLASS_SWITCH_COOLDOWN_MS;
     this.recalc();
     this.dirty = true;
     return { ok: true };

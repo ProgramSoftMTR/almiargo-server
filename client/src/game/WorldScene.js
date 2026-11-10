@@ -390,7 +390,7 @@ export class WorldScene extends Phaser.Scene {
 
   updateLocalAxe() {
     if (!this.localAxe) return;
-    const hasAxe = store.player?.equipment?.weapon?.itemId === 'axe';
+    const hasAxe = store.player?.equipment?.mano?.itemId === 'axe';
     this.localAxe.setVisible(hasAxe);
   }
 
