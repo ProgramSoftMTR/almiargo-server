@@ -165,7 +165,7 @@ export class PlayerState {
   }
 
   get hasAxe() {
-    return this.equipment?.tool?.itemId === 'axe';
+    return this.equipment?.weapon?.itemId === 'axe';
   }
 
   get classId() {

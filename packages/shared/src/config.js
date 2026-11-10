@@ -72,7 +72,7 @@ export const SKULLS = Object.freeze({
 });
 
 export const EQUIP_SLOTS = Object.freeze([
-  'helmet', 'armor', 'legs', 'boots', 'weapon', 'shield', 'ring', 'amulet', 'tool',
+  'helmet', 'armor', 'legs', 'boots', 'weapon', 'shield', 'ring', 'amulet',
 ]);
 
 export const INVENTORY_SLOTS = 30;
