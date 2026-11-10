@@ -333,7 +333,9 @@ export class WorldScene extends Phaser.Scene {
     const weaponSprite = (weaponKey && this.textures.exists(weaponKey))
       ? this.add.image(0, 2, weaponKey).setOrigin(0.5, 0.9).setScale(size)
       : null;
-    const axeSprite = this.add.image(10 * size, 2, 'tool_axe').setOrigin(0.5, 0.9).setScale(size).setVisible(e.hasAxe === true);
+    const handItemInit = e?.equipment?.mano ?? null;
+    const handKeyInit = handItemInit ? (handItemInit.spriteId || handItemInit.id) : null;
+    const axeSprite = this.add.image(10 * size, 2, (handKeyInit && this.textures.exists(handKeyInit)) ? handKeyInit : 'tool_axe').setOrigin(0.5, 0.9).setScale(size).setVisible(!!(handKeyInit && this.textures.exists(handKeyInit)));
     const barBg = this.add.rectangle(0, -30, 30, 4, 0x05070a, 0.7).setOrigin(0.5);
     const barFill = this.add.rectangle(-15, -30, 30, 2.5, 0xd85a5a).setOrigin(0, 0.5);
     const nameText = this.add.text(0, -35, e.name ?? '', {
@@ -402,8 +404,15 @@ export class WorldScene extends Phaser.Scene {
 
   updateLocalAxe() {
     if (!this.localAxe) return;
-    const hasAxe = store.player?.equipment?.mano?.itemId === 'axe';
-    this.localAxe.setVisible(hasAxe);
+    const handItem = store.player?.equipment?.mano ?? null;
+    if (!handItem) { this.localAxe.setVisible(false); return; }
+    const key = handItem.spriteId || handItem.id;
+    if (key && this.textures.exists(key)) {
+      if (this.localAxe.texture.key !== key) this.localAxe.setTexture(key);
+      this.localAxe.setVisible(true);
+    } else {
+      this.localAxe.setVisible(false);
+    }
   }
 
   updateEntityVisual(view, e) {
@@ -427,7 +436,16 @@ export class WorldScene extends Phaser.Scene {
         view.weaponSprite.setVisible(false);
       }
     }
-    if (view.axeSprite) view.axeSprite.setVisible(e.hasAxe === true);
+    if (view.axeSprite) {
+      const handItemV = e?.equipment?.mano ?? view?.data?.equipment?.mano ?? null;
+      const handKeyV = handItemV ? (handItemV.spriteId || handItemV.id) : null;
+      if (handKeyV && this.textures.exists(handKeyV)) {
+        if (view.axeSprite.texture.key !== handKeyV) view.axeSprite.setTexture(handKeyV);
+        view.axeSprite.setVisible(true);
+      } else {
+        view.axeSprite.setVisible(false);
+      }
+    }
     const name = e.kind === ENTITY_KIND.PLAYER ? `${e.name}` : e.name;
     view.nameText.setText(name ?? '');
     if (e.kind === ENTITY_KIND.PLAYER) {
