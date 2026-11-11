@@ -5,7 +5,11 @@ import { monsterAttack } from './combat.js';
  * IA simple y barata: patrulla -> aggro -> persecución -> ataque.
  * Se ejecuta dentro del tick autoritativo (20 Hz).
  */
+const reservedTiles = new Set();
+const tileKeyLocal = (x, y) => `${Math.round(x)},${Math.round(y)}`;
+
 export function updateMonsters(game, now) {
+  reservedTiles.clear();
   for (const monster of game.world.monsters.values()) {
     if (!monster.alive) {
       if (now >= monster.respawnAt) {
@@ -76,7 +80,9 @@ function moveMonster(world, monster, dx, dy, now) {
     const ny = monster.y + oy;
     if (!world.canWalk(nx, ny)) continue;
     if (world.isTileOccupied(nx, ny, monster.id)) continue;
+    if (reservedTiles.has(tileKeyLocal(nx, ny))) continue;
     world.moveEntity(monster, nx, ny);
+    reservedTiles.add(tileKeyLocal(nx, ny));
     monster.dir = Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? 'right' : 'left') : (oy > 0 ? 'down' : 'up');
     const diagonal = ox !== 0 && oy !== 0;
     monster.nextMoveAt = now + monster.def.moveMs * (diagonal ? 1.25 : 1);
@@ -95,6 +101,7 @@ function freeAdjacentTiles(world, target) {
     const ny = ty + oy;
     if (!world.canWalk(nx, ny)) continue;
     if (world.isTileOccupied(nx, ny)) continue;
+    if (reservedTiles.has(tileKeyLocal(nx, ny))) continue;
     out.push({ x: nx, y: ny });
   }
   return out;
