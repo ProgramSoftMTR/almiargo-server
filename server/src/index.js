@@ -5,7 +5,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: master fix slot mano completo
 // deploy trigger: validacion servidor slot mano final
 // deploy trigger: habilitar slot mano en servidor, UI y render de sprite
-// deploy trigger: 2026-11-11 03:00:00 auto-deploy render party system
+// deploy trigger: 2026-11-11 03:30:00 auto-deploy render fix google duplicate
 
 const store = await createStore();
 const game = new GameServer({ store, config });
