@@ -59,6 +59,19 @@ export class InventoryUI {
       }
       this.render();
     };
+    const equipGrid = $('equipGrid');
+    if (equipGrid) {
+      equipGrid.addEventListener('dragstart', handleDragStart);
+      equipGrid.addEventListener('dragover', handleDragOver);
+      equipGrid.addEventListener('drop', handleDrop);
+      equipGrid.addEventListener('click', (e) => {
+        const slot = e.target.closest('.rucoy-slot');
+        if (!slot) return;
+        if (slot.dataset.slot && slot.classList.contains('filled')) {
+          socket.send('unequip', { slot: slot.dataset.slot });
+        }
+      });
+    }
     if (invGrid) {
       invGrid.addEventListener('dragstart', handleDragStart);
       invGrid.addEventListener('dragover', handleDragOver);
@@ -169,65 +182,81 @@ export class InventoryUI {
     const invFree = $('invFree');
     if (invFree) invFree.textContent = `${p.inventory?.length ?? 0} items`;
 
-    const grid = $('inventoryGrid');
-    grid.textContent = '';
-    const EQUIP_ORDER = ['mano','shield','helmet','armor','legs','boots','ring','amulet'];
-    for (const slot of EQUIP_ORDER) {
-      const inst = p.equipment?.[slot];
-      const div = document.createElement('div');
-      div.className = `rucoy-slot${inst ? ' filled' : ''}`;
-      div.dataset.slot = slot;
-      if (inst) div.draggable = true;
-      if (inst) {
-        const def = ITEMS[inst.itemId];
-        const canvas = document.createElement('canvas');
-        drawItemIcon(canvas, def, 28);
-        div.appendChild(canvas);
-        if (inst.qty > 1) {
-          const qty = document.createElement('span');
-          qty.className = 'qty';
-          qty.textContent = inst.qty;
-          div.appendChild(qty);
+    // Siluetas de equipamiento (16 slots) en orden Rucoy.
+    const SILHOUETTES = ['sil-weapon','sil-shield','sil-neck','sil-helm','sil-bag','sil-bow','sil-quiver','sil-gloves','sil-armor','sil-bracer','sil-staff','sil-ring1','sil-pants','sil-ring2','sil-boots','sil-potion'];
+    const equipGrid = $('equipGrid');
+    if (equipGrid) {
+      equipGrid.textContent = '';
+      const EQUIP_ORDER = ['mano','shield','helmet','armor','legs','boots','ring','amulet'];
+      for (let i = 0; i < 16; i++) {
+        const slotName = EQUIP_ORDER[i] || null;
+        const inst = slotName ? p.equipment?.[slotName] : null;
+        const div = document.createElement('div');
+        div.className = `rucoy-slot${inst ? ' filled' : ''}`;
+        if (slotName) div.dataset.slot = slotName;
+        if (inst) div.draggable = true;
+        if (inst) {
+          const def = ITEMS[inst.itemId];
+          const canvas = document.createElement('canvas');
+          drawItemIcon(canvas, def, 24);
+          div.appendChild(canvas);
+          if (inst.qty > 1) {
+            const qty = document.createElement('span');
+            qty.className = 'qty';
+            qty.textContent = inst.qty;
+            div.appendChild(qty);
+          }
+          div.addEventListener('click', () => {
+            if (div.classList.contains('filled')) socket.send('unequip', { slot: slotName });
+          });
+        } else {
+          const sil = document.createElement('div');
+          sil.className = `rucoy-silhouette ${SILHOUETTES[i] || ''}`;
+          div.appendChild(sil);
+          if (slotName) {
+            div.addEventListener('click', () => {});
+          }
         }
+        equipGrid.appendChild(div);
       }
-      div.addEventListener('click', () => {
-        if (div.classList.contains('filled')) socket.send('unequip', { slot });
-      });
-      grid.appendChild(div);
     }
 
-    const start = this.page * this.pageSize;
-    const pageSlots = p.inventory.slice(start, start + this.pageSize);
-    pageSlots.forEach((inst, index) => {
-      const btn = document.createElement('button');
-      btn.className = `rucoy-slot${inst ? ' filled' : ''}${inst?.uid === this.selectedUid ? ' selected' : ''}`;
-      btn.type = 'button';
-      if (inst) {
-        btn.draggable = true;
-        btn.dataset.uid = inst.uid;
-        const def = ITEMS[inst.itemId];
-        const canvas = document.createElement('canvas');
-        drawItemIcon(canvas, def, 34);
-        btn.appendChild(canvas);
-        if (inst.qty > 1) {
-          const qty = document.createElement('span');
-          qty.className = 'qty';
-          qty.textContent = inst.qty;
-          btn.appendChild(qty);
+    const grid = $('inventoryGrid');
+    if (grid) {
+      grid.textContent = '';
+      const start = this.page * this.pageSize;
+      const pageSlots = p.inventory.slice(start, start + this.pageSize);
+      pageSlots.forEach((inst, index) => {
+        const btn = document.createElement('button');
+        btn.className = `rucoy-slot${inst ? ' filled' : ''}${inst?.uid === this.selectedUid ? ' selected' : ''}`;
+        btn.type = 'button';
+        if (inst) {
+          btn.draggable = true;
+          btn.dataset.uid = inst.uid;
+          const def = ITEMS[inst.itemId];
+          const canvas = document.createElement('canvas');
+          drawItemIcon(canvas, def, 24);
+          btn.appendChild(canvas);
+          if (inst.qty > 1) {
+            const qty = document.createElement('span');
+            qty.className = 'qty';
+            qty.textContent = inst.qty;
+            btn.appendChild(qty);
+          }
+          if (def?.slot && EQUIP_SLOTS.includes(def.slot)) {
+            const dot = document.createElement('span');
+            dot.className = 'rarity';
+            dot.style.background = def.slot === 'mano' ? '#e07b5a' : '#8fbf6a';
+            btn.appendChild(dot);
+          }
+          btn.title = def?.name ?? inst.itemId;
+          btn.setAttribute('aria-label', def?.name ?? inst.itemId);
+        } else {
+          btn.setAttribute('aria-label', `Slot ${index + 1} vacio`);
         }
-        if (def?.slot && EQUIP_SLOTS.includes(def.slot)) {
-          const dot = document.createElement('span');
-          dot.className = 'rarity';
-          dot.style.background = def.slot === 'mano' ? '#e07b5a' : '#8fbf6a';
-          btn.appendChild(dot);
-        }
-        btn.title = def?.name ?? inst.itemId;
-        btn.setAttribute('aria-label', def?.name ?? inst.itemId);
-      } else {
-        btn.setAttribute('aria-label', `Slot ${index + 1} vacio`);
-      }
-      grid.appendChild(btn);
-    });
+        grid.appendChild(btn);
+      });
+    }
 
     this.renderDetail();
   }

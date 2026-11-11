@@ -11,34 +11,6 @@ import { InventoryUI } from './ui/InventoryUI.js';
 import { ShopUI } from './ui/ShopUI.js';
 import { StallUI } from './ui/StallUI.js';
 
-// ── Consola de depuración en pantalla (temporal) ──────────────
-(function setupDebugConsole() {
-  const dc = document.getElementById('debug-console');
-  if (!dc) return;
-  function append(type, args) {
-    const p = document.createElement('p');
-    p.style.margin = '0';
-    p.style.whiteSpace = 'pre-wrap';
-    p.style.wordBreak = 'break-word';
-    const text = args.map((a) => {
-      try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
-      catch (e) { return String(a); }
-    }).join(' ');
-    p.textContent = `[${type}] ` + text;
-    if (type === 'ERROR') p.style.color = '#ff6b6b';
-    else if (type === 'WARN') p.style.color = '#ffd93d';
-    dc.appendChild(p);
-    dc.scrollTop = dc.scrollHeight;
-  }
-  const oldLog = console.log.bind(console);
-  const oldError = console.error.bind(console);
-  const oldWarn = console.warn.bind(console);
-  console.log = function (...args) { append('LOG', args); oldLog(...args); };
-  console.error = function (...args) { append('ERROR', args); oldError(...args); };
-  console.warn = function (...args) { append('WARN', args); oldWarn(...args); };
-})();
-console.log('[DEBUG] Sistema de logs iniciado. Esperando click...');
-
 const $ = (id) => document.getElementById(id);
 
 // ── Paneles ───────────────────────────────────────────────────

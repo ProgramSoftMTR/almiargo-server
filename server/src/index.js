@@ -5,7 +5,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: master fix slot mano completo
 // deploy trigger: validacion servidor slot mano final
 // deploy trigger: habilitar slot mano en servidor, UI y render de sprite
-// deploy trigger: 2026-11-11 06:00:00 auto-deploy render fix equipmentGrid null refs
+// deploy trigger: 2026-11-11 06:30:00 auto-deploy render rucoy compact inventory silhouettes
 
 const store = await createStore();
 const game = new GameServer({ store, config });
