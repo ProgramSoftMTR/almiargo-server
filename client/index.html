@@ -137,28 +137,27 @@
     </div>
 
     <!-- ── Panel de inventario / personaje ───────────────── -->
-    <div id="inventoryPanel" class="sheet hidden" role="dialog" aria-label="Inventario">
-      <div class="sheet-head">
-        <h2>Personaje</h2>
-        <button class="close-btn" data-close="inventoryPanel">✕</button>
+    <div id="inventoryPanel" class="rucoy-inv hidden" role="dialog" aria-label="Inventario">
+      <div class="rucoy-top">
+        <div class="rucoy-row">
+          <button class="rucoy-btn">Config</button>
+          <button class="rucoy-btn">Credits</button>
+          <button class="rucoy-btn">Account</button>
+          <button class="rucoy-btn">Servers</button>
+          <button class="rucoy-btn rucoy-back">Back</button>
+        </div>
+        <div class="rucoy-row">
+          <button class="rucoy-btn">Stats</button>
+          <button class="rucoy-btn rucoy-active">Inventory</button>
+          <button class="rucoy-btn">Outfit</button>
+          <button class="rucoy-btn">Shop</button>
+        </div>
       </div>
-      <div class="inv-tabs">
-        <button class="inv-tab active" data-tab="stats">Stats</button>
-        <button class="inv-tab" data-tab="inventory">Inventario</button>
-        <button class="inv-tab" data-tab="outfit">Outfit</button>
-        <button class="inv-tab" data-tab="skills">Habilidades</button>
+      <div class="rucoy-grid-wrap">
+        <div id="inventoryGrid" class="rucoy-grid"></div>
+        <div class="rucoy-scroll"><span>&gt;</span></div>
       </div>
-      <div class="char-summary">
-        <div class="summary-block"><span>Nivel</span><b id="invLevel">1</b></div>
-        <div class="summary-block"><span>Defensa</span><b id="invDef">0</b></div>
-        <div class="summary-block"><span>Ataque</span><b id="invAtk">0</b></div>
-        <div class="summary-block"><span>Clase</span><b id="invClass">Caballero</b></div>
-      </div>
-      <h3 class="section-title">Equipamiento</h3>
-      <div id="equipmentGrid" class="inv-equip"></div>
-      <h3 class="section-title">Mochila <small id="invFree">30 libres</small></h3>
-      <div id="inventoryGrid" class="inv-grid"></div>
-      <div id="itemDetail" class="item-detail hidden">
+      <button class="rucoy-btn rucoy-presets">Presets</button>      <div id="itemDetail" class="item-detail hidden">
         <div class="item-detail-head">
           <canvas id="itemDetailIcon" width="40" height="40"></canvas>
           <div><strong id="itemDetailName"></strong><small id="itemDetailInfo"></small></div>

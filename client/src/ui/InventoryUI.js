@@ -31,12 +31,12 @@ export class InventoryUI {
     const equipGrid = $('equipmentGrid');
     const invGrid = $('inventoryGrid');
     const handleDragStart = (e) => {
-      const slot = e.target.closest('.inv-slot, .equip-slot');
+      const slot = e.target.closest('.rucoy-slot');
       if (!slot) return;
-      if (slot.classList.contains('inv-slot') && slot.dataset.uid) {
+      if (slot.dataset.uid) {
         e.dataTransfer.setData('text/plain', `inv:${slot.dataset.uid}`);
         e.dataTransfer.effectAllowed = 'move';
-      } else if (slot.classList.contains('equip-slot') && slot.classList.contains('filled')) {
+      } else if (slot.dataset.slot && slot.classList.contains('filled')) {
         e.dataTransfer.setData('text/plain', `equip:${slot.dataset.slot}`);
         e.dataTransfer.effectAllowed = 'move';
       } else {
@@ -44,18 +44,18 @@ export class InventoryUI {
       }
     };
     const handleDragOver = (e) => {
-      const slot = e.target.closest('.inv-slot, .equip-slot');
+      const slot = e.target.closest('.rucoy-slot');
       if (slot) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
     };
     const handleDrop = (e) => {
-      const slot = e.target.closest('.inv-slot, .equip-slot');
+      const slot = e.target.closest('.rucoy-slot');
       if (!slot) return;
       e.preventDefault();
       const data = e.dataTransfer.getData('text/plain');
       if (!data) return;
-      if (slot.classList.contains('equip-slot') && data.startsWith('inv:')) {
+      if (slot.dataset.slot !== undefined && data.startsWith('inv:')) {
         socket.send('equip', { uid: data.slice(4) });
-      } else if (slot.classList.contains('inv-slot') && data.startsWith('equip:')) {
+      } else if (slot.dataset.uid !== undefined && data.startsWith('equip:')) {
         socket.send('unequip', { slot: data.slice(6) });
       }
       this.render();
@@ -170,13 +170,13 @@ export class InventoryUI {
     const invFree = $('invFree');
     if (invFree) invFree.textContent = `${p.inventory?.length ?? 0} items`;
 
-    const eq = $('equipmentGrid');
-    eq.textContent = '';
+    const grid = $('inventoryGrid');
+    grid.textContent = '';
     const EQUIP_ORDER = ['mano','shield','helmet','armor','legs','boots','ring','amulet'];
     for (const slot of EQUIP_ORDER) {
       const inst = p.equipment?.[slot];
       const div = document.createElement('div');
-      div.className = `equip-slot${inst ? ' filled' : ''}`;
+      div.className = `rucoy-slot${inst ? ' filled' : ''}`;
       div.dataset.slot = slot;
       if (inst) div.draggable = true;
       if (inst) {
@@ -184,39 +184,24 @@ export class InventoryUI {
         const canvas = document.createElement('canvas');
         drawItemIcon(canvas, def, 28);
         div.appendChild(canvas);
-        const name = document.createElement('span');
-        name.className = 'slot-name';
-        name.textContent = slotLabel(slot);
-        div.appendChild(name);
-        if (slot === 'mano') {
-          const lvl = document.createElement('span');
-          lvl.className = 'qty';
-          lvl.textContent = 'Lv. ' + (store.player?.level ?? 1);
-          div.appendChild(lvl);
+        if (inst.qty > 1) {
+          const qty = document.createElement('span');
+          qty.className = 'qty';
+          qty.textContent = inst.qty;
+          div.appendChild(qty);
         }
-        div.title = `${def?.name ?? inst.itemId} (toca para quitar)`;
-      } else {
-        const name = document.createElement('span');
-        name.className = 'slot-name';
-        name.textContent = slotLabel(slot);
-        div.appendChild(name);
       }
-      if (!inst) {
-        const canvas = document.createElement('canvas');
-        drawItemIcon(canvas, { icon: { shape: 'misc', color: 0x5a6a6a } }, 28);
-        canvas.style.opacity = '0.35';
-        div.appendChild(canvas);
-      }
-      eq.appendChild(div);
+      div.addEventListener('click', () => {
+        if (div.classList.contains('filled')) socket.send('unequip', { slot });
+      });
+      grid.appendChild(div);
     }
 
-    const grid = $('inventoryGrid');
-    grid.textContent = '';
     const start = this.page * this.pageSize;
     const pageSlots = p.inventory.slice(start, start + this.pageSize);
     pageSlots.forEach((inst, index) => {
       const btn = document.createElement('button');
-      btn.className = `inv-slot${inst ? ' filled' : ''}${inst?.uid === this.selectedUid ? ' selected' : ''}`;
+      btn.className = `rucoy-slot${inst ? ' filled' : ''}${inst?.uid === this.selectedUid ? ' selected' : ''}`;
       btn.type = 'button';
       if (inst) {
         btn.draggable = true;
@@ -250,7 +235,7 @@ export class InventoryUI {
 
   select(uid) {
     this.selectedUid = uid;
-    for (const slot of $('inventoryGrid').querySelectorAll('.inv-slot')) {
+    for (const slot of $('inventoryGrid').querySelectorAll('.rucoy-slot')) {
       slot.classList.toggle('selected', !!uid && slot.dataset.uid === uid);
     }
     this.renderDetail();
