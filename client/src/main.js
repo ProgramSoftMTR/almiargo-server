@@ -116,7 +116,32 @@ async function handleOAuth() {
   }
 }
 
-googleSignInBtn.addEventListener('click', () => { console.log('[UI] click googleSignInBtn'); handleOAuth(); });
+// Reconexión del evento al botón personalizado de Google (sin tocar el HTML/CSS).
+if (googleSignInBtn) {
+  googleSignInBtn.addEventListener('click', () => {
+    console.log('Iniciando Google Auth...');
+    console.log('[UI] click googleSignInBtn');
+    handleOAuth();
+  });
+}
+
+// Callback global esperado por Google Identity Services (g_id_onload).
+// Evita errores de "handleGoogleCredential is not defined" en consola.
+window.handleGoogleCredential = (response) => {
+  console.log('Iniciando Google Auth...');
+  try {
+    const token = response?.credential;
+    if (!token) throw new Error('Google no devolvió una credencial');
+    if (loginBusy) return;
+    loginError.textContent = '';
+    setLoginBusy(true, 'Token verificado. Conectando al servidor...');
+    socket.connect({ provider: 'google', token });
+  } catch (err) {
+    console.error('[login] error:', err);
+    setLoginBusy(false);
+    loginError.textContent = err?.message || 'No se pudo iniciar sesión';
+  }
+};
 
 
 // ── Creación de personaje ─────────────────────────────────────
