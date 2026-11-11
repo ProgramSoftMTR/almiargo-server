@@ -57,7 +57,7 @@ let game = null;
 
 // ── Login OAuth (sólo Google) ──────────────────────────────────
 const loginScreen = $('login');
-const googleSignInBtn = $('googleSignInBtn');
+const googleSignInBtn = $('customGoogleBtn');
 const loginError = $('loginError');
 const loginStatus = $('loginStatus');
 
@@ -145,14 +145,23 @@ async function handleOAuth() {
   }
 }
 
-// Reconexión del evento al botón personalizado de Google (sin tocar el HTML/CSS).
-if (googleSignInBtn) {
-  googleSignInBtn.addEventListener('click', () => {
-    console.log('[DEBUG] Click detectado en botón Google');
-    console.log('Iniciando Google Auth...');
-    console.log('[UI] click googleSignInBtn');
-    handleOAuth();
-  });
+// Conexión segura del botón personalizado de Google (espera a que el DOM exista).
+function connectCustomGoogleBtn() {
+  const btn = document.getElementById('customGoogleBtn');
+  if (btn) {
+    console.log('[DEBUG] Botón encontrado y conectado exitosamente.');
+    btn.addEventListener('click', () => {
+      console.log('[DEBUG] Clic detectado. Ejecutando Auth...');
+      console.log('Iniciando Google Auth...');
+      handleOAuth();
+    });
+  } else {
+    console.error('[ERROR] No se encontró el botón customGoogleBtn en el DOM.');
+  }
+}
+document.addEventListener('DOMContentLoaded', connectCustomGoogleBtn);
+if (document.readyState !== 'loading') {
+  connectCustomGoogleBtn();
 }
 
 // Callback global esperado por Google Identity Services (g_id_onload).
