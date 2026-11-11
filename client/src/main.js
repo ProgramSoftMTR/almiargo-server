@@ -91,6 +91,7 @@ function hideLogin() {
 
 async function handleOAuth() {
   if (loginBusy) return;
+  console.log('Iniciando Google Auth...');
   console.log('[login] click en Continuar con Google');
   loginError.textContent = '';
   setLoginBusy(true, 'Abriendo cuentas de Google...');
