@@ -30,7 +30,6 @@ let game = null;
 // ── Login OAuth (sólo Google) ──────────────────────────────────
 const loginScreen = $('login');
 const googleSignInBtn = $('googleSignInBtn');
-const devSignInBtn = $('devSignInBtn');
 const loginError = $('loginError');
 const loginStatus = $('loginStatus');
 
@@ -74,7 +73,6 @@ function setLoginStatus(text) {
 function setLoginBusy(busy, text = null) {
   loginBusy = busy;
   if (googleSignInBtn) googleSignInBtn.disabled = busy;
-  if (devSignInBtn) devSignInBtn.disabled = busy;
   if (text !== null) setLoginStatus(text);
 }
 
@@ -119,30 +117,6 @@ async function handleOAuth() {
 
 googleSignInBtn.addEventListener('click', () => { console.log('[UI] click googleSignInBtn'); handleOAuth(); });
 
-function enterDevMode() {
-  if (loginBusy) return;
-  hideLogin();
-  setLoginBusy(true, 'Entrando en modo desarrollo…');
-  try {
-    store.setAuth({
-      player: { id: 'dev', name: 'Dev', level: 1, classId: 'knight', x: 40, y: 42, hp: 100, maxHp: 100, mp: 50, maxMp: 50, gold: 100, xp: 0, xpNext: 120, skills: {}, equipment: { weapon: null, mano: null }, inventory: [], skull: 'none', nameColor: null, outfit: { color1: '#c84b4b', color2: '#2a2f3a', color3: '#4a3520', color4: '#d8a37b', color5: '#e0b08a' }, stats: { defense: 0, bonusAtk: 0, moveMs: 260 } },
-      world: { seed: 1337, width: 80, height: 80, spawn: { x: 40, y: 42 }, zones: { safe: { x1: 30, y1: 30, x2: 50, y2: 50 }, pvp: { x1: 6, y1: 6, x2: 24, y2: 24 } } },
-      catalog: {},
-      config: { classes: CLASSES, tickRate: 20, snapshotRate: 10, aoiRadius: 20, viewHalfW: 18, viewHalfH: 11 },
-      npcs: [],
-      monsters: {},
-      token: 'dev',
-      online: 1,
-    });
-  } catch (e) {
-    console.error('DEV MODE ERROR', e);
-    showLogin('No se pudo entrar en modo desarrollo');
-  }
-}
-
-if (devSignInBtn) {
-  devSignInBtn.addEventListener('click', () => { console.log('[UI] click devSignInBtn'); enterDevMode(); });
-}
 
 // ── Creación de personaje ─────────────────────────────────────
 function setCharacterBusy(busy) {
