@@ -631,11 +631,59 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    if (this.path.length > 0) {
+    if (this.pathGoal) {
       if (now < this.nextStepAt) return;
+
+      // Actualiza el destino si se persigue una entidad móvil.
+      if (this.pending?.type === 'attack') {
+        const e = store.entities.get(this.pending.id);
+        if (e) this.pathGoal = { x: Math.round(e.x), y: Math.round(e.y) };
+      } else if (this.pending?.type === 'bag') {
+        const b = store.bags.get(this.pending.id);
+        if (b) this.pathGoal = { x: Math.round(b.x), y: Math.round(b.y) };
+      } else if (this.pending?.type === 'stall') {
+        const s = store.stalls.get(this.pending.id);
+        if (s) this.pathGoal = { x: Math.round(s.x), y: Math.round(s.y) };
+      } else if (this.pending?.type === 'npc') {
+        const n = store.npcs.get(this.pending.id) ?? store.entities.get(this.pending.id);
+        if (n) this.pathGoal = { x: Math.round(n.x), y: Math.round(n.y) };
+      }
+
+      this.rebuildNav();
+      const cx = Math.round(this.localPred.x);
+      const cy = Math.round(this.localPred.y);
+
+      // Llegada al destino.
+      if (cx === this.pathGoal.x && cy === this.pathGoal.y) {
+        this.path = [];
+        this.pathGoal = null;
+        return;
+      }
+
+      // Detección de encierro: las 4 casillas cardinales bloqueadas.
+      if (this.isTrapped(cx, cy)) {
+        if (!this._trappedToastShown) {
+          this._trappedToastShown = true;
+          uiBus.emit('toast', { text: 'Encerrado: sin salida', type: 'error' });
+        }
+        this.path = [];
+        this.nextStepAt = now + 120;
+        return;
+      }
+      this._trappedToastShown = false;
+
+      // Re-pathfinding continuo (A*) considerando mobs/jugadores como obstáculos.
+      const path = findPath(this.navWorld, cx, cy, this.pathGoal.x, this.pathGoal.y, 5000);
+      if (!path.length) {
+        this.path = [];
+        this.nextStepAt = now + 120;
+        return;
+      }
+      this.path = path;
+
       const next = this.path[0];
-      const dx = Math.sign(next.x - Math.round(this.localPred.x));
-      const dy = Math.sign(next.y - Math.round(this.localPred.y));
+      const dx = Math.sign(next.x - cx);
+      const dy = Math.sign(next.y - cy);
       if (dx === 0 && dy === 0) {
         this.path.shift();
         this.nextStepAt = now + 20;
@@ -645,7 +693,7 @@ export class WorldScene extends Phaser.Scene {
         this.recomputePath();
         return;
       }
-      if (!this.clientCanWalk(Math.round(this.localPred.x) + dx, Math.round(this.localPred.y) + dy, dx, dy)) {
+      if (!this.clientCanWalk(cx + dx, cy + dy, dx, dy)) {
         this.recomputePath();
         return;
       }
@@ -674,18 +722,25 @@ export class WorldScene extends Phaser.Scene {
     return true;
   }
 
+  isTrapped(x, y) {
+    if (!this.navWorld) return false;
+    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    return dirs.every(([dx, dy]) => !isWalkable(this.navWorld, x + dx, y + dy));
+  }
+
   recomputePath() {
     this.path = [];
     const goal = this.pathGoal;
     if (!goal) return;
+    this.rebuildNav();
     const start = { x: Math.round(this.localPred.x), y: Math.round(this.localPred.y) };
     const path = findPath(this.navWorld, start.x, start.y, goal.x, goal.y, 5000);
     if (path.length) {
       this.path = path;
       this.nextStepAt = Date.now() + this.moveMs + 60;
     } else {
-      this.pathGoal = null;
-      this.pending = null;
+      // Mantiene el destino activo para reanudar cuando se libere una casilla.
+      this.nextStepAt = Date.now() + 120;
     }
   }
 
@@ -801,13 +856,31 @@ export class WorldScene extends Phaser.Scene {
   startChase(e, range) {
     if (!e) return;
     const p = this.localPred;
-    const path = findPath(this.navWorld, Math.round(p.x), Math.round(p.y), Math.round(e.x), Math.round(e.y), 5000);
-    if (!path.length) {
+    const ex = Math.round(e.x);
+    const ey = Math.round(e.y);
+    const candidates = [];
+    for (let oy = -1; oy <= 1; oy += 1) {
+      for (let ox = -1; ox <= 1; ox += 1) {
+        if (ox === 0 && oy === 0) continue;
+        const x = ex + ox;
+        const y = ey + oy;
+        if (isWalkable(this.navWorld, x, y)) candidates.push({ x, y });
+      }
+    }
+    if (isWalkable(this.navWorld, ex, ey)) candidates.push({ x: ex, y: ey });
+
+    let best = null;
+    let bestLen = Infinity;
+    for (const c of candidates) {
+      const path = findPath(this.navWorld, Math.round(p.x), Math.round(p.y), c.x, c.y, 5000);
+      if (path.length && path.length < bestLen) { bestLen = path.length; best = { path, goal: c }; }
+    }
+    if (!best) {
       uiBus.emit('toast', { text: 'No puedes alcanzar al objetivo', type: 'error' });
       return;
     }
-    this.path = path;
-    this.pathGoal = { x: Math.round(e.x), y: Math.round(e.y) };
+    this.path = best.path;
+    this.pathGoal = best.goal;
     this.pending = { type: 'attack', id: e.id, range };
     this.nextStepAt = Date.now() + 30;
   }
