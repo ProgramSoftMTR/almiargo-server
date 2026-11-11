@@ -53,8 +53,16 @@ export function updateMonsters(game, now) {
       monster.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
       if (now >= monster.nextAttackAt) monsterAttack(game, monster, target, now);
     } else if (now >= monster.nextMoveAt) {
-      const sx = Math.sign(dx);
-      const sy = Math.sign(dy);
+      // Flanqueo estilo Rucoy: elegir la casilla libre adyacente al jugador
+      // más cercana al mob para rodearlo si la frontal está ocupada.
+      const flankTiles = freeAdjacentTiles(game.world, target);
+      let sx = Math.sign(dx);
+      let sy = Math.sign(dy);
+      if (flankTiles.length > 0) {
+        const best = nearestTile(flankTiles, monster);
+        sx = Math.sign(best.x - monster.x);
+        sy = Math.sign(best.y - monster.y);
+      }
       moveMonster(game.world, monster, sx, sy, now);
     }
   }
@@ -75,4 +83,29 @@ function moveMonster(world, monster, dx, dy, now) {
     return;
   }
   monster.nextMoveAt = now + 700;
+}
+
+function freeAdjacentTiles(world, target) {
+  const tx = Math.round(target.x);
+  const ty = Math.round(target.y);
+  const dirs = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
+  const out = [];
+  for (const [ox, oy] of dirs) {
+    const nx = tx + ox;
+    const ny = ty + oy;
+    if (!world.canWalk(nx, ny)) continue;
+    if (world.isTileOccupied(nx, ny)) continue;
+    out.push({ x: nx, y: ny });
+  }
+  return out;
+}
+
+function nearestTile(tiles, monster) {
+  let best = null;
+  let bestD = Infinity;
+  for (const t of tiles) {
+    const d = (t.x - monster.x) ** 2 + (t.y - monster.y) ** 2;
+    if (d < bestD) { bestD = d; best = t; }
+  }
+  return best;
 }
