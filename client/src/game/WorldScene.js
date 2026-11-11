@@ -267,6 +267,10 @@ export class WorldScene extends Phaser.Scene {
       if (!seenStalls.has(id)) { view.destroy(true); this.stallViews.delete(id); }
     }
     this.rebuildNav();
+    if (this.path.length > 0 && this.pathGoal) {
+      const next = this.path[0];
+      if (!isWalkable(this.navWorld, next.x, next.y)) this.recomputePath();
+    }
     this.emitZone();
   }
 
