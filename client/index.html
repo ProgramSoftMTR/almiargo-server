@@ -142,6 +142,12 @@
         <h2>Personaje</h2>
         <button class="close-btn" data-close="inventoryPanel">✕</button>
       </div>
+      <div class="inv-tabs">
+        <button class="inv-tab active" data-tab="stats">Stats</button>
+        <button class="inv-tab" data-tab="inventory">Inventario</button>
+        <button class="inv-tab" data-tab="outfit">Outfit</button>
+        <button class="inv-tab" data-tab="skills">Habilidades</button>
+      </div>
       <div class="char-summary">
         <div class="summary-block"><span>Nivel</span><b id="invLevel">1</b></div>
         <div class="summary-block"><span>Defensa</span><b id="invDef">0</b></div>
@@ -149,9 +155,9 @@
         <div class="summary-block"><span>Clase</span><b id="invClass">Caballero</b></div>
       </div>
       <h3 class="section-title">Equipamiento</h3>
-      <div id="equipmentGrid" class="equipment-grid"></div>
+      <div id="equipmentGrid" class="inv-equip"></div>
       <h3 class="section-title">Mochila <small id="invFree">30 libres</small></h3>
-      <div id="inventoryGrid" class="inventory-grid"></div>
+      <div id="inventoryGrid" class="inv-grid"></div>
       <div id="itemDetail" class="item-detail hidden">
         <div class="item-detail-head">
           <canvas id="itemDetailIcon" width="40" height="40"></canvas>

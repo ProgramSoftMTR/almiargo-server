@@ -46,6 +46,9 @@
 #invTitle { color: #f2c94c; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; }
 .inv-stats { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 9px; color: #9aa7ba; border-bottom: 1px solid #1a2a1f; }
 .inv-stats b { color: #e8eef8; }
+.inv-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.inv-tab { flex: 1; padding: 6px 4px; border: 1px solid transparent; border-radius: 4px; background: #ffffff0a; color: #9aa7ba; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; cursor: pointer; }
+.inv-tab.active { color: #ffd979; border-color: #d3a84c66; background: #d3a84c14; }
 .inv-equip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px; border-bottom: 1px solid #1a2a1f; }
 .inv-equip .equip-slot { background: #050a08; border: 2px solid #2a4a3a; border-radius: 2px; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; cursor: pointer; position: relative; }
 .inv-equip .equip-slot.filled { border-color: #3a6a4a; }

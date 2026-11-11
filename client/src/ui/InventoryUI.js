@@ -21,6 +21,51 @@ export class InventoryUI {
     for (const btn of document.querySelectorAll('[data-close="inventoryPanel"]')) {
       btn.addEventListener('click', () => this.close());
     }
+    for (const tab of document.querySelectorAll('.inv-tab')) {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.inv-tab').forEach((t) => t.classList.toggle('active', t === tab));
+        uiBus.emit('toast', { text: 'Sección próximamente', type: '' });
+      });
+    }
+    // Drag and drop entre mochila y equipamiento.
+    const equipGrid = $('equipmentGrid');
+    const invGrid = $('inventoryGrid');
+    const handleDragStart = (e) => {
+      const slot = e.target.closest('.inv-slot, .equip-slot');
+      if (!slot) return;
+      if (slot.classList.contains('inv-slot') && slot.dataset.uid) {
+        e.dataTransfer.setData('text/plain', `inv:${slot.dataset.uid}`);
+        e.dataTransfer.effectAllowed = 'move';
+      } else if (slot.classList.contains('equip-slot') && slot.classList.contains('filled')) {
+        e.dataTransfer.setData('text/plain', `equip:${slot.dataset.slot}`);
+        e.dataTransfer.effectAllowed = 'move';
+      } else {
+        e.preventDefault();
+      }
+    };
+    const handleDragOver = (e) => {
+      const slot = e.target.closest('.inv-slot, .equip-slot');
+      if (slot) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+    };
+    const handleDrop = (e) => {
+      const slot = e.target.closest('.inv-slot, .equip-slot');
+      if (!slot) return;
+      e.preventDefault();
+      const data = e.dataTransfer.getData('text/plain');
+      if (!data) return;
+      if (slot.classList.contains('equip-slot') && data.startsWith('inv:')) {
+        socket.send('equip', { uid: data.slice(4) });
+      } else if (slot.classList.contains('inv-slot') && data.startsWith('equip:')) {
+        socket.send('unequip', { slot: data.slice(6) });
+      }
+      this.render();
+    };
+    equipGrid.addEventListener('dragstart', handleDragStart);
+    invGrid.addEventListener('dragstart', handleDragStart);
+    equipGrid.addEventListener('dragover', handleDragOver);
+    invGrid.addEventListener('dragover', handleDragOver);
+    equipGrid.addEventListener('drop', handleDrop);
+    invGrid.addEventListener('drop', handleDrop);
     $('inventoryGrid').addEventListener('click', (e) => {
       const slot = e.target.closest('.inv-slot');
       if (!slot || !slot.dataset.uid) { this.select(null); return; }
@@ -133,6 +178,7 @@ export class InventoryUI {
       const div = document.createElement('div');
       div.className = `equip-slot${inst ? ' filled' : ''}`;
       div.dataset.slot = slot;
+      if (inst) div.draggable = true;
       if (inst) {
         const def = ITEMS[inst.itemId];
         const canvas = document.createElement('canvas');
@@ -173,6 +219,7 @@ export class InventoryUI {
       btn.className = `inv-slot${inst ? ' filled' : ''}${inst?.uid === this.selectedUid ? ' selected' : ''}`;
       btn.type = 'button';
       if (inst) {
+        btn.draggable = true;
         btn.dataset.uid = inst.uid;
         const def = ITEMS[inst.itemId];
         const canvas = document.createElement('canvas');
