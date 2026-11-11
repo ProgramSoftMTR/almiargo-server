@@ -28,6 +28,7 @@ export class Monster {
     this.nextAttackAt = 0;
     this.nextPatrolAt = 0;
     this.patrolTarget = null;
+    this.slot = null;
     this.damageBy = new Map();
     this.deathAt = 0;
     this.lastAttackerId = null;
