@@ -111,6 +111,7 @@ async function signInWithGoogleWeb() {
     window.google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: (resp) => {
+        console.log('[DEBUG] GIS initialize callback invocado');
         if (resp && resp.credential) done(resp.credential);
         else fail(new Error('Google no devolvió una credencial'));
       },
