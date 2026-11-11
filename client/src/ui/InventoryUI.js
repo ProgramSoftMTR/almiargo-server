@@ -27,8 +27,7 @@ export class InventoryUI {
         uiBus.emit('toast', { text: 'Sección próximamente', type: '' });
       });
     }
-    // Drag and drop entre mochila y equipamiento.
-    const equipGrid = $('equipmentGrid');
+    // Drag and drop sobre la cuadrícula unificada (equipamiento + mochila).
     const invGrid = $('inventoryGrid');
     const handleDragStart = (e) => {
       const slot = e.target.closest('.rucoy-slot');
@@ -60,29 +59,29 @@ export class InventoryUI {
       }
       this.render();
     };
-    equipGrid.addEventListener('dragstart', handleDragStart);
-    invGrid.addEventListener('dragstart', handleDragStart);
-    equipGrid.addEventListener('dragover', handleDragOver);
-    invGrid.addEventListener('dragover', handleDragOver);
-    equipGrid.addEventListener('drop', handleDrop);
-    invGrid.addEventListener('drop', handleDrop);
-    $('inventoryGrid').addEventListener('click', (e) => {
-      const slot = e.target.closest('.inv-slot');
-      if (!slot || !slot.dataset.uid) { this.select(null); return; }
-      const item = store.itemByUid(slot.dataset.uid);
-      const def = item ? ITEMS[item.itemId] : null;
-      if (def?.slot && EQUIP_SLOTS.includes(def.slot)) {
-        socket.send('equip', { uid: slot.dataset.uid });
-        this.select(null);
-        return;
-      }
-      this.select(slot.dataset.uid);
-    });
-    $('equipmentGrid').addEventListener('click', (e) => {
-      const slot = e.target.closest('.equip-slot');
-      if (!slot || !slot.dataset.slot || !slot.classList.contains('filled')) return;
-      socket.send('unequip', { slot: slot.dataset.slot });
-    });
+    if (invGrid) {
+      invGrid.addEventListener('dragstart', handleDragStart);
+      invGrid.addEventListener('dragover', handleDragOver);
+      invGrid.addEventListener('drop', handleDrop);
+      invGrid.addEventListener('click', (e) => {
+        const slot = e.target.closest('.rucoy-slot');
+        if (!slot) return;
+        if (slot.dataset.uid) {
+          const item = store.itemByUid(slot.dataset.uid);
+          const def = item ? ITEMS[item.itemId] : null;
+          if (def?.slot && EQUIP_SLOTS.includes(def.slot)) {
+            socket.send('equip', { uid: slot.dataset.uid });
+            this.select(null);
+            return;
+          }
+          this.select(slot.dataset.uid);
+        } else if (slot.dataset.slot && slot.classList.contains('filled')) {
+          socket.send('unequip', { slot: slot.dataset.slot });
+        } else {
+          this.select(null);
+        }
+      });
+    }
     $('btnEquip').addEventListener('click', () => {
       if (!this.selectedUid) return;
       socket.send('equip', { uid: this.selectedUid });
