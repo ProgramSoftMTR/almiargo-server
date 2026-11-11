@@ -68,6 +68,7 @@ export class WorldScene extends Phaser.Scene {
     this.navWorld = null;
     this.unsubscribers = [];
     this.tapStart = null;
+    this.partyMenu = null;
   }
 
   create() {
@@ -775,9 +776,14 @@ export class WorldScene extends Phaser.Scene {
       if (d < 28 * 28 && d < bestDist) { bestDist = d; picked = { type: 'stall', view }; }
     }
 
+    this.hidePartyMenu();
     if (picked?.type === 'entity') {
       const e = picked.view.data;
       if (!e) return;
+      if (e.kind === ENTITY_KIND.PLAYER && e.id !== store.player?.id) {
+        this.showPartyMenu(picked.view, e);
+        return;
+      }
       if (e.kind === ENTITY_KIND.NPC) {
         const dist = Math.hypot(e.x - p.x, e.y - p.y);
         if (dist <= 3.1) socket.send('shop_open', { npcId: e.id });
@@ -978,6 +984,34 @@ export class WorldScene extends Phaser.Scene {
       else if (type === 'npc') socket.send('shop_open', { npcId: id });
       else if (type === 'bag') socket.send('pickup', { id });
       else if (type === 'stall') socket.send('stall_view', { id });
+    }
+  }
+
+  showPartyMenu(view, entity) {
+    this.hidePartyMenu();
+    const menu = document.createElement('div');
+    menu.className = 'party-menu';
+    const btn = document.createElement('button');
+    btn.className = 'party-invite-btn';
+    btn.textContent = 'Invite to Party';
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      socket.send('party_invite', { targetId: entity.id });
+      this.hidePartyMenu();
+    });
+    menu.appendChild(btn);
+    document.body.appendChild(menu);
+    const pos = this.cameras.main.worldToScreen(view.container.x, view.container.y - 20);
+    menu.style.left = `${Math.max(8, pos.x - 60)}px`;
+    menu.style.top = `${Math.max(8, pos.y - 40)}px`;
+    this.partyMenu = menu;
+    setTimeout(() => this.hidePartyMenu(), 6000);
+  }
+
+  hidePartyMenu() {
+    if (this.partyMenu) {
+      this.partyMenu.remove();
+      this.partyMenu = null;
     }
   }
 

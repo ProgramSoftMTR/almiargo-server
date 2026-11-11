@@ -275,26 +275,45 @@ export function killMonster(game, monster, source, now) {
   monster.respawnAt = now + 7000 + randInt(0, 6000);
   const topId = monster.topDamager() ?? (source?.kind === 0 ? source.id : null);
 
-  // XP proporcional al daño infligido, con bonus para el que dio el golpe final.
-  const totalDamage = [...monster.damageBy.values()].reduce((a, b) => a + b, 0) || 1;
-  for (const [playerId, dmg] of monster.damageBy) {
-    const p = game.world.getPlayer(playerId);
-    if (!p) continue;
-    const share = dmg / totalDamage;
-    const bonus = playerId === topId ? 1.2 : 1;
-    const xp = Math.max(1, Math.round(monsterXp(monster.def, p.level) * share * bonus));
-    awardXp(game, p, xp);
+  const partyMembers = (source?.partyId)
+    ? [...game.world.players.values()].filter((p) => p.partyId === source.partyId && !p.isDead && dist2(p, monster) <= 25 ** 2)
+    : [];
+
+  if (partyMembers.length > 0) {
+    // EXP y oro compartidos por party.
+    const totalXp = monsterXp(monster.def, source.level);
+    const totalGold = randInt(monster.def.gold[0], monster.def.gold[1]);
+    const xpShare = Math.max(1, Math.round(totalXp / partyMembers.length));
+    const goldShare = Math.floor(totalGold / partyMembers.length);
+    for (const p of partyMembers) {
+      awardXp(game, p, xpShare);
+      p.gold = Math.min(CONSTANTS.MAX_GOLD, p.gold + goldShare);
+      p.dirty = true;
+      game.sendProfile(p);
+    }
+  } else {
+    // XP proporcional al daño infligido, con bonus para el que dio el golpe final.
+    const totalDamage = [...monster.damageBy.values()].reduce((a, b) => a + b, 0) || 1;
+    for (const [playerId, dmg] of monster.damageBy) {
+      const p = game.world.getPlayer(playerId);
+      if (!p) continue;
+      const share = dmg / totalDamage;
+      const bonus = playerId === topId ? 1.2 : 1;
+      const xp = Math.max(1, Math.round(monsterXp(monster.def, p.level) * share * bonus));
+      awardXp(game, p, xp);
+    }
   }
 
-  // Loot: siempre pertenece al que hizo más daño durante 45 s.
+  // Loot: compartido por party si aplica.
   const drops = rollLootTable(monster.def.loot);
-  const gold = randInt(monster.def.gold[0], monster.def.gold[1]);
-  if (gold > 0 || drops.length > 0) {
+  const gold = partyMembers.length > 0 ? 0 : randInt(monster.def.gold[0], monster.def.gold[1]);
+  if (gold > 0 || drops.length > 0 || partyMembers.length > 0) {
     const now = Date.now();
     const bag = game.world.createBag({
       x: monster.x,
       y: monster.y,
-      ownerId: topId,
+      ownerId: partyMembers.length > 0 ? null : topId,
+      partyId: partyMembers.length > 0 ? source.partyId : null,
       items: drops,
       gold,
       freeAt: now + CONSTANTS.BAG_FREE_AFTER_MS,

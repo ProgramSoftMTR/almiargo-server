@@ -10,6 +10,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Almiargo Online — MMORPG</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script type="module" src="/src/main.js"></script>
 </head>
 
@@ -96,6 +97,12 @@
         <div class="logo-mark">⚔</div>
         <h1>ALMIARGO<span>ONLINE</span></h1>
         <p class="tagline">MMORPG 2D · mundo persistente · PvP</p>
+        <div id="g_id_onload"
+          data-client_id="196590783383-3796k1hnlns2dkmjiq5rt634hbmm6k8b.apps.googleusercontent.com"
+          data-callback="handleGoogleCredential"
+          data-auto_prompt="false"></div>
+        <div class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with"
+          data-shape="rectangular" data-logo_alignment="left"></div>
         <div class="oauth-actions">
           <button id="googleSignInBtn" class="oauth-btn google" type="button">
             <span class="oauth-icon" aria-hidden="true">G</span>

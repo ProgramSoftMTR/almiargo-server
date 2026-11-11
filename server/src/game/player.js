@@ -146,6 +146,7 @@ export class PlayerState {
     // Runtime (no persistente)
     this.sessionId = null;
     this.targetId = null;
+    this.partyId = null;
     this.nextMoveAt = 0;
     this.nextAttackAt = 0;
     this.nextSpecialAt = 0;
@@ -342,7 +343,7 @@ export class PlayerState {
 
   toState() {
     const {
-      sessionId, targetId, nextMoveAt, nextAttackAt, nextSpecialAt, nextPotionAt,
+      sessionId, targetId, partyId, nextMoveAt, nextAttackAt, nextSpecialAt, nextPotionAt,
       nextSwitchAt, nextRegenAt, deadUntil, inCombatUntil, dirty, stats, kind,
       lastChatAt, maxHp, maxMp, lastAttackerId, lastAttackerKind,
       invisible, godMode, adminSummonSeq, ...persisted

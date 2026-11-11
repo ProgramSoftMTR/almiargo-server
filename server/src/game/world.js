@@ -191,12 +191,13 @@ export class World {
     return bag;
   }
 
-  createBag({ x, y, ownerId = null, items = [], gold = 0, freeAt = 0, expiresAt = 0 }) {
+  createBag({ x, y, ownerId = null, partyId = null, items = [], gold = 0, freeAt = 0, expiresAt = 0 }) {
     const bag = {
       id: `b_${++this.bagCounter}`,
       x: Math.round(x),
       y: Math.round(y),
       ownerId,
+      partyId,
       items,
       gold,
       freeAt,

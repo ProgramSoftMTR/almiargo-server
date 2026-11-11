@@ -393,6 +393,7 @@ export class GameServer {
       case 'move': this.handleMove(session, msg); break;
       case 'stop': if (session.player) { session.player.targetId = null; this.sendEvent(session.player, 'target_clear', {}); } break;
       case 'target': this.handleTarget(session, msg); break;
+      case 'party_invite': this.handlePartyInvite(session, msg); break;
       case 'attack': this.handleAttack(session, msg); break;
       case 'special': this.handleSpecial(session); break;
       case 'use_item': this.handleUseItem(session, msg); break;
@@ -949,6 +950,25 @@ export class GameServer {
     player.targetId = target.id;
   }
 
+  handlePartyInvite(session, msg) {
+    const player = session.player;
+    if (!player || player.isDead) return;
+    const target = this.world.getPlayer(String(msg.targetId ?? ''));
+    if (!target || target.isDead || target.id === player.id) return;
+    let partyId = player.partyId || target.partyId;
+    if (!partyId) partyId = `party_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    player.partyId = partyId;
+    target.partyId = partyId;
+    for (const p of this.world.players.values()) {
+      if (p.partyId === partyId) p.partyId = partyId;
+    }
+    const members = [...this.world.players.values()]
+      .filter((p) => p.partyId === partyId)
+      .map((p) => p.id);
+    this.sendEvent(player, 'party_update', { partyId, members });
+    this.sendEvent(target, 'party_update', { partyId, members });
+  }
+
   handleAttack(session, msg) {
     const player = session.player;
     if (!player) return;
@@ -1062,7 +1082,8 @@ export class GameServer {
       return this.sendError(session, 'Acércate a la bolsa');
     }
     const now = Date.now();
-    if (now < bag.freeAt && bag.ownerId && bag.ownerId !== player.id) {
+    const partyMatch = bag.partyId && player.partyId && bag.partyId === player.partyId;
+    if (now < bag.freeAt && bag.ownerId && bag.ownerId !== player.id && !partyMatch) {
       return this.sendError(session, 'Esta bolsa pertenece a otro jugador');
     }
 
