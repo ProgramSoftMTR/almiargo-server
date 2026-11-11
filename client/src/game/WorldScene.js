@@ -148,7 +148,7 @@ export class WorldScene extends Phaser.Scene {
     this.localContainer = this.add.container(toWorld(this.localVisual.x), toWorld(this.localVisual.y), [
       shadow, this.localSprite, this.localAxe, this.localBarBg, this.localBarFill, this.localNameText,
     ].filter(Boolean));
-    this.localContainer.setDepth(1000);
+    this.localContainer.setDepth(toWorld(this.localVisual.y) + (this.localSprite?.displayHeight ?? 0) / 2);
     this.updateLocalWeapon();
     this.updateLocalAxe();
     this.localKey = `player_${p.classId ?? 'adventurer'}`;
@@ -388,7 +388,7 @@ export class WorldScene extends Phaser.Scene {
     const container = this.add.container(toWorld(e.x), toWorld(e.y), [
       ring, shadow, sprite, weaponSprite, axeSprite, barBg, barFill, nameText,
     ].filter(Boolean));
-    container.setDepth(100 + e.y * 10);
+    container.setDepth(toWorld(e.y) + (sprite.displayHeight ?? 0) / 2);
 
     const displayHeight = sprite.displayHeight;
     view = {
@@ -559,7 +559,8 @@ export class WorldScene extends Phaser.Scene {
     const lx = toWorld(this.localVisual.x);
     const ly = toWorld(this.localVisual.y);
     this.localContainer.setPosition(lx, ly);
-    this.localContainer.setDepth(1000 + this.localVisual.y * 10);
+    // Y-sorting: profundidad basada en la posición inferior (pies) de la entidad.
+    this.localContainer.setDepth(toWorld(this.localVisual.y) + (this.localSprite?.displayHeight ?? 0) / 2);
     this.localMoving = Math.hypot(this.localPred.x - this.localVisual.x, this.localPred.y - this.localVisual.y) > 0.05
       || (this.joystick?.active && this.joystick.dir && now < this.nextStepAt + this.moveMs);
     this.localSprite.y = 2 - (this.localMoving ? Math.abs(Math.sin(now / 120)) * 1.8 : 0);
@@ -583,7 +584,8 @@ export class WorldScene extends Phaser.Scene {
       view.moving = moved;
       view.lastX = x; view.lastY = y;
       view.container.setPosition(x, y);
-      view.container.setDepth(100 + (y / TILE_SIZE) * 10);
+      // Y-sorting: mayor Y (pies más abajo) se dibuja delante.
+      view.container.setDepth(y + (view.displayHeight ?? 0) * 0.5);
       view.sprite.y = 2 - (moved ? Math.abs(Math.sin(now / 110 + view.id.length)) * 1.6 : 0);
       while (buf.length > 2 && renderTime - buf[0].t > 1500) buf.shift();
     }
