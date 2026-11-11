@@ -313,7 +313,11 @@ export class WorldScene extends Phaser.Scene {
       if (x >= 0 && y >= 0 && x < nav.width && y < nav.height) tiles[y * nav.width + x] = 4;
     };
     for (const npc of store.npcs.values()) block(Math.round(npc.x), Math.round(npc.y));
-    for (const e of store.entities.values()) if (e.kind === ENTITY_KIND.NPC) block(Math.round(e.x), Math.round(e.y));
+    for (const e of store.entities.values()) {
+      if (e.kind === ENTITY_KIND.NPC || e.kind === ENTITY_KIND.MONSTER || e.kind === ENTITY_KIND.PLAYER) {
+        block(Math.round(e.x), Math.round(e.y));
+      }
+    }
     for (const stall of store.stalls.values()) block(Math.round(stall.x), Math.round(stall.y));
     this.navWorld = nav;
   }

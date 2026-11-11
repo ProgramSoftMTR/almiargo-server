@@ -906,11 +906,13 @@ export class GameServer {
 
     const nx = Math.round(player.x) + dx;
     const ny = Math.round(player.y) + dy;
-    let allowed = this.world.canWalk(nx, ny);
+    let allowed = this.world.canWalk(nx, ny) && !this.world.isTileOccupied(nx, ny, player.id);
     // No atravesar esquinas en diagonal.
     if (allowed && dx !== 0 && dy !== 0) {
       allowed = this.world.canWalk(Math.round(player.x) + dx, Math.round(player.y))
-        && this.world.canWalk(Math.round(player.x), Math.round(player.y) + dy);
+        && !this.world.isTileOccupied(Math.round(player.x) + dx, Math.round(player.y), player.id)
+        && this.world.canWalk(Math.round(player.x), Math.round(player.y) + dy)
+        && !this.world.isTileOccupied(Math.round(player.x), Math.round(player.y) + dy, player.id);
     }
     if (!allowed) {
       this.sendEvent(player, 'move_reject', { seq: msg.seq ?? null, x: player.x, y: player.y });
