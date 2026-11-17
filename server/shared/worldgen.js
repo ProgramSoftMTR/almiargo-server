@@ -17,7 +17,7 @@ import {
  */
 
 export const TILE = Object.freeze({
-  GRASS: 0,
+  GRASS: 0,       // Pradera (Grassland)
   DIRT: 1,
   STONE: 2,
   WATER: 3,
@@ -25,17 +25,25 @@ export const TILE = Object.freeze({
   WALL: 5,
   SAND: 6,
   FLOWERS: 7,
+  SWAMP: 8,       // Pantano
+  MOUNTAIN: 9,    // Montaña rocosa
+  SNOW: 10,       // Nevado
+  FOREST: 11,     // Bosque
 });
 
 export const TILE_COLORS = Object.freeze({
-  0: [0x3d6b3a, 0x356236, 0x447540],
+  0: [0x3d6b3a, 0x356236, 0x447540],   // grassland
   1: [0x6a5438, 0x5f4c33, 0x755d3d],
-  2: [0x6b6862, 0x625f5a, 0x74716a],
+  2: [0x6b6862, 0x625f5a, 0x74716a],   // stone/mountain base
   3: [0x2b5680, 0x2f5d8a, 0x274c73],
   4: [0x1e4427, 0x24502c, 0x193a21],
   5: [0x4b4540, 0x554e48, 0x403b37],
   6: [0x9b8657, 0x8f7b4f, 0xa6905f],
   7: [0x3d6b3a, 0x447540, 0x3a6537],
+  8: [0x2f4a3a, 0x2a4234, 0x35523f],   // swamp
+  9: [0x5a5a5a, 0x505050, 0x646464],   // mountain
+  10: [0xdfe7f0, 0xd2dbe6, 0xe8eef5],  // snow
+  11: [0x2a4a2a, 0x254325, 0x305530],  // forest
 });
 
 export function tileAt(world, x, y) {
@@ -70,10 +78,65 @@ function mulberry32(a) {
   };
 }
 
+function makeBiomeNoise(seed) {
+  const rng = mulberry32(seed ^ 0x9e3779b9);
+  const gridW = 48;
+  const gridH = 48;
+  const grid = new Float32Array(gridW * gridH);
+  for (let i = 0; i < grid.length; i += 1) grid[i] = rng();
+  const sample = (gx, gy) => grid[((gx % gridW + gridW) % gridW) + (((gy % gridH + gridH) % gridH) * gridW)];
+  const smooth = (t) => t * t * (3 - 2 * t);
+  const noise = (x, y) => {
+    const ix = Math.floor(x);
+    const iy = Math.floor(y);
+    const fx = x - ix;
+    const fy = y - iy;
+    const ux = smooth(fx);
+    const uy = smooth(fy);
+    const a = sample(ix, iy);
+    const b = sample(ix + 1, iy);
+    const c = sample(ix, iy + 1);
+    const d = sample(ix + 1, iy + 1);
+    return (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d * ux) * uy;
+  };
+  const fbm = (x, y, freq, octaves) => {
+    let value = 0;
+    let amp = 1;
+    let f = freq;
+    let max = 0;
+    for (let i = 0; i < octaves; i += 1) {
+      value += noise(x * f, y * f) * amp;
+      max += amp;
+      amp *= 0.5;
+      f *= 2;
+    }
+    return value / max;
+  };
+  return { fbm };
+}
+
+function biomeTile(noise, x, y) {
+  const e = noise.fbm(x, y, 0.018, 4);
+  const m = noise.fbm(x + 1000, y + 1000, 0.022, 3);
+  const t = noise.fbm(x + 2000, y + 2000, 0.012, 3);
+  if (e < 0.34) return TILE.SWAMP;
+  if (e > 0.72) return t < 0.45 ? TILE.SNOW : TILE.MOUNTAIN;
+  if (m > 0.58) return TILE.FOREST;
+  return TILE.GRASS;
+}
+
 export function generateWorld(seed = WORLD_SEED) {
   const width = MAP_WIDTH;
   const height = MAP_HEIGHT;
   const tiles = new Uint8Array(width * height).fill(TILE.GRASS);
+
+  // Biomas procedurales (ruido de valor suavizado) para un mapa masivo variado.
+  const biomeNoise = makeBiomeNoise(seed);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      tiles[y * width + x] = biomeTile(biomeNoise, x, y, width, height);
+    }
+  }
   const rng = mulberry32(seed);
 
   const idx = (x, y) => y * width + x;

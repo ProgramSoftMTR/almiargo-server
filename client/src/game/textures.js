@@ -240,6 +240,44 @@ export function createWorldTexture(scene, world) {
         const off = Math.round(h * 8);
         ctx.strokeRect(px + 2.5, py + 2.5 + off, 13, 9);
         ctx.strokeRect(px + 17.5, py + 2.5 + off, 12, 9);
+      } else if (tile === TILE.SWAMP) {
+        ctx.fillStyle = '#2f4a3a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = 'rgba(20,40,30,.35)';
+        for (let i = 0; i < 6; i += 1) {
+          const bx = px + ((h * 71 + i * 19) % (TILE_SIZE - 4));
+          const by = py + ((h * 53 + i * 23) % (TILE_SIZE - 4));
+          ctx.fillRect(bx, by, 3, 2);
+        }
+        ctx.fillStyle = 'rgba(80,120,90,.18)';
+        ctx.fillRect(px, py + TILE_SIZE - 6, TILE_SIZE, 6);
+      } else if (tile === TILE.MOUNTAIN) {
+        ctx.fillStyle = '#5a5a5a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = 'rgba(0,0,0,.18)';
+        ctx.fillRect(px, py + TILE_SIZE - 8, TILE_SIZE, 8);
+        ctx.fillStyle = 'rgba(255,255,255,.12)';
+        ctx.fillRect(px + 4, py + 3, 10, 3);
+        ctx.fillRect(px + 16, py + 6, 8, 2);
+      } else if (tile === TILE.SNOW) {
+        ctx.fillStyle = '#dfe7f0';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = 'rgba(200,215,235,.6)';
+        ctx.fillRect(px + 2, py + 4, 12, 2);
+        ctx.fillRect(px + 18, py + 14, 10, 2);
+        ctx.fillStyle = 'rgba(120,140,170,.15)';
+        ctx.fillRect(px, py + TILE_SIZE - 3, TILE_SIZE, 3);
+      } else if (tile === TILE.FOREST) {
+        ctx.fillStyle = '#2a4a2a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = 'rgba(10,25,10,.3)';
+        ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+        ctx.fillStyle = 'rgba(60,90,50,.25)';
+        for (let i = 0; i < 3; i += 1) {
+          const bx = px + 4 + ((h * 61 + i * 17) % 20);
+          const by = py + 4 + ((h * 43 + i * 13) % 20);
+          ctx.fillRect(bx, by, 4, 3);
+        }
       } else if (tile === TILE.TREE) {
         // base de hierba
         ctx.fillStyle = '#2f5730';

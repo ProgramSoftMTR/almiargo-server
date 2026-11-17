@@ -8,6 +8,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-11 06:30:00 auto-deploy render rucoy compact inventory silhouettes
 // deploy trigger: 2026-11-11 12:29:12 build actualizacion servidor render y nuevo cliente apk
 // deploy trigger: 2026-11-17 14:00:00 feat expansion mapa gigante y sistema spawners por zonas
+// deploy trigger: 2026-11-17 16:00:00 perf AoI biomas y optimizacion red
 
 const store = await createStore();
 const game = new GameServer({ store, config });
