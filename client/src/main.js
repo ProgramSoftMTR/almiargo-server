@@ -381,9 +381,13 @@ store.on('game-event', (msg) => {
       hud.toast(m || 'Acción rechazada', 'error');
       break;
     }
-    case 'notice':
-      hud.toast(msg.text || '', '');
+    case 'notice': {
+      const t = String(msg.text || '');
+      // Silencia notificaciones redundantes de loot.
+      if (/^Recogiste/i.test(t)) break;
+      hud.toast(t, '');
       break;
+    }
     case 'system_message':
       hud.toast(msg.message || msg.text || '', 'error');
       break;

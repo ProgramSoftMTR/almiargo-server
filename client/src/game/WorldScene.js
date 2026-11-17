@@ -15,7 +15,8 @@ import {
 import { store } from '../core/store.js';
 import { socket } from '../net/socket.js';
 import { uiBus } from '../core/uiBus.js';
-import { createEntityTextures, createWorldTexture, addZoneLabels, ensurePlayerTexture, createResourceTextures, createToolTextures, createWeaponTextures } from './textures.js';
+import { createEntityTextures, addZoneLabels, ensurePlayerTexture, createResourceTextures, createToolTextures, createWeaponTextures } from './textures.js';
+import { createWorldTexture } from './worldTexture.js';
 import { VirtualJoystick } from '../input/Joystick.js';
 
 const TILE_CENTER = TILE_SIZE / 2;
@@ -81,10 +82,9 @@ export class WorldScene extends Phaser.Scene {
     createResourceTextures(this);
     createToolTextures(this);
     createWeaponTextures(this);
-    createWorldTexture(this, this.worldMap);
+    this.groundChunks = createWorldTexture(this, this.worldMap);
     this.syncResourceStumps();
 
-    this.ground = this.add.image(0, 0, 'world_ground').setOrigin(0, 0).setDepth(-100);
     addZoneLabels(this, this.worldMap);
 
     this.setupLocalPlayer();

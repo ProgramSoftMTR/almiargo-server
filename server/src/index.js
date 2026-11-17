@@ -13,6 +13,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-17 20:00:00 fix ocean playa sprites ui tala segura
 // deploy trigger: 2026-11-17 22:00:00 fix colision troncos y respawn seguro arboles
 // deploy trigger: 2026-11-17 23:30:00 feat expansion mapa mobs playa leashing troncos
+// deploy trigger: 2026-11-18 01:00:00 fix renderizado mapa negro y toasts loot
 
 const store = await createStore();
 const game = new GameServer({ store, config });
