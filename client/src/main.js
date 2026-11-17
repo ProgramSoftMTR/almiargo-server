@@ -657,8 +657,15 @@ if (mapModal) {
 }
 function renderFullMap() {
   if (!mapCanvas || !store.world) return;
+  const modal = mapModal?.getBoundingClientRect?.() || { width: window.innerWidth, height: window.innerHeight };
+  const modalWidth = Math.max(100, modal.width - 24);
+  const modalHeight = Math.max(100, modal.height - 24);
+  const scale = Math.min(modalWidth / store.world.width, modalHeight / store.world.height);
+  const w = Math.floor(store.world.width * scale);
+  const h = Math.floor(store.world.height * scale);
+  mapCanvas.width = w;
+  mapCanvas.height = h;
   const ctx = mapCanvas.getContext('2d');
-  const w = mapCanvas.width, h = mapCanvas.height;
   ctx.imageSmoothingEnabled = false;
   ctx.fillStyle = '#0a0d12';
   ctx.fillRect(0, 0, w, h);

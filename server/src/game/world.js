@@ -183,8 +183,8 @@ export class World {
 
   spawnInitialMonsters(now) {
     for (const spawner of this.spawners) {
-      spawner.nextSpawnAt = now;
       for (let i = 0; i < spawner.maxMobs; i += 1) {
+        spawner.nextSpawnAt = 0;
         spawner.update(this, now);
       }
       spawner.nextSpawnAt = now + spawner.respawnTime;

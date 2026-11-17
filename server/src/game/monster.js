@@ -27,6 +27,7 @@ export class Monster {
     this.alive = true;
     this.respawnAt = 0;
     this.targetId = null;
+    this.state = 'idle';
     this.nextMoveAt = 0;
     this.nextAttackAt = 0;
     this.nextPatrolAt = 0;
@@ -59,6 +60,7 @@ export class Monster {
     this.spawnY = sy;
     this.alive = true;
     this.targetId = null;
+    this.state = 'idle';
     this.patrolTarget = null;
     this.damageBy.clear();
     this.deathAt = 0;
