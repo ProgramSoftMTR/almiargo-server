@@ -34,6 +34,26 @@ export function updateMonsters(game, now) {
     }
 
     const def = monster.def;
+    // Leash: si el mob se aleja demasiado de su spawn, vuelve y olvida el aggro.
+    const MAX_LEASH = 15;
+    const homeDist = Math.hypot(monster.x - (monster.homeX ?? monster.spawnX ?? monster.x), monster.y - (monster.homeY ?? monster.spawnY ?? monster.y));
+    if (homeDist > MAX_LEASH) {
+      monster.targetId = null;
+      monster.slot = null;
+      if (now >= monster.nextMoveAt) {
+        const hx = monster.homeX ?? monster.spawnX ?? monster.x;
+        const hy = monster.homeY ?? monster.spawnY ?? monster.y;
+        const sx = Math.sign(hx - monster.x);
+        const sy = Math.sign(hy - monster.y);
+        moveMonster(game.world, monster, sx, sy, now);
+      } else {
+        monster.nextMoveAt = now + 200;
+      }
+      // Regeneración leve mientras vuelve.
+      if (monster.hp < monster.maxHp) monster.hp = Math.min(monster.maxHp, monster.hp + 1);
+      continue;
+    }
+
     let target = monster.targetId ? game.world.getPlayer(monster.targetId) : null;
     if (target && (target.isDead || isSafeZone(Math.round(target.x), Math.round(target.y)))) target = null;
     if (target && (target.x - monster.homeX) ** 2 + (target.y - monster.homeY) ** 2 > 22 ** 2) target = null;

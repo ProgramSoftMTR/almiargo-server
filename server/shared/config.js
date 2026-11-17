@@ -10,8 +10,8 @@ export const SNAPSHOT_EVERY_TICKS = TICK_RATE / SNAPSHOT_RATE;
 export const INTERPOLATION_MS = 120;         // retardo de render (anti-jitter)
 
 export const TILE_SIZE = 32;
-export const MAP_WIDTH = 200;
-export const MAP_HEIGHT = 200;
+export const MAP_WIDTH = 280;
+export const MAP_HEIGHT = 280;
 export const WORLD_SEED = 1337;
 
 export const AOI_RADIUS = 20;                // radio de interés en tiles
@@ -318,6 +318,24 @@ export const MONSTERS = Object.freeze({
       { itemId: 'arrow', chance: 0.2, min: 3, max: 8 },
     ],
   },
+  crab: {
+    id: 'crab', name: 'Cangrejo', level: 2, maxHp: 45, atkMin: 4, atkMax: 7, defense: 2,
+    xp: 35, gold: [3, 9], aggro: 4, moveMs: 420, attackMs: 1100, color: 0xe07a5a, size: 0.9,
+    loot: [{ itemId: 'arrow', chance: 0.2, min: 2, max: 6 }],
+  },
+  starfish: {
+    id: 'starfish', name: 'Estrella de Mar', level: 3, maxHp: 55, atkMin: 5, atkMax: 8, defense: 1,
+    xp: 45, gold: [4, 10], aggro: 4, moveMs: 500, attackMs: 1200, color: 0xf2c94c, size: 0.95,
+    loot: [{ itemId: 'potion_hp', chance: 0.2, min: 1, max: 1 }],
+  },
+  sandcastle: {
+    id: 'sandcastle', name: 'Castillo de Arena Viviente', level: 4, maxHp: 85, atkMin: 7, atkMax: 12, defense: 4,
+    xp: 70, gold: [6, 16], aggro: 5, moveMs: 600, attackMs: 1300, color: 0xc9b27a, size: 1.1,
+    loot: [
+      { itemId: 'potion_hp', chance: 0.25, min: 1, max: 2 },
+      { itemId: 'arrow', chance: 0.25, min: 3, max: 10 },
+    ],
+  },
   rat: {
     id: 'rat', name: 'Rata Gigante', level: 2, maxHp: 40, atkMin: 3, atkMax: 6, defense: 1,
     xp: 30, gold: [2, 8], aggro: 5, moveMs: 520, attackMs: 1250, color: 0x9b8a72, size: 0.85,
@@ -392,6 +410,9 @@ export const MAP_ZONES = Object.freeze([
 export const SPAWNER_ZONES = Object.freeze([
   { id: 'slime_forest', name: 'Bosque de Slimes', startX: 60, startY: 60, width: 31, height: 31, mobType: 'slime', maxMobs: 16, respawnTime: 6000 },
   { id: 'goblin_camp', name: 'Campamento Goblin', startX: 140, startY: 140, width: 31, height: 31, mobType: 'goblin', maxMobs: 12, respawnTime: 8000 },
+  { id: 'beach_crab', name: 'Playa Cangrejos', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'crab', maxMobs: 14, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_starfish', name: 'Playa Estrellas', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'starfish', maxMobs: 12, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_sandcastle', name: 'Playa Castillos', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'sandcastle', maxMobs: 10, respawnTime: 8000, beachOnly: true },
 ]);
 
 export const BIOMES = MAP_ZONES;

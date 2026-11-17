@@ -71,6 +71,32 @@ export function createEntityTextures(scene) {
   makeTexture(scene, 'player_archer', 32, 36, (g) => drawHumanoid(g, archerBody, 0x6b4a2c, 'none', 0x2a2f3a, 0x4a3520, 0xe0b08a));
   makeTexture(scene, 'player_mage', 32, 36, (g) => drawHumanoid(g, mageBody, 0xd8d0b8, 'none', 0x2a2f3a, 0x4a3520, 0xe0b08a));
 
+  makeTexture(scene, 'monster_crab', 32, 24, (g) => {
+    g.fillStyle(0x8a3a2a, 1); g.fillEllipse(16, 16, 24, 12);
+    g.fillStyle(0xe07a5a, 1); g.fillEllipse(16, 14, 22, 10);
+    g.fillStyle(0x8a3a2a, 1); g.fillRect(2, 10, 6, 4); g.fillRect(24, 10, 6, 4);
+    g.fillStyle(0x1a1a1a, 1); g.fillRect(10, 12, 2, 2); g.fillRect(20, 12, 2, 2);
+  });
+  makeTexture(scene, 'monster_starfish', 32, 32, (g) => {
+    g.fillStyle(0xc9a030, 1);
+    g.beginPath();
+    for (let i = 0; i < 5; i += 1) {
+      const a = (i * Math.PI * 2) / 5 - Math.PI / 2;
+      const x = 16 + Math.cos(a) * 14;
+      const y = 16 + Math.sin(a) * 14;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+      const a2 = a + Math.PI / 5;
+      g.lineTo(16 + Math.cos(a2) * 6, 16 + Math.sin(a2) * 6);
+    }
+    g.closePath(); g.fill();
+    g.fillStyle(0x1a1a1a, 1); g.fillRect(14, 14, 2, 2); g.fillRect(18, 14, 2, 2);
+  });
+  makeTexture(scene, 'monster_sandcastle', 36, 34, (g) => {
+    g.fillStyle(0xb9a05a, 1); g.fillRect(6, 18, 24, 14);
+    g.fillStyle(0xc9b27a, 1); g.fillRect(10, 10, 8, 10); g.fillRect(20, 12, 8, 8);
+    g.fillStyle(0x8a7a4a, 1); g.fillRect(14, 6, 4, 6);
+    g.fillStyle(0x1a1a1a, 1); g.fillRect(14, 22, 4, 6);
+  });
   makeTexture(scene, 'monster_slime', 32, 28, (g) => {
     g.fillStyle(0x2e7a50, 1); g.fillEllipse(16, 20, 26, 13);
     g.fillStyle(0x58c98c, 1); g.fillEllipse(16, 17, 24, 16);

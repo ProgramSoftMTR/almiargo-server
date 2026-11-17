@@ -306,8 +306,8 @@ export function generateWorld(seed = WORLD_SEED) {
   for (const zone of SPAWN_ZONES) clearArea(zone.x, zone.y, 2);
 
   // Océano y playa en los bordes del mapa (intransitable el agua profunda).
-  const oceanW = 4;
-  const beachW = 7;
+  const oceanW = 8;
+  const beachW = 12;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const d = Math.min(x, y, width - 1 - x, height - 1 - y);

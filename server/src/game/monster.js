@@ -18,6 +18,8 @@ export class Monster {
     this.homeX = spawn.x;
     this.homeY = spawn.y;
     this.spawn = spawn;
+    this.spawnX = spawn.x;
+    this.spawnY = spawn.y;
     this.spawnerId = spawnerId;
     this.maxHp = def.maxHp;
     this.hp = def.maxHp;
@@ -53,6 +55,8 @@ export class Monster {
     this.homeX = sx;
     this.homeY = sy;
     this.spawn = { x: sx, y: sy };
+    this.spawnX = sx;
+    this.spawnY = sy;
     this.alive = true;
     this.targetId = null;
     this.patrolTarget = null;

@@ -827,24 +827,23 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // Tala de arboles: si se toca un tile de arbol, talar en lugar de mover.
+    // Tala de arboles: solo si el tile es arbol y NO es un tocón (stump).
     const treeTileX = Math.floor(wx);
     const treeTileY = Math.floor(wy);
-    if (tileAt(this.worldMap, treeTileX, treeTileY) === TILE.TREE) {
-      const key = `${treeTileX},${treeTileY}`;
-      if (this.stumpViews.has(key)) {
-        uiBus.emit('toast', { text: 'Este arbol ya fue talado', type: 'error' });
-        return;
-      }
+    const treeTile = tileAt(this.worldMap, treeTileX, treeTileY);
+    const isTreeTile = [TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD].includes(treeTile);
+    const stumpKey = `${treeTileX},${treeTileY}`;
+    if (isTreeTile && !this.stumpViews.has(stumpKey)) {
       const p = this.localPred;
       const dist = Math.hypot(treeTileX + 0.5 - p.x, treeTileY + 0.5 - p.y);
       if (dist <= 2.0) {
-        socket.send('chop_tree', { id: key });
+        socket.send('chop_tree', { id: stumpKey });
       } else {
         this.moveToInteract({ x: treeTileX, y: treeTileY }, { type: 'chop', x: treeTileX, y: treeTileY, range: 1.8 });
       }
       return;
     }
+    // Si es tocón, caer a movimiento normal (tile transitable).
 
     // Tap al suelo: mover y romper objetivo
     if (store.self?.targetId) {

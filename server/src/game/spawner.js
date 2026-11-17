@@ -12,7 +12,7 @@ const tileKey = (x, y) => `${Math.round(x)},${Math.round(y)}`;
  *  - respawnTime: tiempo en ms para reaparecer un mob
  */
 export class Spawner {
-  constructor({ id, zoneRect, mobType, maxMobs, respawnTime = 8000, world = null } = {}) {
+  constructor({ id, zoneRect, mobType, maxMobs, respawnTime = 8000, beachOnly = false, world = null } = {}) {
     this.id = id ?? `spawner_${mobType}_${Math.random().toString(36).slice(2, 8)}`;
     this.zoneRect = {
       startX: Number(zoneRect?.startX ?? 0),
@@ -23,6 +23,7 @@ export class Spawner {
     this.mobType = mobType;
     this.maxMobs = Math.max(1, Number(maxMobs ?? 1));
     this.respawnTime = Math.max(250, Number(respawnTime ?? 8000));
+    this.beachOnly = Boolean(beachOnly || zoneRect?.beachOnly);
     this.world = world;
     this.nextSpawnAt = 0;
     this.spawnedIds = new Set();
@@ -60,10 +61,20 @@ export class Spawner {
   /** Encuentra una baldosa transitable y libre dentro de la zona. */
   findSpawnTile(world) {
     const { x1, y1, x2, y2 } = this.bounds();
-    for (let attempt = 0; attempt < 80; attempt += 1) {
-      const x = x1 + Math.floor(Math.random() * (x2 - x1 + 1));
-      const y = y1 + Math.floor(Math.random() * (y2 - y1 + 1));
+    for (let attempt = 0; attempt < 200; attempt += 1) {
+      let x, y;
+      if (this.beachOnly) {
+        x = Math.floor(Math.random() * world.width);
+        y = Math.floor(Math.random() * world.height);
+      } else {
+        x = x1 + Math.floor(Math.random() * (x2 - x1 + 1));
+        y = y1 + Math.floor(Math.random() * (y2 - y1 + 1));
+      }
       if (!world.isInside(x, y)) continue;
+      const tile = world.map ? (world.map.tiles ? world.map.tiles[y * world.map.width + x] : null) : null;
+      // beachOnly: solo arena (SAND). Evitar que mobs normales spawneen en arena.
+      if (this.beachOnly && tile !== 6) continue;
+      if (!this.beachOnly && tile === 6) continue;
       if (!world.canWalk(x, y)) continue;
       if (world.blocked.has(tileKey(x, y))) continue;
       if (world.isTileOccupied(x, y)) continue;
@@ -132,6 +143,7 @@ export function createSpawnersFromZones(zones, world = null) {
       mobType,
       maxMobs: zone.maxMobs ?? zone.count ?? 5,
       respawnTime: zone.respawnTime ?? 8000,
+      beachOnly: zone.beachOnly ?? false,
       world,
     }));
   }
