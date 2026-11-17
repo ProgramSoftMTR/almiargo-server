@@ -3,6 +3,7 @@ import {
   MONSTERS,
   NPCS,
   SPAWN_ZONES,
+  SPAWNER_ZONES,
   SPAWN_POINT,
   WORLD_SEED,
   findSpawnTile,
@@ -11,6 +12,7 @@ import {
 } from '../../shared/index.js';
 import { Monster } from './monster.js';
 import { SpatialHash } from './spatialHash.js';
+import { Spawner, createSpawnersFromZones } from './spawner.js';
 
 const tileKey = (x, y) => `${Math.round(x)},${Math.round(y)}`;
 const DEFAULT_VIEW_HALF_W = 18;
@@ -21,7 +23,7 @@ const DEFAULT_VIEW_HALF_H = 11;
  * Las colisiones son estáticas (terreno + NPCs + puestos) para mantener el tick barato.
  */
 export class World {
-  constructor({ seed = WORLD_SEED } = {}) {
+  constructor({ seed = WORLD_SEED, spawners = null } = {}) {
     this.seed = seed;
     this.map = generateWorld(seed);
     this.width = this.map.width;
@@ -36,6 +38,23 @@ export class World {
     this.monsterCounter = 0;
     this.bagCounter = 0;
     this.spawnPoint = { ...SPAWN_POINT };
+    if (Array.isArray(spawners)) {
+      this.spawners = spawners;
+      for (const sp of this.spawners) sp.world = this;
+    } else {
+      // Spawners por defecto: zonas explícitas + SPAWN_ZONES legacy.
+      const zones = [...(SPAWNER_ZONES ?? []), ...(SPAWN_ZONES ?? []).map((z) => ({
+        id: `${z.monsterId}_${z.x}_${z.y}`,
+        startX: z.x - z.radius,
+        startY: z.y - z.radius,
+        width: z.radius * 2 + 1,
+        height: z.radius * 2 + 1,
+        mobType: z.monsterId,
+        maxMobs: z.count,
+        respawnTime: 8000,
+      }))];
+      this.spawners = createSpawnersFromZones(zones, this);
+    }
     // Índices espaciales: interés de snapshots y consultas de IA/comercio.
     this.entityIndex = new SpatialHash(8);
     this.bagIndex = new SpatialHash(8);
@@ -161,28 +180,22 @@ export class World {
   }
 
   spawnInitialMonsters(now) {
-    for (const zone of SPAWN_ZONES) {
-      const def = MONSTERS[zone.monsterId];
-      if (!def) continue;
-      const used = new Set();
-      for (let i = 0; i < zone.count; i += 1) {
-        let tile = findSpawnTile(this.map, zone.x, zone.y, zone.radius);
-        let guard = 0;
-        while ((used.has(tileKey(tile.x, tile.y)) || this.blocked.has(tileKey(tile.x, tile.y)) || this.isTileOccupied(tile.x, tile.y)) && guard < 50) {
-          tile = findSpawnTile(this.map, zone.x, zone.y, zone.radius);
-          guard += 1;
-        }
-        used.add(tileKey(tile.x, tile.y));
-        const monster = new Monster({
-          id: `m_${++this.monsterCounter}`,
-          defId: zone.monsterId,
-          spawn: tile,
-        });
-        monster.nextMoveAt = now + Math.random() * 1000;
-        this.addMonster(monster);
+    for (const spawner of this.spawners) {
+      spawner.nextSpawnAt = now;
+      for (let i = 0; i < spawner.maxMobs; i += 1) {
+        spawner.update(this, now);
       }
+      spawner.nextSpawnAt = now + spawner.respawnTime;
     }
     return this.monsters.size;
+  }
+
+  updateSpawners(now) {
+    let spawned = 0;
+    for (const spawner of this.spawners ?? []) {
+      spawned += spawner.update(this, now);
+    }
+    return spawned;
   }
 
   addBag(bag) {

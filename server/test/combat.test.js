@@ -57,14 +57,14 @@ test('validateAttack rechaza PvP en zona segura y acepta en zona PvP', () => {
   const target = newPlayer('Objetivo', 't1');
   const now = Date.now();
 
-  attacker.x = 40; attacker.y = 42;
-  target.x = 41; target.y = 42;
+  attacker.x = 100; attacker.y = 100;
+  target.x = 101; target.y = 100;
   const safe = validateAttack(game, attacker, target, now);
   assert.equal(safe.ok, false);
   assert.match(safe.error, /PvP deshabilitado/);
 
-  attacker.x = 10; attacker.y = 10;
-  target.x = 11; target.y = 10;
+  attacker.x = 30; attacker.y = 30;
+  target.x = 31; target.y = 30;
   const pvp = validateAttack(game, attacker, target, now);
   assert.equal(pvp.ok, true);
 });
@@ -74,8 +74,8 @@ test('validateAttack comprueba alcance y enfriamiento', () => {
   const attacker = newPlayer('Atacante', 'a2');
   const target = newPlayer('Objetivo', 't2');
   const now = Date.now();
-  attacker.x = 10; attacker.y = 10;
-  target.x = 20; target.y = 20;
+  attacker.x = 30; attacker.y = 30;
+  target.x = 50; target.y = 50;
   const far = validateAttack(game, attacker, target, now);
   assert.equal(far.ok, false);
   assert.match(far.error, /alcance/);

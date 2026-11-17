@@ -10,8 +10,8 @@ export const SNAPSHOT_EVERY_TICKS = TICK_RATE / SNAPSHOT_RATE;
 export const INTERPOLATION_MS = 120;         // retardo de render (anti-jitter)
 
 export const TILE_SIZE = 32;
-export const MAP_WIDTH = 80;
-export const MAP_HEIGHT = 80;
+export const MAP_WIDTH = 200;
+export const MAP_HEIGHT = 200;
 export const WORLD_SEED = 1337;
 
 export const AOI_RADIUS = 20;                // radio de interés en tiles
@@ -310,6 +310,14 @@ export const MONSTERS = Object.freeze({
     xp: 18, gold: [1, 5], aggro: 4, moveMs: 650, attackMs: 1400, color: 0x58c98c, size: 0.8,
     loot: [{ itemId: 'potion_hp', chance: 0.18, min: 1, max: 1 }],
   },
+  goblin: {
+    id: 'goblin', name: 'Goblin', level: 5, maxHp: 95, atkMin: 6, atkMax: 11, defense: 3,
+    xp: 60, gold: [5, 15], aggro: 5, moveMs: 500, attackMs: 1200, color: 0x7fae5a, size: 1.0,
+    loot: [
+      { itemId: 'potion_hp', chance: 0.22, min: 1, max: 2 },
+      { itemId: 'arrow', chance: 0.2, min: 3, max: 8 },
+    ],
+  },
   rat: {
     id: 'rat', name: 'Rata Gigante', level: 2, maxHp: 40, atkMin: 3, atkMax: 6, defense: 1,
     xp: 30, gold: [2, 8], aggro: 5, moveMs: 520, attackMs: 1250, color: 0x9b8a72, size: 0.85,
@@ -346,31 +354,47 @@ export const MONSTERS = Object.freeze({
 
 /** Puntos de spawn: centro + radio + cantidad. */
 export const SPAWN_ZONES = Object.freeze([
-  { monsterId: 'slime', x: 44, y: 57, radius: 5, count: 8 },
-  { monsterId: 'rat', x: 29, y: 23, radius: 4, count: 6 },
-  { monsterId: 'rat', x: 55, y: 24, radius: 3, count: 4 },
-  { monsterId: 'orc', x: 62, y: 39, radius: 5, count: 7 },
-  { monsterId: 'skeleton', x: 18, y: 15, radius: 4, count: 5 },
-  { monsterId: 'golem', x: 61, y: 61, radius: 3, count: 2 },
+  { monsterId: 'slime', x: 75, y: 75, radius: 8, count: 16 },
+  { monsterId: 'goblin', x: 160, y: 160, radius: 8, count: 12 },
+  { monsterId: 'rat', x: 125, y: 75, radius: 6, count: 8 },
+  { monsterId: 'orc', x: 140, y: 100, radius: 6, count: 8 },
+  { monsterId: 'skeleton', x: 40, y: 160, radius: 6, count: 6 },
+  { monsterId: 'golem', x: 180, y: 180, radius: 4, count: 3 },
 ]);
 
 export const NPCS = Object.freeze([
   {
-    id: 'npc_general', name: 'Mercader Baltazar', x: 36, y: 36, kind: 'shop',
+    id: 'npc_general', name: 'Mercader Baltazar', x: 96, y: 96, kind: 'shop',
     shop: ['potion_hp', 'potion_mp', 'arrow', 'axe', 'pickaxe', 'sword_wood', 'bow_wood', 'staff_wood', 'armor_leather', 'helmet_leather'],
   },
   {
-    id: 'npc_weapons', name: 'Herrera Kaia', x: 44, y: 36, kind: 'shop',
+    id: 'npc_weapons', name: 'Herrera Kaia', x: 104, y: 96, kind: 'shop',
     shop: ['sword_iron', 'bow_oak', 'staff_emerald', 'armor_iron', 'helmet_iron', 'shield_wood', 'ring_str', 'amulet_mana'],
   },
 ]);
 
-export const SPAWN_POINT = Object.freeze({ x: 40, y: 42 });
+export const SPAWN_POINT = Object.freeze({ x: 100, y: 100 });
 
 export const ZONES = Object.freeze({
-  safe: { x1: 30, y1: 30, x2: 50, y2: 50 },
-  pvp: { x1: 6, y1: 6, x2: 24, y2: 24 },
+  safe: { x1: 90, y1: 90, x2: 110, y2: 110 },
+  pvp: { x1: 20, y1: 20, x2: 40, y2: 40 },
+  forest: { x1: 60, y1: 60, x2: 90, y2: 90 },
+  goblin: { x1: 140, y1: 140, x2: 170, y2: 170 },
 });
+
+// Zonas expresadas como rectángulos (startX, startY, width, height) para spawners/biomas.
+export const MAP_ZONES = Object.freeze([
+  { id: 'city', name: 'Ciudad Segura', startX: 90, startY: 90, width: 21, height: 21, safe: true, level: 0 },
+  { id: 'forest', name: 'Bosque de Slimes', startX: 60, startY: 60, width: 31, height: 31, mobType: 'slime', minLevel: 1 },
+  { id: 'goblin', name: 'Campamento Goblin', startX: 140, startY: 140, width: 31, height: 31, mobType: 'goblin', minLevel: 5 },
+]);
+
+export const SPAWNER_ZONES = Object.freeze([
+  { id: 'slime_forest', name: 'Bosque de Slimes', startX: 60, startY: 60, width: 31, height: 31, mobType: 'slime', maxMobs: 16, respawnTime: 6000 },
+  { id: 'goblin_camp', name: 'Campamento Goblin', startX: 140, startY: 140, width: 31, height: 31, mobType: 'goblin', maxMobs: 12, respawnTime: 8000 },
+]);
+
+export const BIOMES = MAP_ZONES;
 
 export function isInZone(zone, x, y) {
   return x >= zone.x1 && x <= zone.x2 && y >= zone.y1 && y <= zone.y2;

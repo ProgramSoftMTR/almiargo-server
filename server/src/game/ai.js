@@ -19,6 +19,8 @@ export function updateMonsters(game, now) {
   reservedTiles.clear();
   for (const monster of game.world.monsters.values()) {
     if (!monster.alive) {
+      // Los mobs gestionados por spawner se regeneran vía el sistema de spawners.
+      if (monster.spawnerId) continue;
       if (now >= monster.respawnAt) {
         monster.reset(now, monster.spawn, game.world);
         game.world.refreshEntity?.(monster);

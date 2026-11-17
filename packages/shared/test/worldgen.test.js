@@ -43,8 +43,8 @@ test('el spawn y sus alrededores son transitables', () => {
 });
 
 test('las zonas segura y PvP se detectan por coordenadas', () => {
-  assert.equal(isSafeZone(40, 42), true);
+  assert.equal(isSafeZone(100, 100), true);
   assert.equal(isSafeZone(5, 5), false);
-  assert.equal(isPvPZone(10, 10), true);
-  assert.equal(isPvPZone(40, 42), false);
+  assert.equal(isPvPZone(30, 30), true);
+  assert.equal(isPvPZone(100, 100), false);
 });

@@ -184,7 +184,7 @@ try {
   c1.send({ type: 'stop' });
 
   // Tienda AFK: abrir y cerrar en la ciudad.
-  server.world.moveEntity(player, 40, 42);
+  server.world.moveEntity(player, 100, 100);
   const potion = player.inventory.find((slot) => slot?.itemId === 'potion_hp');
   assert.ok(potion, 'debe tener una poción para vender');
   c1.queue.length = 0;

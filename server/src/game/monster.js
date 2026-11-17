@@ -4,7 +4,7 @@ let monsterSeq = 0;
 
 /** Monstruo autoritativo. Mantiene estado de IA, respawn y contribución de daño. */
 export class Monster {
-  constructor({ id, defId, spawn }) {
+  constructor({ id, defId, spawn, spawnerId = null }) {
     const def = MONSTERS[defId];
     if (!def) throw new Error(`Monstruo desconocido: ${defId}`);
     this.id = id ?? `m_${(monsterSeq += 1)}`;
@@ -18,6 +18,7 @@ export class Monster {
     this.homeX = spawn.x;
     this.homeY = spawn.y;
     this.spawn = spawn;
+    this.spawnerId = spawnerId;
     this.maxHp = def.maxHp;
     this.hp = def.maxHp;
     this.dir = 'down';

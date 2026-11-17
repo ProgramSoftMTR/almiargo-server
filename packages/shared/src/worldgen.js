@@ -95,7 +95,7 @@ export function generateWorld(seed = WORLD_SEED) {
   }
 
   // Lago al este.
-  const lake = { x: 68, y: 20, rx: 6, ry: 4 };
+  const lake = { x: 170, y: 40, rx: 8, ry: 6 };
   for (let y = lake.y - lake.ry - 2; y <= lake.y + lake.ry + 2; y += 1) {
     for (let x = lake.x - lake.rx - 2; x <= lake.x + lake.rx + 2; x += 1) {
       const d = ((x - lake.x) ** 2) / lake.rx ** 2 + ((y - lake.y) ** 2) / lake.ry ** 2;
@@ -152,15 +152,15 @@ export function generateWorld(seed = WORLD_SEED) {
     clear(x2, y2);
   };
 
-  carve(40, 50, 40, 26, 3);       // eje norte-sur dentro de la ciudad
-  carve(30, 40, 50, 40, 3);       // eje este-oeste
-  carve(40, 50, 44, 57, 2);       // salida sur -> slimes
-  carve(44, 57, 61, 61, 2);       // slimes -> golem
-  carve(40, 30, 29, 23, 2);       // salida norte -> ratas
-  carve(29, 23, 55, 24, 2);
-  carve(50, 40, 62, 40, 2);       // salida este -> orcos
-  carve(30, 40, 18, 34, 2);       // salida oeste -> arena
-  carve(18, 34, 18, 15, 2);
+  carve(100, 110, 100, 90, 3);    // eje norte-sur dentro de la ciudad
+  carve(90, 100, 110, 100, 3);    // eje este-oeste
+  carve(100, 110, 75, 75, 2);     // salida suroeste -> slimes
+  carve(75, 75, 160, 160, 2);     // slimes -> goblins
+  carve(100, 90, 125, 75, 2);     // salida noreste -> ratas
+  carve(125, 75, 140, 100, 2);
+  carve(110, 100, 140, 100, 2);   // salida este -> orcos
+  carve(90, 100, 40, 40, 2);      // salida oeste -> arena
+  carve(40, 40, 40, 20, 2);
 
   // Muros de la ciudad con 4 puertas.
   for (let x = ZONES.safe.x1; x <= ZONES.safe.x2; x += 1) {
@@ -171,25 +171,25 @@ export function generateWorld(seed = WORLD_SEED) {
     set(ZONES.safe.x1, y, TILE.WALL);
     set(ZONES.safe.x2, y, TILE.WALL);
   }
-  for (let x = 39; x <= 41; x += 1) {
+  for (let x = 99; x <= 101; x += 1) {
     set(x, ZONES.safe.y1, TILE.STONE);
     set(x, ZONES.safe.y2, TILE.STONE);
   }
-  for (let y = 39; y <= 41; y += 1) {
+  for (let y = 99; y <= 101; y += 1) {
     set(ZONES.safe.x1, y, TILE.STONE);
     set(ZONES.safe.x2, y, TILE.STONE);
   }
 
   // Fuente central y pequeños edificios decorativos (bloqueados).
-  for (let y = 35; y <= 36; y += 1) {
-    for (let x = 39; x <= 41; x += 1) set(x, y, TILE.WATER);
+  for (let y = 95; y <= 96; y += 1) {
+    for (let x = 99; x <= 101; x += 1) set(x, y, TILE.WATER);
   }
-  for (let y = 33; y <= 34; y += 1) {
-    for (let x = 32; x <= 34; x += 1) set(x, y, TILE.WALL);
-    for (let x = 46; x <= 48; x += 1) set(x, y, TILE.WALL);
+  for (let y = 93; y <= 94; y += 1) {
+    for (let x = 92; x <= 94; x += 1) set(x, y, TILE.WALL);
+    for (let x = 106; x <= 108; x += 1) set(x, y, TILE.WALL);
   }
-  set(33, 35, TILE.STONE);
-  set(47, 35, TILE.STONE);
+  set(93, 95, TILE.STONE);
+  set(107, 95, TILE.STONE);
 
   // Limpiar puntos críticos (spawn, NPCs, centros de spawn de monstruos).
   const clearArea = (cx, cy, r) => {
@@ -215,13 +215,13 @@ export function generateWorld(seed = WORLD_SEED) {
   }
 
   // Reabrir caminos por si algún árbol cayó sobre ellos.
-  carve(40, 50, 40, 26, 3);
-  carve(30, 40, 50, 40, 3);
-  carve(40, 50, 44, 57, 2);
-  carve(44, 57, 61, 61, 2);
-  carve(40, 30, 29, 23, 2);
-  carve(30, 40, 18, 34, 2);
-  carve(18, 34, 18, 15, 2);
+  carve(100, 110, 100, 90, 3);
+  carve(90, 100, 110, 100, 3);
+  carve(100, 110, 75, 75, 2);
+  carve(75, 75, 160, 160, 2);
+  carve(100, 90, 125, 75, 2);
+  carve(90, 100, 40, 40, 2);
+  carve(40, 40, 40, 20, 2);
 
   return { width, height, seed, tiles };
 }

@@ -272,7 +272,8 @@ export function killMonster(game, monster, source, now) {
   monster.alive = false;
   monster.hp = 0;
   monster.deathAt = now;
-  monster.respawnAt = now + 7000 + randInt(0, 6000);
+  // Los mobs gestionados por spawner no usan el respawn clásico de IA.
+  monster.respawnAt = monster.spawnerId ? Infinity : now + 7000 + randInt(0, 6000);
   const topId = monster.topDamager() ?? (source?.kind === 0 ? source.id : null);
 
   const partyMembers = (source?.partyId)

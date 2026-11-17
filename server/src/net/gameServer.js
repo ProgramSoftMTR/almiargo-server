@@ -1258,6 +1258,7 @@ export class GameServer {
     this.lastTickAt = now;
     this.tickCount += 1;
     try {
+      this.world.updateSpawners?.(now);
       updateMonsters(this, now);
 
       for (const player of this.world.players.values()) {

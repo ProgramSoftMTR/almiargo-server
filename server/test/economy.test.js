@@ -135,8 +135,8 @@ test('openStall exige estar en la ciudad y abre con ítems de la mochila', async
   assert.equal(outside.ok, false);
   assert.match(outside.error, /ciudad/);
 
-  seller.x = 40;
-  seller.y = 42;
+  seller.x = 100;
+  seller.y = 100;
   const opened = await openStall(game, seller, [{ uid: bow.uid, price: 100 }]);
   assert.equal(opened.ok, true);
   assert.equal(seller.stall.items.length, 1);
@@ -164,14 +164,14 @@ test('comprar un listado acredita al vendedor offline y entrega el ítem', async
   const buyer = newPlayer('Comprador', 'b3');
   const bow = seller.inventory.find((s) => s?.itemId === 'bow_wood');
 
-  seller.x = 40;
-  seller.y = 42;
+  seller.x = 100;
+  seller.y = 100;
   const opened = await openStall(game, seller, [{ uid: bow.uid, price: 100 }]);
   assert.equal(opened.ok, true);
 
   buyer.gold = 500;
-  buyer.x = 40;
-  buyer.y = 42;
+  buyer.x = 100;
+  buyer.y = 100;
   const beforeBow = buyer.countItem('bow_wood');
   const bought = await buyStallListing(game, buyer, opened.stall.id, bow.uid);
 
@@ -194,8 +194,8 @@ test('no se puede comprar en la propia tienda ni sin oro', async () => {
   const buyer = newPlayer('Comprador', 'b4');
   const bow = seller.inventory.find((s) => s?.itemId === 'bow_wood');
 
-  seller.x = 40;
-  seller.y = 42;
+  seller.x = 100;
+  seller.y = 100;
   const opened = await openStall(game, seller, [{ uid: bow.uid, price: 100 }]);
 
   const own = await buyStallListing(game, seller, opened.stall.id, bow.uid);
@@ -203,8 +203,8 @@ test('no se puede comprar en la propia tienda ni sin oro', async () => {
   assert.match(own.error, /propia/);
 
   buyer.gold = 10;
-  buyer.x = 40;
-  buyer.y = 42;
+  buyer.x = 100;
+  buyer.y = 100;
   const poor = await buyStallListing(game, buyer, opened.stall.id, bow.uid);
   assert.equal(poor.ok, false);
   assert.match(poor.error, /insuficiente/);
@@ -217,8 +217,8 @@ test('closeStall devuelve todos los ítems a la mochila', async () => {
   const staff = seller.inventory.find((s) => s?.itemId === 'staff_wood');
   const helmet = seller.inventory.find((s) => s?.itemId === 'helmet_leather');
 
-  seller.x = 40;
-  seller.y = 42;
+  seller.x = 100;
+  seller.y = 100;
   const opened = await openStall(game, seller, [
     { uid: staff.uid, price: 50 },
     { uid: helmet.uid, price: 80 },
