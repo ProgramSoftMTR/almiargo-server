@@ -17,33 +17,43 @@ import {
  */
 
 export const TILE = Object.freeze({
-  GRASS: 0,       // Pradera (Grassland)
+  GRASS: 0,        // Pradera (Grassland)
   DIRT: 1,
   STONE: 2,
   WATER: 3,
-  TREE: 4,
+  TREE: 4,         // Árbol normal
   WALL: 5,
-  SAND: 6,
+  SAND: 6,         // Playa/Arena
   FLOWERS: 7,
-  SWAMP: 8,       // Pantano
-  MOUNTAIN: 9,    // Montaña rocosa
-  SNOW: 10,       // Nevado
-  FOREST: 11,     // Bosque
+  SWAMP: 8,        // Pantano
+  MOUNTAIN: 9,     // Montaña rocosa
+  SNOW: 10,        // Nevado
+  FOREST: 11,      // Bosque (suelo)
+  TREE_PALM: 12,   // Palmera
+  TREE_PINE: 13,   // Pino nevado
+  TREE_ACACIA: 14, // Acacia
+  TREE_DEAD: 15,    // Árbol muerto/manglar
+  SAVANNA: 16,     // Sabana
 });
 
 export const TILE_COLORS = Object.freeze({
   0: [0x3d6b3a, 0x356236, 0x447540],   // grassland
   1: [0x6a5438, 0x5f4c33, 0x755d3d],
-  2: [0x6b6862, 0x625f5a, 0x74716a],   // stone/mountain base
+  2: [0x6b6862, 0x625f5a, 0x74716a],
   3: [0x2b5680, 0x2f5d8a, 0x274c73],
   4: [0x1e4427, 0x24502c, 0x193a21],
   5: [0x4b4540, 0x554e48, 0x403b37],
-  6: [0x9b8657, 0x8f7b4f, 0xa6905f],
+  6: [0xc9b27a, 0xbea46c, 0xd4be86],   // beach
   7: [0x3d6b3a, 0x447540, 0x3a6537],
   8: [0x2f4a3a, 0x2a4234, 0x35523f],   // swamp
   9: [0x5a5a5a, 0x505050, 0x646464],   // mountain
   10: [0xdfe7f0, 0xd2dbe6, 0xe8eef5],  // snow
-  11: [0x2a4a2a, 0x254325, 0x305530],  // forest
+  11: [0x2a4a2a, 0x254325, 0x305530],  // forest floor
+  12: [0x1e4427, 0x24502c, 0x193a21],  // palm
+  13: [0x1a3a24, 0x20442b, 0x163320],  // pine
+  14: [0x3a5a2a, 0x335224, 0x426330],  // acacia
+  15: [0x3a322a, 0x332c25, 0x42382f],  // dead tree
+  16: [0xb9a05a, 0xaf9450, 0xc4aa64],  // savanna
 });
 
 export function tileAt(world, x, y) {
@@ -52,7 +62,9 @@ export function tileAt(world, x, y) {
 }
 
 export function isWalkableTile(tile) {
-  return tile !== TILE.WATER && tile !== TILE.TREE && tile !== TILE.WALL;
+  return tile !== TILE.WATER && tile !== TILE.TREE && tile !== TILE.TREE_PALM
+    && tile !== TILE.TREE_PINE && tile !== TILE.TREE_ACACIA && tile !== TILE.TREE_DEAD
+    && tile !== TILE.WALL;
 }
 
 export function isWalkable(world, x, y) {
@@ -78,50 +90,64 @@ function mulberry32(a) {
   };
 }
 
-function makeBiomeNoise(seed) {
-  const rng = mulberry32(seed ^ 0x9e3779b9);
-  const gridW = 48;
-  const gridH = 48;
-  const grid = new Float32Array(gridW * gridH);
-  for (let i = 0; i < grid.length; i += 1) grid[i] = rng();
-  const sample = (gx, gy) => grid[((gx % gridW + gridW) % gridW) + (((gy % gridH + gridH) % gridH) * gridW)];
-  const smooth = (t) => t * t * (3 - 2 * t);
-  const noise = (x, y) => {
-    const ix = Math.floor(x);
-    const iy = Math.floor(y);
-    const fx = x - ix;
-    const fy = y - iy;
-    const ux = smooth(fx);
-    const uy = smooth(fy);
-    const a = sample(ix, iy);
-    const b = sample(ix + 1, iy);
-    const c = sample(ix, iy + 1);
-    const d = sample(ix + 1, iy + 1);
-    return (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d * ux) * uy;
+function makePerlin(seed) {
+  const perm = new Uint8Array(256);
+  const rng = mulberry32(seed);
+  for (let i = 0; i < 256; i += 1) perm[i] = i;
+  for (let i = 255; i > 0; i -= 1) {
+    const j = Math.floor(rng() * (i + 1));
+    const tmp = perm[i]; perm[i] = perm[j]; perm[j] = tmp;
+  }
+  const p = new Uint8Array(512);
+  for (let i = 0; i < 512; i += 1) p[i] = perm[i & 255];
+  const fade = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+  const lerp = (a, b, t) => a + t * (b - a);
+  const grad = (hash, x, y) => {
+    const h = hash & 3;
+    const u = h < 2 ? x : y;
+    const v = h < 2 ? y : x;
+    return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
   };
-  const fbm = (x, y, freq, octaves) => {
-    let value = 0;
-    let amp = 1;
-    let f = freq;
-    let max = 0;
-    for (let i = 0; i < octaves; i += 1) {
-      value += noise(x * f, y * f) * amp;
-      max += amp;
-      amp *= 0.5;
-      f *= 2;
-    }
-    return value / max;
+  return function perlin(x, y) {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const xf = x - Math.floor(x);
+    const yf = y - Math.floor(y);
+    const u = fade(xf);
+    const v = fade(yf);
+    const aa = p[p[X] + Y];
+    const ab = p[p[X] + Y + 1];
+    const ba = p[p[X + 1] + Y];
+    const bb = p[p[X + 1] + Y + 1];
+    const x1 = lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u);
+    const x2 = lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u);
+    return lerp(x1, x2, v);
   };
-  return { fbm };
 }
 
-function biomeTile(noise, x, y) {
-  const e = noise.fbm(x, y, 0.018, 4);
-  const m = noise.fbm(x + 1000, y + 1000, 0.022, 3);
-  const t = noise.fbm(x + 2000, y + 2000, 0.012, 3);
-  if (e < 0.34) return TILE.SWAMP;
-  if (e > 0.72) return t < 0.45 ? TILE.SNOW : TILE.MOUNTAIN;
-  if (m > 0.58) return TILE.FOREST;
+function fbm(perlin, x, y, octaves, persistence, scale) {
+  let total = 0;
+  let amp = 1;
+  let freq = scale;
+  let max = 0;
+  for (let i = 0; i < octaves; i += 1) {
+    total += perlin(x * freq, y * freq) * amp;
+    max += amp;
+    amp *= persistence;
+    freq *= 2;
+  }
+  return (total / max + 1) / 2; // 0..1
+}
+
+function biomeTile(pe, pm, pt, x, y) {
+  const e = fbm(pe, x, y, 6, 0.5, 0.006);
+  const m = fbm(pm, x, y, 4, 0.5, 0.01);
+  const t = fbm(pt, x, y, 4, 0.5, 0.008);
+  if (e < 0.30) return TILE.WATER;
+  if (e < 0.34) return TILE.SAND;      // playa
+  if (e > 0.78) return t < 0.45 ? TILE.SNOW : TILE.MOUNTAIN;
+  if (m > 0.62) return (t < 0.45) ? TILE.SWAMP : TILE.FOREST;
+  if (m < 0.32 && t > 0.55) return TILE.SAVANNA;
   return TILE.GRASS;
 }
 
@@ -130,11 +156,31 @@ export function generateWorld(seed = WORLD_SEED) {
   const height = MAP_HEIGHT;
   const tiles = new Uint8Array(width * height).fill(TILE.GRASS);
 
-  // Biomas procedurales (ruido de valor suavizado) para un mapa masivo variado.
-  const biomeNoise = makeBiomeNoise(seed);
+  // Biomas organicos (Perlin multi-octava) para un mapa masivo variado.
+  const perlinElev = makePerlin(seed);
+  const perlinMoist = makePerlin(seed + 101);
+  const perlinTemp = makePerlin(seed + 202);
+  const perlinDensity = makePerlin(seed + 303);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      tiles[y * width + x] = biomeTile(biomeNoise, x, y, width, height);
+      tiles[y * width + x] = biomeTile(perlinElev, perlinMoist, perlinTemp, x, y);
+    }
+  }
+
+  // Segunda capa: follaje/árboles en clusters por bioma.
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const tile = tiles[y * width + x];
+      if (tile === TILE.WATER || tile === TILE.SAND || tile === TILE.MOUNTAIN || tile === TILE.WALL) continue;
+      const d = (perlinDensity(x * 0.05, y * 0.05) + 1) / 2;
+      let treeTile = null;
+      if (tile === TILE.FOREST && d > 0.42) treeTile = TILE.TREE;
+      else if (tile === TILE.SNOW && d > 0.55) treeTile = TILE.TREE_PINE;
+      else if (tile === TILE.SAND && d > 0.78) treeTile = TILE.TREE_PALM;
+      else if (tile === TILE.SAVANNA && d > 0.62) treeTile = TILE.TREE_ACACIA;
+      else if (tile === TILE.SWAMP && d > 0.5) treeTile = TILE.TREE_DEAD;
+      else if (tile === TILE.GRASS && d > 0.72) treeTile = TILE.TREE;
+      if (treeTile) tiles[y * width + x] = treeTile;
     }
   }
   const rng = mulberry32(seed);

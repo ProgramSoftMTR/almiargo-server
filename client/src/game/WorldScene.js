@@ -294,7 +294,7 @@ export class WorldScene extends Phaser.Scene {
       this.path = [];
       this.pending = null;
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
-    } else if (dist > 1.0) {
+    } else if (dist > 3.0) {
       // Desincronizacion grande: teleport instantaneo.
       this.localPred = { x: sx, y: sy };
       this.localVisual = { x: sx, y: sy };

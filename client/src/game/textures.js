@@ -278,6 +278,57 @@ export function createWorldTexture(scene, world) {
           const by = py + 4 + ((h * 43 + i * 13) % 20);
           ctx.fillRect(bx, by, 4, 3);
         }
+      } else if (tile === TILE.TREE_PALM) {
+        ctx.fillStyle = '#c9b27a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = '#4a3220';
+        ctx.fillRect(px + 14, py + 10, 4, 16);
+        ctx.fillStyle = '#2a6a3a';
+        ctx.beginPath();
+        ctx.arc(px + 16, py + 8, 12, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (tile === TILE.TREE_PINE) {
+        ctx.fillStyle = '#dfe7f0';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = '#2a4020';
+        ctx.beginPath();
+        ctx.moveTo(px + 16, py + 2);
+        ctx.lineTo(px + 28, py + 28);
+        ctx.lineTo(px + 4, py + 28);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#4a3220';
+        ctx.fillRect(px + 14, py + 24, 4, 8);
+      } else if (tile === TILE.TREE_ACACIA) {
+        ctx.fillStyle = '#b9a05a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = '#5a4020';
+        ctx.fillRect(px + 14, py + 12, 4, 14);
+        ctx.fillStyle = '#3a6a2a';
+        ctx.beginPath();
+        ctx.ellipse(px + 16, py + 10, 13, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (tile === TILE.TREE_DEAD) {
+        ctx.fillStyle = '#2f4a3a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.strokeStyle = '#3a322a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 16, py + 28);
+        ctx.lineTo(px + 16, py + 8);
+        ctx.lineTo(px + 10, py + 4);
+        ctx.moveTo(px + 16, py + 14);
+        ctx.lineTo(px + 22, py + 10);
+        ctx.stroke();
+      } else if (tile === TILE.SAVANNA) {
+        ctx.fillStyle = '#b9a05a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.fillStyle = 'rgba(120,100,40,.25)';
+        for (let i = 0; i < 5; i += 1) {
+          const bx = px + ((h * 73 + i * 17) % TILE_SIZE);
+          const by = py + ((h * 41 + i * 23) % TILE_SIZE);
+          ctx.fillRect(bx, by, 3, 2);
+        }
       } else if (tile === TILE.TREE) {
         // base de hierba
         ctx.fillStyle = '#2f5730';

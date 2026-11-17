@@ -9,6 +9,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-11 12:29:12 build actualizacion servidor render y nuevo cliente apk
 // deploy trigger: 2026-11-17 14:00:00 feat expansion mapa gigante y sistema spawners por zonas
 // deploy trigger: 2026-11-17 16:00:00 perf AoI biomas y optimizacion red
+// deploy trigger: 2026-11-17 18:00:00 feat lerp biomas organicos y follaje denso
 
 const store = await createStore();
 const game = new GameServer({ store, config });
