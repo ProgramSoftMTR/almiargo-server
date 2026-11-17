@@ -324,6 +324,13 @@ export class WorldScene extends Phaser.Scene {
       }
     }
     for (const stall of store.stalls.values()) block(Math.round(stall.x), Math.round(stall.y));
+    // Los tocones (árboles talados) no tienen colisión.
+    for (const key of this.stumpViews.keys()) {
+      const [sx, sy] = key.split(',').map((v) => Number.parseInt(v, 10));
+      if (Number.isInteger(sx) && Number.isInteger(sy) && sx >= 0 && sy >= 0 && sx < nav.width && sy < nav.height) {
+        nav.tiles[sy * nav.width + sx] = 0;
+      }
+    }
     this.navWorld = nav;
   }
 
@@ -852,7 +859,7 @@ export class WorldScene extends Phaser.Scene {
     const path = findPath(this.navWorld, Math.round(p.x), Math.round(p.y), tile.x, tile.y, 5000);
     if (!path.length) {
       if (tile.x === Math.round(p.x) && tile.y === Math.round(p.y)) return;
-      uiBus.emit('toast', { text: 'Sin camino hacia ese punto', type: 'error' });
+      // Silenciado: no mostrar toast redundante de ruta.
       return;
     }
     this.path = path;
@@ -931,6 +938,7 @@ export class WorldScene extends Phaser.Scene {
     const key = `${x},${y}`;
     if (msg.state === 'stump') this.addStump(x, y, key);
     else this.removeStump(key);
+    this.rebuildNav();
   }
 
   addStump(x, y, key) {

@@ -2,18 +2,17 @@ import { TILE, tileAt } from '../../shared/index.js';
 
 /**
  * Estado en memoria de los recursos recolectables (árboles).
- *
- * - NO se persiste en Firestore ni en disco: si el servidor se reinicia,
- *   todos los árboles vuelven a estar en estado 'alive'.
- * - Cada árbol talado se marca como 'stump' y programa un temporizador
- *   aleatorio de reaparición (120–180 s).
  */
 const MIN_MS = 120000;
 const MAX_MS = 180000;
+const TREE_TILES = new Set([
+  TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD,
+]);
 
 export class ResourceManager {
   constructor({ world, map = null, minMs = MIN_MS, maxMs = MAX_MS, onRegrow = null } = {}) {
     this.map = map ?? world?.map ?? world ?? null;
+    this.world = world ?? null;
     this.minMs = minMs;
     this.maxMs = maxMs;
     this.onRegrow = onRegrow;
@@ -25,14 +24,23 @@ export class ResourceManager {
     return `${Math.round(x)},${Math.round(y)}`;
   }
 
+  isTreeTile(tile) {
+    return TREE_TILES.has(tile);
+  }
+
   isTree(x, y) {
     if (!this.map || !Number.isInteger(x) || !Number.isInteger(y)) return false;
     if (x < 0 || y < 0 || x >= this.map.width || y >= this.map.height) return false;
     try {
-      return tileAt(this.map, x, y) === TILE.TREE;
+      return this.isTreeTile(tileAt(this.map, x, y));
     } catch {
       return false;
     }
+  }
+
+  isStump(x, y) {
+    const node = this.trees.get(ResourceManager.key(x, y));
+    return !!node && node.alive === false;
   }
 
   stumps() {
@@ -48,10 +56,6 @@ export class ResourceManager {
     return !node || node.alive === true;
   }
 
-  /**
-   * Intenta talar. Devuelve { delay } si se taló, o null si no era posible
-   * (ya talado o no es árbol). El llamador debe validar distancia/hacha/etc.
-   */
   chop(x, y) {
     if (!this.isTree(x, y)) return null;
     const key = ResourceManager.key(x, y);
@@ -61,20 +65,30 @@ export class ResourceManager {
     node.alive = false;
     const delay = Math.floor(Math.random() * (this.maxMs - this.minMs + 1)) + this.minMs;
     node.respawnAt = Date.now() + delay;
-    node.timer = setTimeout(() => {
+
+    const tryRegrow = () => {
+      // Pausa/reinicia si hay un jugador parado sobre el tocón.
+      const occupied = this.world?.players
+        ? [...this.world.players.values()].some((p) => !p.isDead && Math.round(p.x) === x && Math.round(p.y) === y)
+        : false;
+      if (occupied) {
+        node.timer = setTimeout(tryRegrow, 5000);
+        node.timer.unref?.();
+        return;
+      }
       node.alive = true;
       node.respawnAt = 0;
       node.timer = null;
-      // Estado por defecto = alive: limpiamos la entrada para no acumular memoria.
       this.trees.delete(key);
       if (typeof this.onRegrow === 'function') this.onRegrow(x, y);
-    }, delay);
+    };
+
+    node.timer = setTimeout(tryRegrow, delay);
     node.timer.unref?.();
     this.trees.set(key, node);
     return { delay };
   }
 
-  /** Limpia temporizadores (usar en stop()). */
   clear() {
     for (const node of this.trees.values()) {
       if (node.timer) clearTimeout(node.timer);

@@ -203,15 +203,7 @@ export function generateWorld(seed = WORLD_SEED) {
     }
   }
 
-  // Lago al este.
-  const lake = { x: 170, y: 40, rx: 8, ry: 6 };
-  for (let y = lake.y - lake.ry - 2; y <= lake.y + lake.ry + 2; y += 1) {
-    for (let x = lake.x - lake.rx - 2; x <= lake.x + lake.rx + 2; x += 1) {
-      const d = ((x - lake.x) ** 2) / lake.rx ** 2 + ((y - lake.y) ** 2) / lake.ry ** 2;
-      if (d <= 1) set(x, y, TILE.WATER);
-      else if (d <= 1.5) set(x, y, TILE.SAND);
-    }
-  }
+  // Sin lagos cerrados: el agua solo aparece como océano en los bordes.
 
   // Arena PvP (noroeste) y ciudad (centro).
   for (let y = ZONES.pvp.y1; y <= ZONES.pvp.y2; y += 1) {
@@ -313,14 +305,15 @@ export function generateWorld(seed = WORLD_SEED) {
   for (const npc of NPCS) clearArea(npc.x, npc.y, 1);
   for (const zone of SPAWN_ZONES) clearArea(zone.x, zone.y, 2);
 
-  // Borde del mundo intransitable.
-  for (let x = 0; x < width; x += 1) {
-    set(x, 0, TILE.TREE);
-    set(x, height - 1, TILE.TREE);
-  }
+  // Océano y playa en los bordes del mapa (intransitable el agua profunda).
+  const oceanW = 4;
+  const beachW = 7;
   for (let y = 0; y < height; y += 1) {
-    set(0, y, TILE.TREE);
-    set(width - 1, y, TILE.TREE);
+    for (let x = 0; x < width; x += 1) {
+      const d = Math.min(x, y, width - 1 - x, height - 1 - y);
+      if (d < oceanW) set(x, y, TILE.WATER);
+      else if (d < oceanW + beachW) set(x, y, TILE.SAND);
+    }
   }
 
   // Reabrir caminos por si algún árbol cayó sobre ellos.

@@ -374,9 +374,13 @@ function startGame() {
 // ── Avisos de juego ───────────────────────────────────────────
 store.on('game-event', (msg) => {
   switch (msg.event) {
-    case 'error':
-      hud.toast(msg.message || 'Acción rechazada', 'error');
+    case 'error': {
+      const m = String(msg.message || '');
+      // Silencia avisos redundantes de cooldown (ya visibles en los botones).
+      if (/enfriamiento/i.test(m)) break;
+      hud.toast(m || 'Acción rechazada', 'error');
       break;
+    }
     case 'notice':
       hud.toast(msg.text || '', '');
       break;

@@ -91,6 +91,8 @@ export class World {
     const ty = Math.round(y);
     if (!this.isInside(tx, ty)) return false;
     if (this.blocked.has(tileKey(tx, ty))) return false;
+    // Un tocón (árbol talado) no tiene colisión.
+    if (this.resources?.isStump?.(tx, ty)) return true;
     return isWalkable(this.map, tx, ty);
   }
 

@@ -10,6 +10,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-17 14:00:00 feat expansion mapa gigante y sistema spawners por zonas
 // deploy trigger: 2026-11-17 16:00:00 perf AoI biomas y optimizacion red
 // deploy trigger: 2026-11-17 18:00:00 feat lerp biomas organicos y follaje denso
+// deploy trigger: 2026-11-17 20:00:00 fix ocean playa sprites ui tala segura
 
 const store = await createStore();
 const game = new GameServer({ store, config });

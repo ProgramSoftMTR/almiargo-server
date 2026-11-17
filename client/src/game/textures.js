@@ -79,6 +79,7 @@ export function createEntityTextures(scene) {
     g.fillStyle(0xffffff, 0.7); g.fillRect(12, 16, 1, 2); g.fillRect(20, 16, 1, 2);
   });
 
+  makeTexture(scene, 'monster_goblin', 32, 36, (g) => drawHumanoid(g, 0x3a6a2a, 0x2a4a1a, 'none', 0x4a3a20, 0x2a4a1a, 0x7fae5a));
   makeTexture(scene, 'monster_rat', 34, 26, (g) => {
     g.fillStyle(0x6f6253, 1); g.fillEllipse(16, 17, 23, 12);
     g.fillStyle(0x9b8a72, 1); g.fillEllipse(13, 15, 18, 9);
@@ -333,23 +334,32 @@ export function createWorldTexture(scene, world) {
         // base de hierba
         ctx.fillStyle = '#2f5730';
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-        ctx.fillStyle = 'rgba(0,0,0,.25)';
+        // sombra voluminosa
+        ctx.fillStyle = 'rgba(0,0,0,.30)';
         ctx.beginPath();
-        ctx.ellipse(px + 16, py + 27, 12, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + 16, py + 29, 13, 5, 0, 0, Math.PI * 2);
         ctx.fill();
+        // tronco alto
+        ctx.fillStyle = '#3a2817';
+        ctx.fillRect(px + 13, py + 14, 6, 16);
         ctx.fillStyle = '#4a3220';
-        ctx.fillRect(px + 14, py + 18, 5, 10);
-        const green = h > 0.5 ? '#2a5731' : '#1f4728';
+        ctx.fillRect(px + 14, py + 14, 2, 16);
+        // copa voluminosa verde oscuro
+        const green = h > 0.5 ? '#1b3f20' : '#16361b';
         ctx.fillStyle = green;
         ctx.beginPath();
-        ctx.ellipse(px + 16, py + 13, 14, 12, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + 16, py + 9, 15, 13, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = h > 0.5 ? '#356b3a' : '#2b5c31';
+        ctx.fillStyle = h > 0.5 ? '#234a28' : '#1d4022';
         ctx.beginPath();
-        ctx.ellipse(px + 12, py + 10, 8, 7, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + 11, py + 7, 9, 8, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = 'rgba(160,210,120,.12)';
-        ctx.fillRect(px + 8, py + 5, 7, 4);
+        ctx.beginPath();
+        ctx.ellipse(px + 21, py + 8, 9, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(40,80,45,.35)';
+        ctx.fillRect(px + 6, py + 4, 5, 3);
+        ctx.fillRect(px + 20, py + 5, 6, 3);
       }
     }
   }
