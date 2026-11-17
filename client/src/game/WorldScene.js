@@ -959,6 +959,7 @@ export class WorldScene extends Phaser.Scene {
       const [x, y] = key.split(',').map((v) => Number.parseInt(v, 10));
       if (Number.isInteger(x) && Number.isInteger(y)) this.addStump(x, y, key);
     }
+    this.rebuildNav();
   }
 
   updatePendingAction() {

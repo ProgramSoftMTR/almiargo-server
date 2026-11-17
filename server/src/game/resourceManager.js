@@ -13,6 +13,7 @@ export class ResourceManager {
   constructor({ world, map = null, minMs = MIN_MS, maxMs = MAX_MS, onRegrow = null } = {}) {
     this.map = map ?? world?.map ?? world ?? null;
     this.world = world ?? null;
+    if (world) world.resources = this;
     this.minMs = minMs;
     this.maxMs = maxMs;
     this.onRegrow = onRegrow;
@@ -68,9 +69,13 @@ export class ResourceManager {
 
     const tryRegrow = () => {
       // Pausa/reinicia si hay un jugador parado sobre el tocón.
-      const occupied = this.world?.players
+      const playerOccupied = this.world?.players
         ? [...this.world.players.values()].some((p) => !p.isDead && Math.round(p.x) === x && Math.round(p.y) === y)
         : false;
+      const mobOccupied = this.world?.monsters
+        ? [...this.world.monsters.values()].some((m) => m.alive && Math.round(m.x) === x && Math.round(m.y) === y)
+        : false;
+      const occupied = playerOccupied || mobOccupied;
       if (occupied) {
         node.timer = setTimeout(tryRegrow, 5000);
         node.timer.unref?.();
