@@ -135,6 +135,7 @@ export class WorldScene extends Phaser.Scene {
     this.moveMs = p.stats?.moveMs ?? 260;
 
     const shadow = this.add.ellipse(0, 8, 24, 9, 0x000000, 0.35);
+    this.localShadow = shadow;
     const localTexture = ensurePlayerTexture(this, 'base', p.outfit);
     this.localSprite = this.add.sprite(0, 0, localTexture);
     this.localSprite.setOrigin(0.5, 0.9);
@@ -434,6 +435,7 @@ export class WorldScene extends Phaser.Scene {
       kind: e.kind,
       container,
       sprite,
+      shadow,
       ring,
       nameText,
       barBg,
@@ -610,7 +612,10 @@ export class WorldScene extends Phaser.Scene {
     this.localContainer.setDepth(toWorld(this.localVisual.y) + (this.localSprite?.displayHeight ?? 0) / 2);
     this.localMoving = Math.hypot(this.localPred.x - this.localVisual.x, this.localPred.y - this.localVisual.y) > 0.05
       || (this.joystick?.active && this.joystick.dir && now < this.nextStepAt + this.moveMs);
-    this.localSprite.y = 2 - (this.localMoving ? Math.abs(Math.sin(now / 120)) * 1.8 : 0);
+    const localBreathPhase = Math.sin(performance.now() * 0.0032);
+    const localBreathOffset = this.localMoving ? 0 : (localBreathPhase * 1.2);
+    this.localSprite.y = 2 - (this.localMoving ? Math.abs(Math.sin(now / 120)) * 1.8 : 0) - localBreathOffset;
+    if (this.localShadow) this.localShadow.scaleX = 1 + (this.localMoving ? 0 : (localBreathPhase * 0.02));
     this.updateLocalOverhead();
 
     // Interpolación de entidades remotas
@@ -633,7 +638,11 @@ export class WorldScene extends Phaser.Scene {
       view.container.setPosition(x, y);
       // Y-sorting: mayor Y (pies más abajo) se dibuja delante.
       view.container.setDepth(y + (view.displayHeight ?? 0) * 0.5);
-      view.sprite.y = 2 - (moved ? Math.abs(Math.sin(now / 110 + view.id.length)) * 1.6 : 0);
+      const breathSeed = (view.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 0.37;
+      const remoteBreathPhase = Math.sin((performance.now() + breathSeed) * 0.0032);
+      const remoteBreathOffset = moved ? 0 : (remoteBreathPhase * 1.2);
+      view.sprite.y = 2 - (moved ? Math.abs(Math.sin(now / 110 + view.id.length)) * 1.6 : 0) - remoteBreathOffset;
+      if (view.shadow) view.shadow.scaleX = 1 + (moved ? 0 : (remoteBreathPhase * 0.02));
       while (buf.length > 2 && renderTime - buf[0].t > 1500) buf.shift();
     }
 
