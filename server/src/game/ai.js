@@ -1,5 +1,5 @@
 import { isSafeZone, findPath } from '../../shared/index.js';
-import { monsterAttack } from './combat.js';
+import { monsterAttack, monsterRangedAttack } from './combat.js';
 
 /**
  * IA simple y barata: patrulla -> aggro -> persecucion -> ataque -> leashing.
@@ -72,6 +72,24 @@ export function updateMonsters(game, now) {
     }
 
     const def = monster.def;
+
+    // Comportamiento a distancia / torreta estatica (sandcastle).
+    if (def?.isRanged || def?.stationary) {
+      monster.state = 'idle';
+      monster.targetId = null;
+      monster.slot = null;
+      const range = Number(def.attackRange ?? 7);
+      const found = game.world.nearestPlayer(monster.x, monster.y, range);
+      if (found && !isSafeZone(Math.round(found.x), Math.round(found.y))) {
+        const player = game.world.getPlayer(found.id);
+        if (player && !player.isDead) {
+          monster.targetId = found.id;
+          monsterRangedAttack(game, monster, player, now);
+        }
+      }
+      continue;
+    }
+
     const hx = monster.homeX ?? monster.spawnX ?? monster.x;
     const hy = monster.homeY ?? monster.spawnY ?? monster.y;
 

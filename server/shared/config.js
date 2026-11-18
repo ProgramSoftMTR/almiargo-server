@@ -331,6 +331,7 @@ export const MONSTERS = Object.freeze({
   sandcastle: {
     id: 'sandcastle', name: 'Castillo de Arena Viviente', level: 4, maxHp: 85, atkMin: 7, atkMax: 12, defense: 4,
     xp: 70, gold: [6, 16], aggro: 5, moveMs: 600, attackMs: 1300, color: 0xc9b27a, size: 1.1,
+    isRanged: true, stationary: true, attackRange: 7, attackCooldownMs: 1800,
     loot: [
       { itemId: 'potion_hp', chance: 0.25, min: 1, max: 2 },
       { itemId: 'arrow', chance: 0.25, min: 3, max: 10 },

@@ -22,6 +22,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 14:00:00 feat spawners mixtos playa distribucion equitativa espaciado
 // deploy trigger: 2026-11-18 15:00:00 fix sincronizacion silenciosa loot bags y eliminacion alerta bolsa no encontrada
 // deploy trigger: 2026-11-18 16:00:00 feat indicador dinamico bioma minimapa
+// deploy trigger: 2026-11-18 17:00:00 feat ataque a distancia y proyectil de arena en sandcastle
 
 const store = await createStore();
 const game = new GameServer({ store, config });

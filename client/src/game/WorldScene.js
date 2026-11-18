@@ -92,6 +92,9 @@ export class WorldScene extends Phaser.Scene {
     this.setupCamera();
     this.setupJoystick();
     this.setupInput();
+    this.activeProjectiles = [];
+    this.impactEffects = [];
+    this.projectileGraphics = this.add.graphics().setDepth(1000);
     this.updateZoom();
 
     this.scale.on('resize', this.onResize, this);
@@ -634,6 +637,68 @@ export class WorldScene extends Phaser.Scene {
       while (buf.length > 2 && renderTime - buf[0].t > 1500) buf.shift();
     }
 
+    // Proyectiles de arena (mobs a distancia)
+    const pg = this.projectileGraphics;
+    if (pg) {
+      pg.clear();
+      const nowMs = Date.now();
+      for (let i = this.activeProjectiles.length - 1; i >= 0; i -= 1) {
+        const p = this.activeProjectiles[i];
+        const elapsed = nowMs - p.start;
+        const t = Math.min(1, elapsed / p.travelMs);
+        // Interpolar hacia posicion actual del objetivo si es el jugador local.
+        let toX = p.toX, toY = p.toY;
+        if (p.targetId === store.player?.id && store.self) {
+          toX = store.self.x; toY = store.self.y;
+        }
+        const x = Phaser.Math.Linear(p.fromX, toX, t);
+        const y = Phaser.Math.Linear(p.fromY, toY, t);
+        // Actualizar destino final para impacto
+        p.curX = x; p.curY = y;
+        if (t >= 1) {
+          // Impacto: 6 particulas de polvo
+          for (let k = 0; k < 6; k += 1) {
+            const ang = (Math.PI * 2 * k) / 6;
+            this.impactEffects.push({
+              x: toX * TILE_SIZE, y: toY * TILE_SIZE,
+              vx: Math.cos(ang) * 40, vy: Math.sin(ang) * 40 - 20,
+              start: nowMs, life: 300,
+            });
+          }
+          this.activeProjectiles.splice(i, 1);
+          continue;
+        }
+        // Estela
+        for (let k = 1; k <= 4; k += 1) {
+          const tt = Math.max(0, t - k * 0.05);
+          const tx = Phaser.Math.Linear(p.fromX, toX, tt) * TILE_SIZE;
+          const ty = Phaser.Math.Linear(p.fromY, toY, tt) * TILE_SIZE;
+          pg.fillStyle(0xb8863b, 0.4 - k * 0.08);
+          pg.fillCircle(tx, ty, 2);
+        }
+        // Proyectil principal
+        pg.fillStyle(0xf0d399, 1);
+        pg.fillCircle(x * TILE_SIZE, y * TILE_SIZE, 4);
+        pg.fillStyle(0xd4a359, 1);
+        pg.fillCircle(x * TILE_SIZE - 1, y * TILE_SIZE - 1, 2);
+        pg.fillStyle(0xb8863b, 1);
+        pg.fillCircle(x * TILE_SIZE + 1, y * TILE_SIZE + 1, 1);
+      }
+      // Impact effects
+      for (let i = this.impactEffects.length - 1; i >= 0; i -= 1) {
+        const e = this.impactEffects[i];
+        const age = nowMs - e.start;
+        if (age >= e.life) { this.impactEffects.splice(i, 1); continue; }
+        const alpha = 1 - age / e.life;
+        const px = e.x + e.vx * (age / 1000);
+        const py = e.y + e.vy * (age / 1000) + 0.5 * 200 * (age / 1000) ** 2;
+        pg.fillStyle(0xd4a359, alpha);
+        pg.fillCircle(px, py, 3);
+        pg.fillStyle(0xf0d399, alpha * 0.7);
+        pg.fillCircle(px - 1, py - 1, 1.5);
+      }
+    }
+
     // Anillo de objetivo
     const targetId = store.self?.targetId;
     for (const view of this.entityViews.values()) {
@@ -1138,6 +1203,24 @@ export class WorldScene extends Phaser.Scene {
           if (r?.state === 'stump') this.addStump(r.x, r.y, `${r.x},${r.y}`);
         }
         break;
+      case 'mob_ranged_attack': {
+        const proj = {
+          mobId: msg.mobId,
+          targetId: msg.targetId,
+          fromX: Number(msg.fromX), fromY: Number(msg.fromY),
+          toX: Number(msg.toX), toY: Number(msg.toY),
+          travelMs: Number(msg.travelMs ?? 350),
+          start: Date.now(),
+          done: false,
+        };
+        this.activeProjectiles.push(proj);
+        // Retroceso/vibracion del castillo.
+        const view = this.entityViews.get(msg.mobId);
+        if (view?.sprite) {
+          this.tweens.add({ targets: view.sprite, x: '+=4', duration: 50, yoyo: true, repeat: 1 });
+        }
+        break;
+      }
       default:
         break;
     }

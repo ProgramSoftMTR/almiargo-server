@@ -267,6 +267,37 @@ export function monsterAttack(game, monster, player, now = Date.now()) {
   applyDamage(game, monster, player, amount, now, { crit, element: 'melee' });
 }
 
+/** Ataque a distancia de un mob (torreta). Emite proyectil a AoI. */
+export function monsterRangedAttack(game, monster, player, now = Date.now()) {
+  if (!monster?.alive || !player || player.isDead) return;
+  const range = Number(monster.def?.attackRange ?? 7);
+  if (dist2(monster, player) > range ** 2) return;
+  if (now < (monster.nextAttackAt ?? 0)) return;
+
+  const crit = Math.random() < 0.04;
+  const raw = randInt(monster.def.atkMin, monster.def.atkMax) * (crit ? 1.5 : 1);
+  const amount = mitigate(raw, player.stats.defense);
+  monster.nextAttackAt = now + (monster.def.attackCooldownMs ?? monster.def.attackMs ?? 1800);
+  monster.dir = dirTo(monster, player);
+
+  const dist = Math.sqrt(dist2(monster, player));
+  const travelMs = Math.round(300 + Math.min(100, dist * 14));
+
+  applyDamage(game, monster, player, amount, now, { crit, element: 'ranged' });
+
+  game.broadcastNear(monster.x, monster.y, eventRadius(game), {
+    type: 'mob_ranged_attack',
+    mobId: monster.id,
+    targetId: player.id,
+    fromX: monster.x,
+    fromY: monster.y,
+    toX: player.x,
+    toY: player.y,
+    projectileType: 'sand',
+    travelMs,
+  });
+}
+
 export function killMonster(game, monster, source, now) {
   if (!monster.alive) return;
   monster.alive = false;
