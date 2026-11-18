@@ -868,15 +868,29 @@ export class GameServer {
       return this.sendEvent(player, 'system_message', { message: 'Ese arbol ya fue talado.' });
     }
 
-    const amount = Math.random() < 0.05
-      ? 9
-      : Math.floor(Math.random() * (5 - 2 + 1)) + 2;
-    addItem(player.inventory, 'wood', amount);
+    const tile = this.world.map?.tiles?.[y * this.world.width + x];
+    const isPalm = tile === TILE.TREE_PALM;
+    const drops = [];
+    if (isPalm) {
+      const palmAmount = 1 + (Math.random() < 0.5 ? 1 : 0);
+      addItem(player.inventory, 'palm_wood', palmAmount);
+      drops.push(`+${palmAmount} Madera de Palmera`);
+      if (Math.random() < 0.45) {
+        addItem(player.inventory, 'coconut', 1);
+        drops.push('+1 Coco');
+      }
+    } else {
+      const amount = Math.random() < 0.05
+        ? 9
+        : Math.floor(Math.random() * (5 - 2 + 1)) + 2;
+      addItem(player.inventory, 'wood', amount);
+      drops.push(`+${amount} Madera`);
+    }
     player.nextChopAt = now + CONSTANTS.CHOP_COOLDOWN_MS;
     player.dirty = true;
     this.sendProfile(player);
     await this.savePlayer(player);
-    this.sendEvent(player, 'notice', { text: `+${amount} Madera` });
+    this.sendEvent(player, 'notice', { text: drops.join(' · ') });
     this.broadcastResource(x, y, 'stump');
   }
 

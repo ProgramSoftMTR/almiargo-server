@@ -117,6 +117,38 @@ export function drawItemIcon(canvas, def, size = 32) {
     px(8, 12, 16, 10, shade(color, 25));
     px(10, 14, 4, 6, shade(color, -35));
     px(18, 14, 4, 6, shade(color, -35));
+  } else if (shape === 'palm_wood') {
+    // Dos troncos apilados marrón dorado con anillos
+    px(4, 16, 24, 8, hex(color));
+    px(6, 18, 20, 4, shade(color, 25));
+    px(8, 16, 2, 8, shade(color, -35));
+    px(14, 16, 2, 8, shade(color, -35));
+    px(20, 16, 2, 8, shade(color, -35));
+    px(5, 6, 22, 8, shade(color, -15));
+    px(7, 8, 18, 4, shade(color, 20));
+    px(9, 6, 2, 8, shade(color, -35));
+    px(15, 6, 2, 8, shade(color, -35));
+    px(21, 6, 2, 8, shade(color, -35));
+  } else if (shape === 'coconut') {
+    // Esfera marrón rugosa con 3 puntos
+    ctx.fillStyle = hex(color);
+    ctx.beginPath();
+    ctx.arc(16, 17, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shade(color, -45);
+    ctx.beginPath();
+    ctx.arc(12, 14, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(17, 12, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(21, 15, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.beginPath();
+    ctx.arc(11, 11, 3, 0, Math.PI * 2);
+    ctx.fill();
   } else {
     px(9, 8, 14, 4, shade(color, 25));
     px(14, 12, 4, 12, shade(color, -40));

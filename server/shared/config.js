@@ -162,6 +162,17 @@ export const ITEMS = Object.freeze({
     price: 0, sell: 3, icon: { shape: 'wood', color: 0x8a6034 },
     description: 'Recurso obtenido al talar arboles.',
   },
+  palm_wood: {
+    id: 'palm_wood', name: 'Madera de Palmera', slot: 'resource', stackable: true,
+    price: 0, sell: 4, icon: { shape: 'palm_wood', color: 0xb8874e },
+    description: 'Tronco fibroso y ligero obtenido de las palmeras de la costa.',
+  },
+  coconut: {
+    id: 'coconut', name: 'Coco', slot: 'consumable', stackable: true, consumable: true,
+    price: 0, sell: 2, icon: { shape: 'coconut', color: 0x3a2410 },
+    use: { healHp: 30 }, cooldownMs: 5000,
+    description: 'Coco fresco de la playa. Restaura un poco de salud al consumirlo.',
+  },
 
   // Armas — Caballero
   sword_wood: {
