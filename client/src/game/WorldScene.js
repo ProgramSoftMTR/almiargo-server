@@ -71,6 +71,10 @@ export class WorldScene extends Phaser.Scene {
     this.unsubscribers = [];
     this.tapStart = null;
     this.partyMenu = null;
+    this.lastGroundTap = 0;
+    this._fpsFrames = 0;
+    this._fpsLast = 0;
+    this.fps = 60;
   }
 
   create() {
@@ -176,7 +180,7 @@ export class WorldScene extends Phaser.Scene {
     // Posicionamiento instantaneo (sin lerp inicial).
     cam.setLerp(1, 1);
     cam.startFollow(this.localContainer, true, 1, 1);
-    cam.setRoundPixels(true);
+    cam.setRoundPixels(false);
     const p = store.player ?? { x: this.localPred?.x ?? 0, y: this.localPred?.y ?? 0 };
     cam.centerOn((p.x ?? 0) * TILE_SIZE, (p.y ?? 0) * TILE_SIZE);
   }
@@ -610,6 +614,16 @@ export class WorldScene extends Phaser.Scene {
   update(time, delta) {
     try {
     const now = Date.now();
+    // Contador estable de FPS (actualiza cada 500 ms).
+    this._fpsFrames += 1;
+    const perfNow = performance.now();
+    if (!this._fpsLast) this._fpsLast = perfNow;
+    if (perfNow - this._fpsLast >= 500) {
+      this.fps = Math.round((this._fpsFrames * 1000) / (perfNow - this._fpsLast));
+      this._fpsFrames = 0;
+      this._fpsLast = perfNow;
+      uiBus.emit('fps', this.fps);
+    }
     if (!store.authenticated) return;
 
     this.handleMovementInput(now);
@@ -971,6 +985,11 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
     // Si es tocón, caer a movimiento normal (tile transitable).
+
+    // Throttle de toques repetidos al suelo (60-80 ms).
+    const nowTap = Date.now();
+    if (nowTap - this.lastGroundTap < 70) return;
+    this.lastGroundTap = nowTap;
 
     // Tap al suelo: mover y romper objetivo
     if (store.self?.targetId) {

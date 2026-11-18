@@ -73,6 +73,7 @@ export class Hud {
     store.on('profile', () => this.update(true));
     store.on('zone', (zone) => { $('zoneLabel').textContent = zone; });
     store.on('chat', (msg) => this.addFeed(msg));
+    uiBus.on('fps', (fps) => this.updateFps(fps));
   }
 
   usePotion(kind) {
@@ -179,6 +180,14 @@ export class Hud {
   setOnline(count) {
     store.online = count;
     $('onlineText').textContent = `● ${count}${store.latency ? ` · ${store.latency}ms` : ''}`;
+  }
+
+  updateFps(fps) {
+    this.fps = fps;
+    const el = $('fpsText');
+    if (!el) return;
+    el.textContent = `${fps} FPS`;
+    el.style.color = fps >= 50 ? '#7ef29b' : (fps >= 30 ? '#f2c94c' : '#ff6b6b');
   }
 
   toast(text, type = '') {
