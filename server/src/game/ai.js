@@ -17,10 +17,10 @@ const CARDINALS = [
   [-1, 0],
 ];
 
-export const AI_TICK_MS = 200;          // 5 decisiones de IA por segundo
+export const AI_TICK_MS = 100;          // 10 decisiones de IA por segundo (2 ticks)
 export const MAX_LEASH_DISTANCE = 15;
 export const AGGRO_RADIUS = 5;
-export const SLEEP_RADIUS = 60;         // ~3 pantallas: culling de mobs lejanos
+export const SLEEP_RADIUS = 28;         // hibernacion: sin jugadores en 28 tiles
 
 const MAX_LEASH_DISTANCE_SQ = MAX_LEASH_DISTANCE * MAX_LEASH_DISTANCE;
 const SLEEP_RADIUS_SQ = SLEEP_RADIUS * SLEEP_RADIUS;
