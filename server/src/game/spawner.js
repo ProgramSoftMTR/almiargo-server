@@ -62,14 +62,8 @@ export class Spawner {
   findSpawnTile(world) {
     const { x1, y1, x2, y2 } = this.bounds();
     for (let attempt = 0; attempt < 200; attempt += 1) {
-      let x, y;
-      if (this.beachOnly) {
-        x = Math.floor(Math.random() * world.width);
-        y = Math.floor(Math.random() * world.height);
-      } else {
-        x = x1 + Math.floor(Math.random() * (x2 - x1 + 1));
-        y = y1 + Math.floor(Math.random() * (y2 - y1 + 1));
-      }
+      const x = x1 + Math.floor(Math.random() * (x2 - x1 + 1));
+      const y = y1 + Math.floor(Math.random() * (y2 - y1 + 1));
       if (!world.isInside(x, y)) continue;
       const tile = world.map ? (world.map.tiles ? world.map.tiles[y * world.map.width + x] : null) : null;
       // Bioma estricto:

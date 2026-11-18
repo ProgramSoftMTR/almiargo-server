@@ -48,6 +48,20 @@ btnToggleControls.textContent = controlMode === 'joystick'
   ? '🎮 Controles: Joystick'
   : '👆 Controles: Tocar pantalla';
 
+// Aplica visibilidad del joystick segun el modo de control.
+function applyControlMode(mode) {
+  const el = document.getElementById('joystick');
+  if (!el) return;
+  if (mode === 'touch') {
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+  } else {
+    el.style.display = '';
+    el.style.pointerEvents = '';
+  }
+}
+applyControlMode(controlMode);
+
 // Settings gear button and dropdown (top-right, next to minimap)
 const btnSettingsGear = $('btnSettings');
 
@@ -478,6 +492,7 @@ btnToggleControls.addEventListener('click', () => {
   btnToggleControls.textContent = controlMode === 'joystick'
     ? '🎮 Controles: Joystick'
     : '👆 Controles: Tocar pantalla';
+  applyControlMode(controlMode);
   hud.toast(
     controlMode === 'joystick'
       ? 'Controles: Joystick activado'

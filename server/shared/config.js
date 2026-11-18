@@ -410,9 +410,21 @@ export const MAP_ZONES = Object.freeze([
 export const SPAWNER_ZONES = Object.freeze([
   { id: 'slime_forest', name: 'Bosque de Slimes', startX: 60, startY: 60, width: 31, height: 31, mobType: 'slime', maxMobs: 16, respawnTime: 6000 },
   { id: 'goblin_camp', name: 'Campamento Goblin', startX: 140, startY: 140, width: 31, height: 31, mobType: 'goblin', maxMobs: 12, respawnTime: 8000 },
-  { id: 'beach_crab', name: 'Playa Cangrejos', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'crab', maxMobs: 14, respawnTime: 7000, beachOnly: true },
-  { id: 'beach_starfish', name: 'Playa Estrellas', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'starfish', maxMobs: 12, respawnTime: 7000, beachOnly: true },
-  { id: 'beach_sandcastle', name: 'Playa Castillos', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'sandcastle', maxMobs: 10, respawnTime: 8000, beachOnly: true },
+  // Playa: sectores por borde (norte, sur, este, oeste) para distribuir la densidad.
+  { id: 'beach_crab_north', name: 'Playa Cangrejos N', startX: 0, startY: 0, width: MAP_WIDTH, height: 20, mobType: 'crab', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_crab_south', name: 'Playa Cangrejos S', startX: 0, startY: MAP_HEIGHT - 20, width: MAP_WIDTH, height: 20, mobType: 'crab', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_crab_west', name: 'Playa Cangrejos O', startX: 0, startY: 20, width: 20, height: MAP_HEIGHT - 40, mobType: 'crab', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_crab_east', name: 'Playa Cangrejos E', startX: MAP_WIDTH - 20, startY: 20, width: 20, height: MAP_HEIGHT - 40, mobType: 'crab', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+
+  { id: 'beach_starfish_north', name: 'Playa Estrellas N', startX: 0, startY: 0, width: MAP_WIDTH, height: 20, mobType: 'starfish', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_starfish_south', name: 'Playa Estrellas S', startX: 0, startY: MAP_HEIGHT - 20, width: MAP_WIDTH, height: 20, mobType: 'starfish', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_starfish_west', name: 'Playa Estrellas O', startX: 0, startY: 20, width: 20, height: MAP_HEIGHT - 40, mobType: 'starfish', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_starfish_east', name: 'Playa Estrellas E', startX: MAP_WIDTH - 20, startY: 20, width: 20, height: MAP_HEIGHT - 40, mobType: 'starfish', maxMobs: 5, respawnTime: 7000, beachOnly: true },
+
+  { id: 'beach_sandcastle_north', name: 'Playa Castillos N', startX: 0, startY: 0, width: MAP_WIDTH, height: 20, mobType: 'sandcastle', maxMobs: 4, respawnTime: 8000, beachOnly: true },
+  { id: 'beach_sandcastle_south', name: 'Playa Castillos S', startX: 0, startY: MAP_HEIGHT - 20, width: MAP_WIDTH, height: 20, mobType: 'sandcastle', maxMobs: 4, respawnTime: 8000, beachOnly: true },
+  { id: 'beach_sandcastle_west', name: 'Playa Castillos O', startX: 0, startY: 20, width: 20, height: MAP_HEIGHT - 40, mobType: 'sandcastle', maxMobs: 4, respawnTime: 8000, beachOnly: true },
+  { id: 'beach_sandcastle_east', name: 'Playa Castillos E', startX: MAP_WIDTH - 20, startY: 20, width: 20, height: MAP_HEIGHT - 40, mobType: 'sandcastle', maxMobs: 4, respawnTime: 8000, beachOnly: true },
 ]);
 
 export const BIOMES = MAP_ZONES;
