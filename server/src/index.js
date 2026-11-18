@@ -17,6 +17,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 02:30:00 fix autoscale minimapa spawns playa y IA mobs
 // deploy trigger: 2026-11-18 03:00:00 perf optimizacion IA, sleep mode mobs y reduccion carga servidor
 // deploy trigger: 2026-11-18 11:00:00 feat mayor densidad mobs playa y ocultar joystick tocar pantalla
+// deploy trigger: 2026-11-18 12:00:00 feat pantalla carga previa y mundo persistente 24/7
 
 const store = await createStore();
 const game = new GameServer({ store, config });

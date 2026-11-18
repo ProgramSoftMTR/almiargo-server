@@ -182,6 +182,11 @@ export class World {
     this.stallIndex.rebuild(this.stalls.values());
   }
 
+  init(now = Date.now()) {
+    this.spawnInitialMonsters(now);
+    return this;
+  }
+
   spawnInitialMonsters(now) {
     for (const spawner of this.spawners) {
       for (let i = 0; i < spawner.maxMobs; i += 1) {

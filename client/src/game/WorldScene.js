@@ -74,6 +74,7 @@ export class WorldScene extends Phaser.Scene {
 
   create() {
     try {
+    window.__setLoadingProgress?.(85, 'Cargando terreno...');
     this.worldSeed = store.world?.seed ?? 1337;
     this.worldMap = generateWorld(this.worldSeed);
     this.rebuildNav();
@@ -109,6 +110,13 @@ export class WorldScene extends Phaser.Scene {
     // Primer render con el estado ya autenticado.
     this.syncLocal(true);
     this.syncFromStore();
+
+    // Garantizar que el primer frame este pintado antes de ocultar la pantalla de carga.
+    requestAnimationFrame(() => {
+      window.__setLoadingProgress?.(100, 'Listo');
+      this.cameras.main.setLerp(0.16, 0.16);
+      window.__hideLoadingScreen?.();
+    });
     } catch (err) {
       console.error('WORLDSCENE CREATE ERROR', err);
       this.add.text(10, 10, 'WORLDSCENE ERROR: ' + (err?.message || err), { color: '#ff0000', fontSize: '14px' }).setDepth(9999);
@@ -160,8 +168,12 @@ export class WorldScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, this.worldMap.width * TILE_SIZE, this.worldMap.height * TILE_SIZE);
     cam.setBackgroundColor('#0b0e14');
-    cam.startFollow(this.localContainer, true, 0.16, 0.16);
+    // Posicionamiento instantaneo (sin lerp inicial).
+    cam.setLerp(1, 1);
+    cam.startFollow(this.localContainer, true, 1, 1);
     cam.setRoundPixels(true);
+    const p = store.player ?? { x: this.localPred?.x ?? 0, y: this.localPred?.y ?? 0 };
+    cam.centerOn((p.x ?? 0) * TILE_SIZE, (p.y ?? 0) * TILE_SIZE);
   }
 
   setupJoystick() {

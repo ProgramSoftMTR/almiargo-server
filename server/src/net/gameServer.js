@@ -103,7 +103,7 @@ export class GameServer {
 
   // ── Ciclo de vida ────────────────────────────────────────────
   async start() {
-    this.world.spawnInitialMonsters(Date.now());
+    this.world.init(Date.now());
     await this.loadOfflineStalls();
     this.httpServer = http.createServer((req, res) => {
       this.handleHttp(req, res).catch((err) => {
@@ -713,6 +713,7 @@ export class GameServer {
     this.broadcastLocalChat(player.x, player.y, 12, {
       channel: 'local', from: 'Sistema', text: `${player.name} se conectó`, at: Date.now(), system: true,
     });
+    this.forceSnapshot(player, Date.now());
     console.log(`[auth] ${player.name} (nivel ${player.level}) conectado desde ${session.ip}${player.isAdmin ? ' [admin]' : ''}`);
   }
 

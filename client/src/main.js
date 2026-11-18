@@ -62,6 +62,40 @@ function applyControlMode(mode) {
 }
 applyControlMode(controlMode);
 
+// ── Pantalla de carga ─────────────────────────────────────────
+const loadingScreen = $('loading-screen');
+const loadingBar = $('loading-bar');
+const loadingStatus = $('loading-status');
+const loadingRetry = $('loading-retry');
+let loadingTimer = null;
+function setLoadingProgress(pct, text) {
+  if (!loadingScreen) return;
+  loadingScreen.classList.remove('hidden');
+  loadingScreen.classList.remove('fade-out');
+  if (loadingBar) loadingBar.style.width = `${pct}%`;
+  if (loadingStatus && text) loadingStatus.textContent = text;
+}
+function hideLoadingScreen() {
+  if (!loadingScreen || loadingScreen.classList.contains('hidden')) return;
+  loadingScreen.classList.add('fade-out');
+  setTimeout(() => {
+    loadingScreen.classList.add('hidden');
+    loadingScreen.classList.remove('fade-out');
+  }, 300);
+  if (loadingTimer) { clearTimeout(loadingTimer); loadingTimer = null; }
+}
+function startLoadingSafetyTimer() {
+  if (loadingTimer) clearTimeout(loadingTimer);
+  loadingTimer = setTimeout(() => {
+    if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
+      loadingRetry?.classList.remove('hidden');
+    }
+  }, 10000);
+}
+window.__setLoadingProgress = setLoadingProgress;
+window.__hideLoadingScreen = hideLoadingScreen;
+loadingRetry?.addEventListener('click', () => window.location.reload());
+
 // Settings gear button and dropdown (top-right, next to minimap)
 const btnSettingsGear = $('btnSettings');
 
@@ -308,8 +342,18 @@ socket.on('hello', (msg) => {
   }
 });
 
+let firstSnapshotSeen = false;
+socket.on('snapshot', () => {
+  if (!firstSnapshotSeen) {
+    firstSnapshotSeen = true;
+    setLoadingProgress(50, 'Sincronizando entorno y criaturas...');
+  }
+});
+
 // ── Entrada al mundo ──────────────────────────────────────────
 store.on('auth', (msg) => {
+  setLoadingProgress(25, 'Conectando con el servidor...');
+  startLoadingSafetyTimer();
   hideCharacterCreator();
   hideLogin();
   hud.setOnline(msg.online ?? 1);
