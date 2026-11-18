@@ -1357,8 +1357,38 @@ export class GameServer {
     };
   }
 
-  sendSnapshot(session, player, now) {
-    return this.send(session, this.createSnapshotPayload(player, now));
+  sendSnapshot(session, player, now, { full = false } = {}) {
+    const payload = this.createSnapshotPayload(player, now);
+    const baseline = session.aoiBaseline instanceof Map ? session.aoiBaseline : new Map();
+    const currentEntities = Array.isArray(payload.e) ? payload.e : [];
+    const currentIds = new Set(currentEntities.map((e) => e[0]));
+
+    if (full || baseline.size === 0) {
+      // Snapshot completo (primer envio o forzado).
+      payload.delta = false;
+      payload.removed = [];
+    } else {
+      // Delta: solo entidades que cambiaron + ids removidos.
+      const changed = [];
+      for (const ent of currentEntities) {
+        const sig = JSON.stringify(ent);
+        if (baseline.get(ent[0]) !== sig) changed.push(ent);
+      }
+      const removed = [];
+      for (const id of baseline.keys()) {
+        if (!currentIds.has(id)) removed.push(id);
+      }
+      payload.e = changed;
+      payload.delta = true;
+      payload.removed = removed;
+    }
+
+    // Actualiza la linea base con el estado completo actual.
+    const nextBaseline = new Map();
+    for (const ent of currentEntities) nextBaseline.set(ent[0], JSON.stringify(ent));
+    session.aoiBaseline = nextBaseline;
+
+    return this.send(session, payload);
   }
 
   /**
@@ -1368,7 +1398,7 @@ export class GameServer {
   forceSnapshot(player, now = Date.now()) {
     const session = this.sessionsByPlayer.get(player.id);
     if (!session) return false;
-    return this.sendSnapshot(session, player, now);
+    return this.sendSnapshot(session, player, now, { full: true });
   }
 
   cleanup(now) {

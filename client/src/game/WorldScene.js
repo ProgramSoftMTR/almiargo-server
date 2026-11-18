@@ -66,6 +66,7 @@ export class WorldScene extends Phaser.Scene {
     this.moveMs = 260;
     this.localPred = { x: 40, y: 42 };
     this.localVisual = { x: 40, y: 42 };
+    this.reconcile = null;
     this.navWorld = null;
     this.unsubscribers = [];
     this.tapStart = null;
@@ -240,6 +241,8 @@ export class WorldScene extends Phaser.Scene {
     this.moveMs = msg.self.moveMs ?? this.moveMs;
     const receivedAt = Date.now();
 
+    const delta = msg.delta === true;
+    const removed = Array.isArray(msg.removed) ? msg.removed : [];
     const seen = new Set();
     for (const raw of msg.ents) {
       const e = decodeEntity(raw);
@@ -248,17 +251,23 @@ export class WorldScene extends Phaser.Scene {
       if (view) {
         view.kind = e.kind;
         view.data = e;
-        // Usamos la hora de RECEPCIÓN del cliente, no msg.t del servidor:
-        // los relojes del móvil y del servidor pueden estar desincronizados.
-        view.buffer.push({ t: receivedAt, x: toWorld(e.x), y: toWorld(e.y) });
-        if (view.buffer.length > 8) view.buffer.shift();
+        // Guarda la posicion autoritativa del servidor como objetivo.
+        view.serverX = toWorld(e.x);
+        view.serverY = toWorld(e.y);
         this.updateEntityVisual(view, e);
       }
     }
-    for (const [id, view] of this.entityViews) {
-      if (!seen.has(id) && store.entities.has(id) === false && !store.npcs.has(id)) {
-        view.container.destroy(true);
-        this.entityViews.delete(id);
+    if (delta) {
+      for (const id of removed) {
+        const view = this.entityViews.get(id);
+        if (view) { view.container.destroy(true); this.entityViews.delete(id); }
+      }
+    } else {
+      for (const [id, view] of this.entityViews) {
+        if (!seen.has(id) && store.entities.has(id) === false && !store.npcs.has(id)) {
+          view.container.destroy(true);
+          this.entityViews.delete(id);
+        }
       }
     }
 
@@ -300,28 +309,31 @@ export class WorldScene extends Phaser.Scene {
     const holding = (this.joystick?.active && this.joystick.dir) || this.path.length > 0;
     const recent = Date.now() - this.lastStepSentAt < this.moveMs * 1.8;
 
-    // Reconciliacion suave: solo teletransporta si la diferencia es grande.
-    // Con latencia (~200 ms) el servidor va por detras de la prediccion
-    // local; un snap directo produce rubberbanding. Para diferencias pequenas
-    // se corrige la prediccion con una interpolacion gradual.
+    // Reconciliacion suave: evita teletransportes bruscos (snap) salvo
+    // desincronizacion grave (>2.5 tiles) o bloqueo por colision.
     if (force) {
       this.localPred = { x: sx, y: sy };
       this.localVisual = { x: sx, y: sy };
+      this.reconcile = null;
       this.path = [];
       this.pending = null;
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
-    } else if (dist > 3.0) {
-      // Desincronizacion grande: teleport instantaneo.
+    } else if (dist > 2.5) {
+      // Desincronizacion grave: ajuste directo.
       this.localPred = { x: sx, y: sy };
       this.localVisual = { x: sx, y: sy };
+      this.reconcile = null;
       this.path = [];
       this.pending = null;
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
-    } else if (!holding && !recent && dist > 0.05) {
-      // Correccion suave hacia la posicion autoritativa del servidor.
-      const k = dist > 1.0 ? 0.35 : 0.18;
-      this.localPred.x += (sx - this.localPred.x) * k;
-      this.localPred.y += (sy - this.localPred.y) * k;
+    } else if (!holding && !recent && dist > 0.05 && dist < 1.5) {
+      // Desviacion pequena (<1.5 tiles): correccion gradual mediante lerp
+      // suave durante 100-150 ms hacia la posicion autoritativa del servidor.
+      this.reconcile = {
+        fromX: this.localPred.x, fromY: this.localPred.y,
+        toX: sx, toY: sy,
+        start: Date.now(), duration: 120,
+      };
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
     }
     // La apariencia base depende solo del outfit; el arma se dibuja como overlay.
@@ -441,7 +453,9 @@ export class WorldScene extends Phaser.Scene {
       barBg,
       barFill,
       displayHeight,
-      buffer: quiet ? [] : [{ t: Date.now(), x: toWorld(e.x), y: toWorld(e.y) }],
+      buffer: quiet ? [] : [],
+      serverX: toWorld(e.x),
+      serverY: toWorld(e.y),
       axeSprite,
       weaponSprite,
       data: e,
@@ -601,6 +615,15 @@ export class WorldScene extends Phaser.Scene {
     this.handleMovementInput(now);
     this.updatePendingAction();
 
+    // Reconciliacion gradual activa (100-150 ms) hacia posicion autoritativa.
+    if (this.reconcile) {
+      const r = this.reconcile;
+      const t = Math.min(1, (Date.now() - r.start) / r.duration);
+      this.localPred.x = r.fromX + (r.toX - r.fromX) * t;
+      this.localPred.y = r.fromY + (r.toY - r.fromY) * t;
+      if (t >= 1) this.reconcile = null;
+    }
+
     // Predicción local suave
     const smooth = 1 - Math.pow(0.002, Math.min(delta, 50) / 1000);
     this.localVisual.x += (this.localPred.x - this.localVisual.x) * smooth;
@@ -618,32 +641,23 @@ export class WorldScene extends Phaser.Scene {
     if (this.localShadow) this.localShadow.scaleX = 1 + (this.localMoving ? 0 : (localBreathPhase * 0.02));
     this.updateLocalOverhead();
 
-    // Interpolación de entidades remotas
-    const renderTime = now - INTERPOLATION_MS;
+    // Interpolación de entidades remotas hacia serverX/serverY con deltaTime.
+    const remoteSmooth = 1 - Math.pow(0.001, Math.min(delta, 50) / 1000);
     for (const view of this.entityViews.values()) {
-      const buf = view.buffer;
-      if (buf.length === 0) continue;
-      let a = buf[0];
-      let b = buf[buf.length - 1];
-      for (let i = 0; i < buf.length - 1; i += 1) {
-        if (buf[i].t <= renderTime && buf[i + 1].t >= renderTime) { a = buf[i]; b = buf[i + 1]; break; }
-      }
-      let alpha = 1;
-      if (b.t !== a.t) alpha = Phaser.Math.Clamp((renderTime - a.t) / (b.t - a.t), 0, 1);
-      const x = Phaser.Math.Linear(a.x, b.x, alpha);
-      const y = Phaser.Math.Linear(a.y, b.y, alpha);
-      const moved = Math.hypot(x - view.lastX, y - view.lastY) > 0.15;
+      if (!Number.isFinite(view.serverX)) view.serverX = view.container.x;
+      if (!Number.isFinite(view.serverY)) view.serverY = view.container.y;
+      view.container.x += (view.serverX - view.container.x) * remoteSmooth;
+      view.container.y += (view.serverY - view.container.y) * remoteSmooth;
+      const moved = Math.hypot(view.container.x - view.lastX, view.container.y - view.lastY) > 0.15;
       view.moving = moved;
-      view.lastX = x; view.lastY = y;
-      view.container.setPosition(x, y);
+      view.lastX = view.container.x; view.lastY = view.container.y;
       // Y-sorting: mayor Y (pies más abajo) se dibuja delante.
-      view.container.setDepth(y + (view.displayHeight ?? 0) * 0.5);
+      view.container.setDepth(view.container.y + (view.displayHeight ?? 0) * 0.5);
       const breathSeed = (view.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 0.37;
       const remoteBreathPhase = Math.sin((performance.now() + breathSeed) * 0.0032);
       const remoteBreathOffset = moved ? 0 : (remoteBreathPhase * 1.2);
       view.sprite.y = 2 - (moved ? Math.abs(Math.sin(now / 110 + view.id.length)) * 1.6 : 0) - remoteBreathOffset;
       if (view.shadow) view.shadow.scaleX = 1 + (moved ? 0 : (remoteBreathPhase * 0.02));
-      while (buf.length > 2 && renderTime - buf[0].t > 1500) buf.shift();
     }
 
     // Proyectiles de arena (mobs a distancia)
@@ -736,6 +750,9 @@ export class WorldScene extends Phaser.Scene {
   handleMovementInput(now) {
     const self = store.self;
     if (!self || self.deadUntil > now || self.inStall) return;
+
+    // El input del jugador tiene prioridad sobre la reconciliacion pendiente.
+    if ((this.joystick?.active && this.joystick.dir) || this.pathGoal) this.reconcile = null;
 
     if (this.joystick?.active && this.joystick.dir) {
       if (now < this.nextStepAt) return;
@@ -1238,11 +1255,10 @@ export class WorldScene extends Phaser.Scene {
   handleMoveReject(msg) {
     const sx = Number(msg.x);
     const sy = Number(msg.y);
-    const dist = Math.hypot(sx - this.localPred.x, sy - this.localPred.y);
     this.localPred = { x: sx, y: sy };
-    // Solo teletransporta la visual si la diferencia es grande; si no, la
-    // interpolacion suave del bucle de render corrige sin rubberbanding.
-    if (dist > 2.0) this.localVisual = { x: sx, y: sy };
+    // Bloqueo por colision: ajuste directo.
+    this.localVisual = { x: sx, y: sy };
+    this.reconcile = null;
     this.nextStepAt = Date.now() + this.moveMs + 80;
     if (this.pathGoal) {
       const goal = this.pathGoal;

@@ -21,10 +21,10 @@ export function defaultServerUrl() {
   const env = String(import.meta.env.VITE_SERVER_URL ?? '').trim();
   if (env) return env;
   // En builds nativos (APK) el endpoint de produccion siempre esta disponible.
-  if (typeof window === 'undefined') return 'wss://almiargo-server.onrender.com/ws';
+  if (typeof window === 'undefined') return 'wss://almiargo-server-1.onrender.com/ws';
   const native = window.Capacitor?.isNativePlatform?.()
     || (typeof window !== 'undefined' && window.Capacitor?.getPlatform?.() === 'android');
-  if (native) return 'wss://almiargo-server.onrender.com/ws';
+  if (native) return 'wss://almiargo-server-1.onrender.com/ws';
   const { protocol, hostname, port, host } = window.location;
   if (hostname && hostname !== 'localhost' && hostname !== '127.0.0.1' && port !== '5173') {
     return `${protocol === 'https:' ? 'wss' : 'ws'}://${host}:8080/ws`;

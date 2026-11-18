@@ -75,6 +75,8 @@ class ClientStore extends Emitter {
       this.player.stats = { ...(this.player.stats ?? {}), moveMs: self.moveMs };
     }
 
+    const delta = msg.delta === true;
+    const removed = Array.isArray(msg.removed) ? msg.removed : [];
     const seen = new Set();
     for (const raw of msg.ents) {
       const e = decodeEntity(raw);
@@ -83,8 +85,12 @@ class ClientStore extends Emitter {
       this.entities.set(e.id, e);
       seen.add(e.id);
     }
-    for (const id of this.entities.keys()) {
-      if (!seen.has(id) && !this.npcs.has(id)) this.entities.delete(id);
+    if (delta) {
+      for (const id of removed) this.entities.delete(id);
+    } else {
+      for (const id of this.entities.keys()) {
+        if (!seen.has(id) && !this.npcs.has(id)) this.entities.delete(id);
+      }
     }
 
     this.bags.clear();
