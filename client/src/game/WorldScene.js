@@ -1089,14 +1089,28 @@ export class WorldScene extends Phaser.Scene {
 
   addStump(x, y, key) {
     if (this.stumpViews.has(key)) return;
-    const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, 'tree_stump')
+    const tile = tileAt(this.worldMap, x, y);
+    const texKey = tile === TILE.SAND ? 'palm_stump' : 'tree_stump';
+    // Cubre el árbol original horneado en el mapa para que no queden hojas.
+    const baseColor = tile === TILE.TREE_PALM ? 0xc9b27a
+      : tile === TILE.TREE_DEAD ? 0x2f4a3a
+      : tile === TILE.TREE_PINE ? 0xdfe7f0
+      : tile === TILE.TREE_ACACIA ? 0xb9a05a
+      : 0x2f5730;
+    const cover = this.add.rectangle(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE, TILE_SIZE, baseColor, 1)
+      .setOrigin(0.5, 0.5).setDepth(-51);
+    const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, texKey)
       .setOrigin(0.5, 0.5).setDepth(-50);
-    this.stumpViews.set(key, sprite);
+    this.stumpViews.set(key, { container: null, sprite, cover });
   }
 
   removeStump(key) {
-    const sprite = this.stumpViews.get(key);
-    if (sprite) { sprite.destroy(); this.stumpViews.delete(key); }
+    const view = this.stumpViews.get(key);
+    if (view) {
+      if (view.sprite) view.sprite.destroy();
+      if (view.cover) view.cover.destroy();
+      this.stumpViews.delete(key);
+    }
   }
 
   syncResourceStumps() {

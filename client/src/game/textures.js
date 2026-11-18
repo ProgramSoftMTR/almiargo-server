@@ -456,9 +456,8 @@ export function ensurePlayerTexture(scene, classId, outfit) {
 
 export function createResourceTextures(scene) {
   makeTexture(scene, 'tree_stump', 32, 32, (g) => {
-    // base de hierba
-    g.fillStyle(0x2f5730, 1); g.fillRect(0, 0, 32, 32);
-    g.fillStyle(0x254526, 1); g.fillRect(2, 2, 28, 28);
+    // Fondo transparente: solo sombra + tocón.
+    g.fillStyle(0x000000, 0.22); g.fillEllipse(16, 29, 13, 5);
     // tronco cortado
     g.fillStyle(0x5a3a24, 1); g.fillRect(10, 18, 12, 8);
     g.fillStyle(0x7a5630, 1); g.fillRect(11, 19, 10, 6);
@@ -467,6 +466,15 @@ export function createResourceTextures(scene) {
     g.fillStyle(0x8a6034, 1); g.fillRect(14, 21, 4, 2);
     // astillas
     g.fillStyle(0x4a3320, 1); g.fillRect(6, 24, 4, 3); g.fillRect(22, 22, 4, 3);
+  });
+  makeTexture(scene, 'palm_stump', 32, 32, (g) => {
+    g.fillStyle(0x000000, 0.22); g.fillEllipse(16, 29, 13, 5);
+    // tocón de palmera en madera cálida
+    g.fillStyle(0x8a5a30, 1); g.fillRect(10, 18, 12, 8);
+    g.fillStyle(0xb8874e, 1); g.fillRect(11, 19, 10, 6);
+    g.fillStyle(0x5a3a1e, 1); g.fillRect(13, 20, 6, 4);
+    g.fillStyle(0xd4a359, 1); g.fillRect(14, 21, 4, 2);
+    g.fillStyle(0x6a4420, 1); g.fillRect(6, 24, 4, 3); g.fillRect(22, 22, 4, 3);
   });
 }
 

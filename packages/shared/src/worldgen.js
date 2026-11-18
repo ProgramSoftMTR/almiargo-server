@@ -348,14 +348,14 @@ export function generateWorld(seed = WORLD_SEED) {
       if (isSafeZone(x, y) || isPvPZone(x, y)) continue;
       // Espaciado mínimo 2-3 tiles entre palmeras.
       let tooClose = false;
-      for (let oy = -2; oy <= 2 && !tooClose; oy += 1) {
-        for (let ox = -2; ox <= 2; ox += 1) {
+      for (let oy = -4; oy <= 4 && !tooClose; oy += 1) {
+        for (let ox = -4; ox <= 4; ox += 1) {
           if (ox === 0 && oy === 0) continue;
           if (get(x + ox, y + oy) === TILE.TREE_PALM) { tooClose = true; break; }
         }
       }
       if (tooClose) continue;
-      if (palmHash(x, y) > 0.62) set(x, y, TILE.TREE_PALM);
+      if (palmHash(x, y) > 0.81) set(x, y, TILE.TREE_PALM);
     }
   }
 
