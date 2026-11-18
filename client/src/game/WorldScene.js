@@ -525,6 +525,15 @@ export class WorldScene extends Phaser.Scene {
     this.tweens.add({ targets: sprite, y: -3, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     view = { container, sprite, label, data: bag };
     this.bagViews.set(bag.id, view);
+    // Temporizador de respaldo de expiracion segun vida del servidor.
+    if (bag.expiresAt) {
+      const delay = Math.max(0, Number(bag.expiresAt) - Date.now());
+      setTimeout(() => {
+        const v = this.bagViews.get(bag.id);
+        if (v) { v.container.destroy(true); this.bagViews.delete(bag.id); }
+        store.bags.delete(bag.id);
+      }, delay);
+    }
     return view;
   }
 
@@ -1078,13 +1087,18 @@ export class WorldScene extends Phaser.Scene {
         if (msg.gold > 0) this.floatText(`+${msg.gold}◈`, this.localContainer.x, this.localContainer.y - 40, '#f2c94c');
         break;
       case 'drop_despawn':
-        // El servidor removió la bolsa temporalmente (timeout 60s o pickup)
-        // Eliminar el sprite visual de la bolsa
-        const bagView = this.bagViews.get(msg.bagId);
+      case 'remove_bag':
+      case 'loot_removed':
+      case 'loot_expired':
+        // El servidor removió la bolsa (timeout, pickup o inexistente).
+        // Eliminar el sprite visual de la bolsa silenciosamente.
+        const bagId = msg?.bagId ?? msg?.id;
+        const bagView = this.bagViews.get(bagId);
         if (bagView) {
           bagView.container.destroy(true);
-          this.bagViews.delete(msg.bagId);
+          this.bagViews.delete(bagId);
         }
+        if (bagId != null) store.bags.delete(bagId);
         break;
       case 'move_reject':
         this.handleMoveReject(msg);

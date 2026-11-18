@@ -20,6 +20,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 12:00:00 feat pantalla carga previa y mundo persistente 24/7
 // deploy trigger: 2026-11-18 13:00:00 feat aumento densidad 180 mobs y 28 spawners playa
 // deploy trigger: 2026-11-18 14:00:00 feat spawners mixtos playa distribucion equitativa espaciado
+// deploy trigger: 2026-11-18 15:00:00 fix sincronizacion silenciosa loot bags y eliminacion alerta bolsa no encontrada
 
 const store = await createStore();
 const game = new GameServer({ store, config });

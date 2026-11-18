@@ -436,6 +436,8 @@ store.on('game-event', (msg) => {
       const m = String(msg.message || '');
       // Silencia avisos redundantes de cooldown (ya visibles en los botones).
       if (/enfriamiento/i.test(m)) break;
+      // Silencia alerta de bolsa no encontrada (se limpia silenciosamente).
+      if (/bolsa no encontrada/i.test(m)) break;
       hud.toast(m || 'Acción rechazada', 'error');
       break;
     }

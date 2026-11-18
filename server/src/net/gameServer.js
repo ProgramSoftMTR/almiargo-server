@@ -403,6 +403,8 @@ export class GameServer {
       case 'set_outfit': await this.handleSetOutfit(session, msg); break;
       case 'drop': await this.handleDrop(session, msg); break;
       case 'pickup': await this.handlePickup(session, msg); break;
+      case 'pickup_loot': await this.handlePickup(session, msg); break;
+      case 'collect_bag': await this.handlePickup(session, msg); break;
       case 'chat': this.handleChatMessage(session, msg); break;
       case 'shop_open': this.handleShopOpen(session, msg); break;
       case 'shop_buy': await this.handleShopBuy(session, msg); break;
@@ -1077,8 +1079,13 @@ export class GameServer {
   async handlePickup(session, msg) {
     const player = session.player;
     if (!player || player.isDead) return;
-    const bag = this.world.bags.get(String(msg.id ?? ''));
-    if (!bag) return this.sendError(session, 'Bolsa no encontrada');
+    const requestedId = String(msg?.bagId ?? msg?.id ?? '');
+    const bag = this.world.bags.get(requestedId);
+    if (!bag) {
+      // Respuesta silenciosa: ordenar al cliente eliminar la bolsa fantasma.
+      this.sendEvent(player, 'drop_despawn', { bagId: requestedId });
+      return;
+    }
     if ((bag.x - player.x) ** 2 + (bag.y - player.y) ** 2 > 2.2 ** 2) {
       return this.sendError(session, 'Acércate a la bolsa');
     }
