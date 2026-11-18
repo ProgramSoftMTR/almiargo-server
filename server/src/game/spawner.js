@@ -1,4 +1,4 @@
-import { MONSTERS, isWalkable } from '../../shared/index.js';
+import { MONSTERS, isWalkable, TILE } from '../../shared/index.js';
 import { Monster } from './monster.js';
 
 const tileKey = (x, y) => `${Math.round(x)},${Math.round(y)}`;
@@ -72,9 +72,14 @@ export class Spawner {
       }
       if (!world.isInside(x, y)) continue;
       const tile = world.map ? (world.map.tiles ? world.map.tiles[y * world.map.width + x] : null) : null;
-      // beachOnly: solo arena (SAND). Evitar que mobs normales spawneen en arena.
-      if (this.beachOnly && tile !== 6) continue;
-      if (!this.beachOnly && tile === 6) continue;
+      // Bioma estricto:
+      //  - beachOnly (cangrejo, estrella, castillo): SOLO arena (SAND).
+      //  - mobs regulares: SOLO Grass/Dirt/Forest. Excluye Beach (sand) y Ocean (water).
+      if (this.beachOnly) {
+        if (tile !== TILE.SAND) continue;
+      } else {
+        if (tile !== TILE.GRASS && tile !== TILE.DIRT && tile !== TILE.FOREST) continue;
+      }
       if (!world.canWalk(x, y)) continue;
       if (world.blocked.has(tileKey(x, y))) continue;
       if (world.isTileOccupied(x, y)) continue;

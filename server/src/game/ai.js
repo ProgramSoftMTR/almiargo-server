@@ -3,7 +3,9 @@ import { monsterAttack } from './combat.js';
 
 /**
  * IA simple y barata: patrulla -> aggro -> persecucion -> ataque -> leashing.
- * Se ejecuta dentro del tick autoritativo (20 Hz).
+ * Se ejecuta dentro del tick autoritativo (20 Hz), pero las decisiones de IA
+ * (buscar objetivos, verificar leashing, cambiar estados) se throttle a
+ * AI_TICK_MS para aliviar CPU.
  */
 const reservedTiles = new Set();
 const tileKeyLocal = (x, y) => `${Math.round(x)},${Math.round(y)}`;
@@ -15,10 +17,20 @@ const CARDINALS = [
   [-1, 0],
 ];
 
-const MAX_LEASH_DISTANCE = 15;
-const AGGRO_RADIUS = 5;
+export const AI_TICK_MS = 200;          // 5 decisiones de IA por segundo
+export const MAX_LEASH_DISTANCE = 15;
+export const AGGRO_RADIUS = 5;
+export const SLEEP_RADIUS = 60;         // ~3 pantallas: culling de mobs lejanos
+
+const MAX_LEASH_DISTANCE_SQ = MAX_LEASH_DISTANCE * MAX_LEASH_DISTANCE;
+const SLEEP_RADIUS_SQ = SLEEP_RADIUS * SLEEP_RADIUS;
 
 export function updateMonsters(game, now) {
+  if (!game || !game.world) return;
+  if (!Number.isFinite(game.lastAiTickAt)) game.lastAiTickAt = -Infinity;
+  const runAI = (now - game.lastAiTickAt) >= AI_TICK_MS;
+  if (runAI) game.lastAiTickAt = now;
+
   reservedTiles.clear();
   for (const monster of game.world.monsters.values()) {
     if (!monster.alive) {
@@ -29,6 +41,7 @@ export function updateMonsters(game, now) {
         monster.dir = 'down';
         monster.slot = null;
         monster.state = 'idle';
+        monster.sleeping = false;
         game.broadcastNear(monster.x, monster.y, game.config?.aoiRadius ?? 20, {
           type: 'respawn', id: monster.id, kind: 'monster', x: monster.x, y: monster.y,
         });
@@ -37,18 +50,42 @@ export function updateMonsters(game, now) {
     }
 
     if (!monster.state) monster.state = 'idle';
+    if (monster.sleeping == null) monster.sleeping = false;
+
+    // ── SLEEP MODE: culling espacial para mobs lejanos ───────────────
+    if (monster.state === 'sleep' || monster.sleeping) {
+      monster.state = 'sleep';
+      monster.sleeping = true;
+      // Despertar instantaneo cuando un jugador entra en el sector.
+      const nearby = game.world.playersNear
+        ? game.world.playersNear(monster.x, monster.y, SLEEP_RADIUS)
+        : [];
+      if (nearby && nearby.length > 0) {
+        monster.sleeping = false;
+        monster.state = 'idle';
+        monster.nextPatrolAt = now + 500;
+        monster.nextMoveAt = now;
+      } else {
+        // Dormido: sin movimiento, pathfinding ni IA de busqueda.
+        continue;
+      }
+    }
+
     const def = monster.def;
     const hx = monster.homeX ?? monster.spawnX ?? monster.x;
     const hy = monster.homeY ?? monster.spawnY ?? monster.y;
 
     // Estado RETURNING: ignora jugadores y vuelve al spawn.
     if (monster.state === 'returning') {
-      const distHome = Math.hypot(monster.x - hx, monster.y - hy);
-      if (distHome < 1) {
+      const dxh = monster.x - hx;
+      const dyh = monster.y - hy;
+      const distHomeSq = dxh * dxh + dyh * dyh;
+      if (distHomeSq < 1) {
         monster.state = 'idle';
         monster.targetId = null;
         monster.slot = null;
         monster.hp = monster.maxHp;
+        monster.sleeping = false;
         continue;
       }
       if (now >= monster.nextMoveAt) {
@@ -61,8 +98,10 @@ export function updateMonsters(game, now) {
 
     // Estado CHASING: persigue al target; verifica leash.
     if (monster.state === 'chasing') {
-      const leashDist = Math.hypot(monster.x - hx, monster.y - hy);
-      if (leashDist > MAX_LEASH_DISTANCE) {
+      const dxh = monster.x - hx;
+      const dyh = monster.y - hy;
+      const leashDistSq = dxh * dxh + dyh * dyh;
+      if (leashDistSq > MAX_LEASH_DISTANCE_SQ) {
         monster.state = 'returning';
         monster.targetId = null;
         monster.slot = null;
@@ -133,11 +172,25 @@ export function updateMonsters(game, now) {
     // Estado IDLE: patrulla y detecta jugadores en aggro radius.
     monster.targetId = null;
     monster.slot = null;
-    const found = game.world.nearestPlayer(monster.x, monster.y, AGGRO_RADIUS);
-    if (found && !isSafeZone(Math.round(found.x), Math.round(found.y))) {
-      monster.targetId = found.id;
-      monster.state = 'chasing';
+
+    // Sleep transition: si no hay jugadores en radio amplio, dormir.
+    const nearPlayers = game.world.playersNear
+      ? game.world.playersNear(monster.x, monster.y, SLEEP_RADIUS)
+      : [];
+    if (!nearPlayers || nearPlayers.length === 0) {
+      monster.state = 'sleep';
+      monster.sleeping = true;
       continue;
+    }
+
+    // Busqueda de objetivos solo en ticks de IA.
+    if (runAI) {
+      const found = game.world.nearestPlayer(monster.x, monster.y, AGGRO_RADIUS);
+      if (found && !isSafeZone(Math.round(found.x), Math.round(found.y))) {
+        monster.targetId = found.id;
+        monster.state = 'chasing';
+        continue;
+      }
     }
 
     if (now >= monster.nextPatrolAt) {

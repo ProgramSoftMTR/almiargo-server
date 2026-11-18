@@ -9,6 +9,7 @@ import {
   findSpawnTile,
   generateWorld,
   isWalkable,
+  TILE,
 } from '../../shared/index.js';
 import { Monster } from './monster.js';
 import { SpatialHash } from './spatialHash.js';
@@ -189,7 +190,45 @@ export class World {
       }
       spawner.nextSpawnAt = now + spawner.respawnTime;
     }
+    this.sanitizeMisplacedMonsters?.();
     return this.monsters.size;
+  }
+
+  /** Limpia mobs regulares mal ubicados sobre arena/agua reubicándolos o eliminándolos. */
+  sanitizeMisplacedMonsters() {
+    const beachMobs = new Set(['crab', 'starfish', 'sandcastle']);
+    for (const [id, monster] of [...this.monsters.entries()]) {
+      if (!monster || !monster.alive) continue;
+      const tx = Math.round(monster.x);
+      const ty = Math.round(monster.y);
+      if (!this.isInside(tx, ty)) { this.removeMonster(id); continue; }
+      const tile = this.map.tiles[ty * this.width + tx];
+      const isBeachMob = beachMobs.has(monster.defId);
+      if (isBeachMob) continue;
+      if (tile === TILE.GRASS || tile === TILE.DIRT || tile === TILE.FOREST) continue;
+      // reubicar en pasto válido
+      let found = null;
+      for (let a = 0; a < 300; a += 1) {
+        const x = Math.floor(Math.random() * this.width);
+        const y = Math.floor(Math.random() * this.height);
+        const t = this.map.tiles[y * this.width + x];
+        if (t !== TILE.GRASS && t !== TILE.DIRT && t !== TILE.FOREST) continue;
+        if (!this.canWalk(x, y)) continue;
+        if (this.isTileOccupied(x, y, monster.id)) continue;
+        found = { x, y }; break;
+      }
+      if (found) {
+        this.moveEntity(monster, found.x, found.y);
+        monster.homeX = found.x;
+        monster.homeY = found.y;
+        monster.spawn = { x: found.x, y: found.y };
+        monster.spawnX = found.x;
+        monster.spawnY = found.y;
+        this.refreshEntity(monster);
+      } else {
+        this.removeMonster(id);
+      }
+    }
   }
 
   updateSpawners(now) {

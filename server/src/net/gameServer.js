@@ -847,7 +847,7 @@ export class GameServer {
 
     const now = Date.now();
     if (now < (player.nextChopAt ?? 0)) return;
-    if (Math.hypot(player.x - x, player.y - y) > CONSTANTS.CHOP_RANGE) {
+    if ((player.x - x) ** 2 + (player.y - y) ** 2 > CONSTANTS.CHOP_RANGE ** 2) {
       return this.sendEvent(player, 'system_message', { message: 'Estas demasiado lejos del arbol.' });
     }
     if (!this.resources.isAlive(x, y)) {
