@@ -12,7 +12,7 @@ const tileKey = (x, y) => `${Math.round(x)},${Math.round(y)}`;
  *  - respawnTime: tiempo en ms para reaparecer un mob
  */
 export class Spawner {
-  constructor({ id, zoneRect, mobType, maxMobs, respawnTime = 8000, beachOnly = false, world = null } = {}) {
+  constructor({ id, zoneRect, mobType, mobPool, maxMobs, respawnTime = 8000, beachOnly = false, world = null } = {}) {
     this.id = id ?? `spawner_${mobType}_${Math.random().toString(36).slice(2, 8)}`;
     this.zoneRect = {
       startX: Number(zoneRect?.startX ?? 0),
@@ -20,7 +20,8 @@ export class Spawner {
       width: Number(zoneRect?.width ?? 1),
       height: Number(zoneRect?.height ?? 1),
     };
-    this.mobType = mobType;
+    this.mobType = mobType ?? null;
+    this.mobPool = Array.isArray(mobPool) && mobPool.length ? mobPool.slice() : (mobType ? [mobType] : []);
     this.maxMobs = Math.max(1, Number(maxMobs ?? 1));
     this.respawnTime = Math.max(250, Number(respawnTime ?? 8000));
     this.beachOnly = Boolean(beachOnly || zoneRect?.beachOnly);
@@ -49,8 +50,8 @@ export class Spawner {
     let count = 0;
     for (const monster of world.monsters.values()) {
       if (!monster || !monster.alive) continue;
-      if (monster.defId !== this.mobType) continue;
       if (monster.spawnerId !== this.id) continue;
+      if (this.mobPool.length && !this.mobPool.includes(monster.defId)) continue;
       const tx = Math.round(monster.x);
       const ty = Math.round(monster.y);
       if (this.contains(tx, ty)) count += 1;
@@ -86,7 +87,10 @@ export class Spawner {
   update(world, now) {
     const w = world ?? this.world;
     if (!w) return 0;
-    const def = MONSTERS[this.mobType];
+    const chosenType = this.mobPool.length
+      ? this.mobPool[Math.floor(Math.random() * this.mobPool.length)]
+      : this.mobType;
+    const def = MONSTERS[chosenType];
     if (!def) return 0;
 
     // Limpieza de mobs muertos gestionados por este spawner.
@@ -106,7 +110,7 @@ export class Spawner {
       if (!tile) break;
       const monster = new Monster({
         id: `m_${++w.monsterCounter}`,
-        defId: this.mobType,
+        defId: chosenType,
         spawn: tile,
         spawnerId: this.id,
       });
@@ -134,12 +138,13 @@ export function createSpawnersFromZones(zones, world = null) {
       width: zone.width,
       height: zone.height,
     };
-    const mobType = zone.mobType ?? zone.monsterId;
-    if (!mobType) continue;
+    const mobType = zone.mobType ?? zone.monsterId ?? (Array.isArray(zone.mobPool) ? zone.mobPool[0] : null);
+    if (!mobType && !(zone.mobPool && zone.mobPool.length)) continue;
     list.push(new Spawner({
       id: zone.id ?? zone.name ?? `${mobType}_spawner`,
       zoneRect: rect,
       mobType,
+      mobPool: zone.mobPool ?? null,
       maxMobs: zone.maxMobs ?? zone.count ?? 5,
       respawnTime: zone.respawnTime ?? 8000,
       beachOnly: zone.beachOnly ?? false,
