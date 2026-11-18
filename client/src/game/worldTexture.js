@@ -104,14 +104,66 @@ function drawTile(ctx, world, x, y, px, py) {
       ctx.fillRect(bx, by, 4, 3);
     }
   } else if (tile === TILE.TREE_PALM) {
+    // Arena seca
     ctx.fillStyle = '#c9b27a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.fillStyle = '#4a3220';
-    ctx.fillRect(px + 14, py + 10, 4, 16);
-    ctx.fillStyle = '#2a6a3a';
+    ctx.fillStyle = 'rgba(255,235,180,.18)';
+    for (let i = 0; i < 5; i += 1) {
+      const bx = px + ((h * 83 + i * 29) % TILE_SIZE);
+      const by = py + ((h * 61 + i * 11) % TILE_SIZE);
+      ctx.fillRect(bx, by, 2, 2);
+    }
+    // Sombra suave en arena
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.beginPath();
-    ctx.arc(px + 16, py + 8, 12, 0, Math.PI * 2);
+    ctx.ellipse(px + 16, py + 29, 13, 5, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Tronco curvo determinista
+    const lean = h > 0.5 ? -3 : 3;
+    ctx.strokeStyle = '#8a5a30';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(px + 16, py + 30);
+    ctx.quadraticCurveTo(px + 16 + lean, py + 18, px + 16 + lean * 2, py + 8);
+    ctx.stroke();
+    ctx.strokeStyle = '#5a3a1e';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i += 1) {
+      const ty = py + 26 - i * 5;
+      const tx = px + 16 + Math.round((lean / 3) * (3 - i));
+      ctx.beginPath();
+      ctx.moveTo(tx - 2, ty);
+      ctx.lineTo(tx + 2, ty);
+      ctx.stroke();
+    }
+    // Copa tropical
+    ctx.fillStyle = '#2a8a3a';
+    for (let i = 0; i < 6; i += 1) {
+      const ang = (i / 6) * Math.PI * 2;
+      const lx = px + 16 + lean * 2 + Math.cos(ang) * 10;
+      const ly = py + 8 + Math.sin(ang) * 6;
+      ctx.beginPath();
+      ctx.ellipse(lx, ly, 7, 3, ang, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#4aaa4a';
+    for (let i = 0; i < 5; i += 1) {
+      const ang = (i / 5) * Math.PI * 2 + 0.4;
+      const lx = px + 16 + lean * 2 + Math.cos(ang) * 8;
+      const ly = py + 8 + Math.sin(ang) * 5;
+      ctx.beginPath();
+      ctx.ellipse(lx, ly, 5, 2.5, ang, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Cocos
+    ctx.fillStyle = '#3a2410';
+    for (let i = 0; i < 3; i += 1) {
+      const cx = px + 14 + lean * 2 + i * 3;
+      const cy = py + 9 + (i % 2);
+      ctx.beginPath();
+      ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else if (tile === TILE.TREE_PINE) {
     ctx.fillStyle = '#dfe7f0';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
@@ -134,17 +186,67 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.ellipse(px + 16, py + 10, 13, 6, 0, 0, Math.PI * 2);
     ctx.fill();
   } else if (tile === TILE.TREE_DEAD) {
+    // Pantano (pasto verde oscuro)
     ctx.fillStyle = '#2f4a3a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.strokeStyle = '#3a322a';
-    ctx.lineWidth = 2;
+    ctx.fillStyle = 'rgba(20,40,30,.35)';
+    for (let i = 0; i < 6; i += 1) {
+      const bx = px + ((h * 71 + i * 19) % (TILE_SIZE - 4));
+      const by = py + ((h * 53 + i * 23) % (TILE_SIZE - 4));
+      ctx.fillRect(bx, by, 3, 2);
+    }
+    ctx.fillStyle = 'rgba(80,120,90,.18)';
+    ctx.fillRect(px, py + TILE_SIZE - 6, TILE_SIZE, 6);
+    // Sombra humeda
+    ctx.fillStyle = 'rgba(0,0,0,0.30)';
     ctx.beginPath();
-    ctx.moveTo(px + 16, py + 28);
-    ctx.lineTo(px + 16, py + 8);
-    ctx.lineTo(px + 10, py + 4);
-    ctx.moveTo(px + 16, py + 14);
-    ctx.lineTo(px + 22, py + 10);
+    ctx.ellipse(px + 16, py + 30, 14, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Raices aereas (zancudas)
+    ctx.strokeStyle = '#2a2418';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 4; i += 1) {
+      const rx = px + 6 + i * 7;
+      ctx.beginPath();
+      ctx.moveTo(px + 16, py + 22);
+      ctx.quadraticCurveTo(rx, py + 28, rx, py + 31);
+      ctx.stroke();
+    }
+    // Tronco retorcido/bifurcado
+    ctx.strokeStyle = '#3a3228';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(px + 16, py + 30);
+    ctx.quadraticCurveTo(px + 12, py + 18, px + 14, py + 10);
     ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px + 14, py + 16);
+    ctx.lineTo(px + 20, py + 10);
+    ctx.stroke();
+    // Copa ancha irregular achatada en 3 tonos verde musgo/oliva
+    const greens = ['#3a4a2a', '#4a5a30', '#5a6a38'];
+    ctx.fillStyle = greens[0];
+    ctx.beginPath();
+    ctx.ellipse(px + 16, py + 7, 15, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = greens[1];
+    ctx.beginPath();
+    ctx.ellipse(px + 11, py + 6, 9, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(px + 21, py + 6, 9, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = greens[2];
+    ctx.beginPath();
+    ctx.ellipse(px + 16, py + 5, 8, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Musgo colgante
+    ctx.fillStyle = 'rgba(60,80,40,.6)';
+    for (let i = 0; i < 5; i += 1) {
+      const mx = px + 8 + ((h * 67 + i * 17) % 16);
+      const my = py + 11 + ((h * 43 + i * 11) % 6);
+      ctx.fillRect(mx, my, 1, 3 + (i % 3));
+    }
   } else if (tile === TILE.SAVANNA) {
     ctx.fillStyle = '#b9a05a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);

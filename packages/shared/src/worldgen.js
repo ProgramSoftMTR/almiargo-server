@@ -176,7 +176,15 @@ export function generateWorld(seed = WORLD_SEED) {
       let treeTile = null;
       if (tile === TILE.FOREST && d > 0.42) treeTile = TILE.TREE;
       else if (tile === TILE.SNOW && d > 0.55) treeTile = TILE.TREE_PINE;
-      else if (tile === TILE.SAND && d > 0.78) treeTile = TILE.TREE_PALM;
+      else if (tile === TILE.SAND && d > 0.78) {
+        let nearWater = false;
+        for (let oy = -2; oy <= 2 && !nearWater; oy += 1) {
+          for (let ox = -2; ox <= 2; ox += 1) {
+            if (tileAt({ width, height, tiles }, x + ox, y + oy) === TILE.WATER) { nearWater = true; break; }
+          }
+        }
+        if (!nearWater && !isSafeZone(x, y) && !isPvPZone(x, y)) treeTile = TILE.TREE_PALM;
+      }
       else if (tile === TILE.SAVANNA && d > 0.62) treeTile = TILE.TREE_ACACIA;
       else if (tile === TILE.SWAMP && d > 0.5) treeTile = TILE.TREE_DEAD;
       else if (tile === TILE.GRASS && d > 0.72) treeTile = TILE.TREE;
