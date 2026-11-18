@@ -14,6 +14,41 @@ import { CraftingUI } from './ui/CraftingUI.js';
 
 const $ = (id) => document.getElementById(id);
 
+// PROTECTED: GOOGLE AUTH - NO MODIFICAR EN CAMBIOS DE UI
+try {
+  // Inicialización prioritaria y aislada de la pantalla de login.
+  function connectCustomGoogleBtn() {
+    const btn = document.getElementById('customGoogleBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (typeof handleOAuth === 'function') handleOAuth();
+      });
+      btn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (typeof handleOAuth === 'function') handleOAuth();
+      });
+    }
+  }
+  if (document.readyState !== 'loading') connectCustomGoogleBtn();
+  else document.addEventListener('DOMContentLoaded', connectCustomGoogleBtn);
+  window.handleGoogleCredential = (response) => {
+    try {
+      const token = response?.credential;
+      if (!token) throw new Error('Google no devolvió una credencial');
+      if (typeof loginBusy !== 'undefined' && loginBusy) return;
+      const loginError = document.getElementById('loginError');
+      if (loginError) loginError.textContent = '';
+      socket.connect({ provider: 'google', token });
+    } catch (err) {
+      console.error('[login] error:', err);
+      const loginError = document.getElementById('loginError');
+      if (loginError) loginError.textContent = err?.message || 'No se pudo iniciar sesión';
+    }
+  };
+} catch (err) {
+  console.error('[auth] error de inicialización aislada:', err);
+}
+
 // ── Paneles ───────────────────────────────────────────────────
 const shopUI = new ShopUI();
 const stallUI = new StallUI();
@@ -167,42 +202,7 @@ async function handleOAuth() {
   }
 }
 
-// Conexión segura del botón personalizado de Google (espera a que el DOM exista).
-function connectCustomGoogleBtn() {
-  const btn = document.getElementById('customGoogleBtn');
-  if (btn) {
-    console.log('[DEBUG] Botón encontrado y conectado exitosamente.');
-    btn.addEventListener('click', () => {
-      console.log('[DEBUG] Clic detectado. Ejecutando Auth...');
-      console.log('Iniciando Google Auth...');
-      handleOAuth();
-    });
-  } else {
-    console.error('[ERROR] No se encontró el botón customGoogleBtn en el DOM.');
-  }
-}
-document.addEventListener('DOMContentLoaded', connectCustomGoogleBtn);
-if (document.readyState !== 'loading') {
-  connectCustomGoogleBtn();
-}
-
-// Callback global esperado por Google Identity Services (g_id_onload).
-// Evita errores de "handleGoogleCredential is not defined" en consola.
-window.handleGoogleCredential = (response) => {
-  console.log('Iniciando Google Auth...');
-  try {
-    const token = response?.credential;
-    if (!token) throw new Error('Google no devolvió una credencial');
-    if (loginBusy) return;
-    loginError.textContent = '';
-    setLoginBusy(true, 'Token verificado. Conectando al servidor...');
-    socket.connect({ provider: 'google', token });
-  } catch (err) {
-    console.error('[login] error:', err);
-    setLoginBusy(false);
-    loginError.textContent = err?.message || 'No se pudo iniciar sesión';
-  }
-};
+// PROTECTED: GOOGLE AUTH - NO MODIFICAR EN CAMBIOS DE UI (inicializado arriba)
 
 
 // ── Creación de personaje ─────────────────────────────────────

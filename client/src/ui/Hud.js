@@ -47,7 +47,6 @@ export class Hud {
     $('btnInventory').addEventListener('click', () => this.onInventory?.());
     $('btnChat').addEventListener('click', () => this.onChat?.());
     $('btnCrafting')?.addEventListener('click', () => this.onCrafting?.());
-    $('btnStall').addEventListener('click', () => this.onStall?.());
     $('chatFeed').addEventListener('click', () => this.onChat?.());
 
     window.addEventListener('keydown', (e) => {
