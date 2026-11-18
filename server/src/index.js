@@ -25,6 +25,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 17:00:00 feat ataque a distancia y proyectil de arena en sandcastle
 // deploy trigger: 2026-11-18 18:00:00 feat rango 4 tiles y persecucion dinamica sandcastle
 // deploy trigger: 2026-11-18 19:00:00 feat animacion respiracion idle personaje
+// deploy trigger: 2026-11-18 20:00:00 feat mesa de trabajo 3x3 estilo minecraft y tirar cualquier item
 // deploy trigger: 2026-11-18 20:00:00 perf migracion Ohio prediccion cliente interpolacion suave
 // deploy trigger: 2026-11-18 21:00:00 art manglares palmeras preservacion pradera
 // deploy trigger: 2026-11-18 22:00:00 perf hibernacion mobs cache sprites cliente

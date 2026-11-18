@@ -1,6 +1,8 @@
 import { store } from '../core/store.js';
 import { socket } from '../net/socket.js';
 import { uiBus } from '../core/uiBus.js';
+import { drawItemIcon } from './icons.js';
+import { ITEMS } from '@almiargo/shared';
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,20 +29,17 @@ export class CraftingUI {
     modal.id = 'craftingModal';
     modal.className = 'sheet hidden';
     modal.innerHTML = `
-      <div class="sheet-header">
-        <h3>Mesa de Trabajo</h3>
-        <button id="craftClose" class="sheet-close">✕</button>
-      </div>
-      <div class="craft-body">
-        <div class="craft-top">
-          <button id="craftRecipes" class="craft-btn">📖 Recetas</button>
-          <div id="craftGrid" class="craft-grid"></div>
-          <div class="craft-arrow">→</div>
-          <div id="craftOutput" class="craft-output"></div>
+      <div style="background:#C6C6C6;border:4px solid #000;box-shadow:inset 2px 2px 0 #FFFFFF,inset -2px -2px 0 #555555;padding:12px;max-width:420px;margin:auto;position:relative;">
+        <button id="craftClose" style="position:absolute;top:4px;right:8px;background:none;border:none;font-size:18px;cursor:pointer;">✕</button>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <button id="craftRecipes" style="width:42px;height:42px;background:#7CBD6B;border:2px solid #000;font-size:22px;cursor:pointer;">📖</button>
+          <div id="craftGrid" style="display:grid;grid-template-columns:repeat(3,42px);gap:4px;"></div>
+          <div style="font-size:24px;margin:0 6px;">➔</div>
+          <div id="craftOutput" style="width:52px;height:52px;background:#8B8B8B;border:2px inset #373737;display:flex;align-items:center;justify-content:center;cursor:pointer;"></div>
         </div>
-        <div id="craftRecipesPanel" class="craft-recipes hidden"></div>
-        <div class="craft-inv-label">Inventario</div>
-        <div id="craftInventory" class="craft-inventory"></div>
+        <div id="craftRecipesPanel" class="hidden" style="font-size:11px;margin-bottom:8px;"></div>
+        <div style="font-size:10px;margin-bottom:4px;">Inventario</div>
+        <div id="craftInventory" style="display:grid;grid-template-columns:repeat(9,38px);gap:4px;"></div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -67,7 +66,6 @@ export class CraftingUI {
   }
 
   close() {
-    // Devuelve items de la grilla al inventario (local, sin pérdida real).
     this.grid = Array(9).fill(null);
     this.modal.classList.add('hidden');
     this.renderGrid();
@@ -83,8 +81,22 @@ export class CraftingUI {
     el.innerHTML = '';
     for (let i = 0; i < 9; i += 1) {
       const cell = document.createElement('div');
-      cell.className = 'craft-cell';
-      cell.textContent = this.grid[i] ? this.grid[i] : '';
+      cell.style.cssText = 'width:42px;height:42px;background:#8B8B8B;border:2px inset #373737;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;';
+      const val = this.grid[i];
+      if (val) {
+        const def = ITEMS[val];
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        if (def) {
+          // drawItemIcon expects canvas and def
+          try { drawItemIcon(canvas, def, 32); } catch (e) {}
+        }
+        cell.appendChild(canvas);
+        const qty = document.createElement('span');
+        qty.style.cssText = 'position:absolute;bottom:2px;right:4px;font-size:10px;font-weight:bold;color:#fff;text-shadow:1px 1px 0 #000;';
+        qty.textContent = '1';
+        cell.appendChild(qty);
+      }
       cell.addEventListener('click', () => {
         if (this.grid[i]) {
           this.grid[i] = null;
@@ -96,7 +108,7 @@ export class CraftingUI {
       el.appendChild(cell);
     }
     const out = this.modal.querySelector('#craftOutput');
-    out.textContent = '';
+    out.innerHTML = '';
   }
 
   renderInventory() {
@@ -105,13 +117,24 @@ export class CraftingUI {
     el.innerHTML = '';
     const inv = store.player?.inventory ?? [];
     for (const it of inv) {
+      const def = ITEMS[it.itemId];
       const btn = document.createElement('button');
-      btn.className = 'craft-inv-item' + (this.selected === it.itemId ? ' selected' : '');
-      btn.textContent = `${it.itemId} x${it.qty}`;
+      btn.style.cssText = 'width:38px;height:38px;background:#C6C6C6;border:2px outset #fff;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;padding:0;';
+      const canvas = document.createElement('canvas');
+      canvas.width = 28; canvas.height = 28;
+      if (def) try { drawItemIcon(canvas, def, 28); } catch (e) {}
+      btn.appendChild(canvas);
+      if (it.qty > 1) {
+        const qty = document.createElement('span');
+        qty.style.cssText = 'position:absolute;bottom:1px;right:3px;font-size:9px;font-weight:bold;color:#fff;text-shadow:1px 1px 0 #000;';
+        qty.textContent = it.qty;
+        btn.appendChild(qty);
+      }
       btn.addEventListener('click', () => {
         this.selected = it.itemId;
         this.renderInventory();
       });
+      if (this.selected === it.itemId) btn.style.outline = '2px solid #FFFF00';
       el.appendChild(btn);
     }
   }
@@ -121,15 +144,12 @@ export class CraftingUI {
     const recipes = [
       'Cuerda: 3 lianas columna centro + 1 rama arriba-izq',
       'Poción viscosa: 1 liana arriba + 2 slime centro/abajo',
-      'Elixir agilidad: 1 rama arriba + 3 slime centro + 1 rama abajo',
-      'Arco largo: madera manglar arriba/centro-izq/abajo + cuerda columna derecha',
-      'Báculo: diagonal slime arriba-der, rama centro, madera abajo-izq',
-      'Escudo: fila superior madera, centro slime, abajo-centro madera',
     ];
-    el.innerHTML = recipes.map((r) => `<div class="craft-recipe">${r}</div>`).join('');
+    el.innerHTML = recipes.map((r) => `<div>${r}</div>`).join('');
   }
 
   doCraft() {
     socket.send('craft_grid', { grid: this.grid });
   }
+
 }
