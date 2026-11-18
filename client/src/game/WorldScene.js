@@ -312,6 +312,7 @@ export class WorldScene extends Phaser.Scene {
     const dist = Math.hypot(sx - this.localPred.x, sy - this.localPred.y);
     const holding = (this.joystick?.active && this.joystick.dir) || this.path.length > 0;
     const recent = Date.now() - this.lastStepSentAt < this.moveMs * 1.8;
+    const recentInput = Date.now() - this.lastStepSentAt < 400;
 
     // Reconciliacion suave: evita teletransportes bruscos (snap) salvo
     // desincronizacion grave (>2.5 tiles) o bloqueo por colision.
@@ -322,7 +323,7 @@ export class WorldScene extends Phaser.Scene {
       this.path = [];
       this.pending = null;
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
-    } else if (dist > 2.5) {
+    } else if (dist > 2.5 && !recentInput) {
       // Desincronizacion grave: ajuste directo.
       this.localPred = { x: sx, y: sy };
       this.localVisual = { x: sx, y: sy };

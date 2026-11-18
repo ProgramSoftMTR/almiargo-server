@@ -324,6 +324,39 @@ export function generateWorld(seed = WORLD_SEED) {
     }
   }
 
+  // Palmeras en la playa (borde exterior): pass determinista sobre arena,
+  // respetando distancia a agua/tierra/caminos y espaciado mínimo.
+  const palmHash = (px, py) => {
+    const n = Math.sin(px * 127.1 + py * 311.7) * 43758.5453;
+    return n - Math.floor(n);
+  };
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (get(x, y) !== TILE.SAND) continue;
+      let edge = false;
+      for (let oy = -1; oy <= 1 && !edge; oy += 1) {
+        for (let ox = -1; ox <= 1; ox += 1) {
+          if (ox === 0 && oy === 0) continue;
+          const t = get(x + ox, y + oy);
+          if (t === TILE.WATER || t === TILE.DIRT || t === TILE.STONE || t === TILE.WALL || t === TILE.GRASS) {
+            edge = true; break;
+          }
+        }
+      }
+      if (edge) continue;
+      if (isSafeZone(x, y) || isPvPZone(x, y)) continue;
+      let tooClose = false;
+      for (let oy = -2; oy <= 2 && !tooClose; oy += 1) {
+        for (let ox = -2; ox <= 2; ox += 1) {
+          if (ox === 0 && oy === 0) continue;
+          if (get(x + ox, y + oy) === TILE.TREE_PALM) { tooClose = true; break; }
+        }
+      }
+      if (tooClose) continue;
+      if (palmHash(x, y) > 0.62) set(x, y, TILE.TREE_PALM);
+    }
+  }
+
   // Reabrir caminos por si algún árbol cayó sobre ellos.
   carve(100, 110, 100, 90, 3);
   carve(90, 100, 110, 100, 3);

@@ -3,7 +3,7 @@
  * Todo valor de balance vive aquí: una sola fuente de verdad.
  */
 
-export const TICK_RATE = 20;                 // ticks/s del servidor autoritativo
+export const TICK_RATE = 10;                 // ticks/s del servidor autoritativo (100ms)
 export const TICK_MS = 1000 / TICK_RATE;
 export const SNAPSHOT_RATE = 10;             // snapshots/s enviados al cliente
 export const SNAPSHOT_EVERY_TICKS = TICK_RATE / SNAPSHOT_RATE;

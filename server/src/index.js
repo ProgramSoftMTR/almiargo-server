@@ -29,6 +29,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 21:00:00 art manglares palmeras preservacion pradera
 // deploy trigger: 2026-11-18 22:00:00 perf hibernacion mobs cache sprites cliente
 // deploy trigger: 2026-11-18 23:00:00 ui contador FPS HUD
+// deploy trigger: 2026-11-19 00:00:00 fix palmeras borde playa time-slicing mobs
 
 const store = await createStore();
 const game = new GameServer({ store, config });

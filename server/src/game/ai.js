@@ -17,10 +17,10 @@ const CARDINALS = [
   [-1, 0],
 ];
 
-export const AI_TICK_MS = 100;          // 10 decisiones de IA por segundo (2 ticks)
+export const AI_TICK_MS = 100;          // decisiones de IA cada 100ms
 export const MAX_LEASH_DISTANCE = 15;
 export const AGGRO_RADIUS = 5;
-export const SLEEP_RADIUS = 28;         // hibernacion: sin jugadores en 28 tiles
+export const SLEEP_RADIUS = 18;         // hibernacion: sin jugadores en 18 tiles
 
 const MAX_LEASH_DISTANCE_SQ = MAX_LEASH_DISTANCE * MAX_LEASH_DISTANCE;
 const SLEEP_RADIUS_SQ = SLEEP_RADIUS * SLEEP_RADIUS;
@@ -32,7 +32,9 @@ export function updateMonsters(game, now) {
   if (runAI) game.lastAiTickAt = now;
 
   reservedTiles.clear();
+  let monsterIndex = 0;
   for (const monster of game.world.monsters.values()) {
+    const mi = monsterIndex++;
     if (!monster.alive) {
       if (monster.spawnerId) continue;
       if (now >= monster.respawnAt) {
@@ -70,6 +72,9 @@ export function updateMonsters(game, now) {
         continue;
       }
     }
+
+    // Round-robin / time-slicing: solo 25% de los mobs activos por tick.
+    if (mi % 4 !== ((game.tickCount ?? 0) % 4)) continue;
 
     const def = monster.def;
 
@@ -137,43 +142,10 @@ export function updateMonsters(game, now) {
         monster.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
         if (now >= monster.nextAttackAt) monsterAttack(game, monster, target, now);
       } else if (now >= monster.nextMoveAt) {
-        const tx = Math.round(target.x);
-        const ty = Math.round(target.y);
-        const slots = CARDINALS
-          .map(([ox, oy]) => ({ x: tx + ox, y: ty + oy }))
-          .filter((s) => game.world.canWalk(s.x, s.y));
-
-        if (monster.slot && !slots.some((s) => s.x === monster.slot.x && s.y === monster.slot.y)) {
-          monster.slot = null;
-        }
-        if (monster.slot && isSlotOccupied(game.world, monster.slot, monster.id)) {
-          monster.slot = null;
-        }
-
-        if (!monster.slot) {
-          const free = slots
-            .filter((s) => !isSlotOccupied(game.world, s, monster.id) && !reservedTiles.has(tileKeyLocal(s.x, s.y)))
-            .sort((a, b) => (a.x - monster.x) ** 2 + (a.y - monster.y) ** 2 - ((b.x - monster.x) ** 2 + (b.y - monster.y) ** 2));
-          if (free.length > 0) monster.slot = free[0];
-        }
-
-        if (monster.slot) {
-          const nav = buildNav(game.world, monster.id);
-          const path = findPath(nav, Math.round(monster.x), Math.round(monster.y), monster.slot.x, monster.slot.y, 2000);
-          let sx = 0;
-          let sy = 0;
-          if (path.length > 0) {
-            const next = path[0];
-            sx = Math.sign(next.x - Math.round(monster.x));
-            sy = Math.sign(next.y - Math.round(monster.y));
-          } else {
-            sx = Math.sign(monster.slot.x - monster.x);
-            sy = Math.sign(monster.slot.y - monster.y);
-          }
-          moveMonster(game.world, monster, sx, sy, now);
-        } else {
-          monster.nextMoveAt = now + 700;
-        }
+        // Movimiento directo con deslizamiento simple (sin A*/BFS).
+        const sx = Math.sign(target.x - monster.x);
+        const sy = Math.sign(target.y - monster.y);
+        moveMonster(game.world, monster, sx, sy, now);
       }
       continue;
     }
