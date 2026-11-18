@@ -870,6 +870,7 @@ export class GameServer {
 
     const tile = this.world.map?.tiles?.[y * this.world.width + x];
     const isPalm = tile === TILE.TREE_PALM;
+    const isSwamp = tile === TILE.TREE_DEAD;
     const drops = [];
     if (isPalm) {
       const palmAmount = 1 + (Math.random() < 0.5 ? 1 : 0);
@@ -879,6 +880,13 @@ export class GameServer {
         addItem(player.inventory, 'coconut', 1);
         drops.push('+1 Coco');
       }
+    } else if (isSwamp) {
+      const mangroveAmount = 1 + (Math.random() < 0.5 ? 1 : 0);
+      addItem(player.inventory, 'mangrove_wood', mangroveAmount);
+      drops.push(`+${mangroveAmount} Madera de Manglar`);
+      if (Math.random() < 0.25) { addItem(player.inventory, 'branches', 1); drops.push('+1 Ramas'); }
+      if (Math.random() < 0.14) { addItem(player.inventory, 'vines', 1); drops.push('+1 Lianas'); }
+      if (Math.random() < 0.10) { addItem(player.inventory, 'slime_ball', 1); drops.push('+1 Bola de Slime'); }
     } else {
       const amount = Math.random() < 0.05
         ? 9

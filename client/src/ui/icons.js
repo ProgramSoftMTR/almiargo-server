@@ -130,24 +130,55 @@ export function drawItemIcon(canvas, def, size = 32) {
     px(15, 6, 2, 8, shade(color, -35));
     px(21, 6, 2, 8, shade(color, -35));
   } else if (shape === 'coconut') {
-    // Esfera marrón rugosa con 3 puntos
     ctx.fillStyle = hex(color);
     ctx.beginPath();
     ctx.arc(16, 17, 11, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = shade(color, -45);
-    ctx.beginPath();
-    ctx.arc(12, 14, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(17, 12, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(21, 15, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(12, 14, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(17, 12, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(21, 15, 2.5, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.beginPath(); ctx.arc(11, 11, 3, 0, Math.PI * 2); ctx.fill();
+  } else if (shape === 'mangrove_wood') {
+    px(4, 16, 24, 8, hex(color));
+    px(6, 18, 20, 4, shade(color, 20));
+    px(8, 16, 2, 8, shade(color, -40));
+    px(14, 16, 2, 8, shade(color, -40));
+    px(20, 16, 2, 8, shade(color, -40));
+    px(5, 6, 22, 8, shade(color, 15));
+    px(7, 8, 18, 4, shade(color, 35));
+    // toque verdoso
+    px(6, 6, 20, 2, 'rgba(60,90,50,.45)');
+  } else if (shape === 'branches') {
+    px(6, 10, 20, 3, hex(color));
+    px(8, 9, 2, 5, shade(color, -30));
+    px(24, 9, 2, 5, shade(color, -30));
+    px(10, 18, 18, 3, shade(color, -15));
+    px(12, 17, 2, 5, shade(color, -30));
+    px(24, 17, 2, 5, shade(color, -30));
+    px(4, 24, 16, 3, shade(color, -25));
+    px(6, 23, 2, 5, shade(color, -30));
+    px(18, 23, 2, 5, shade(color, -30));
+  } else if (shape === 'vines') {
+    px(6, 6, 4, 20, hex(color));
+    px(7, 6, 2, 20, shade(color, 30));
+    px(14, 4, 4, 24, shade(color, -10));
+    px(15, 4, 2, 24, shade(color, 25));
+    px(22, 8, 4, 18, hex(color));
+    px(23, 8, 2, 18, shade(color, 30));
+  } else if (shape === 'slime_ball') {
+    ctx.fillStyle = hex(color);
     ctx.beginPath();
-    ctx.arc(11, 11, 3, 0, Math.PI * 2);
+    ctx.arc(16, 17, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath();
+    ctx.arc(12, 12, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = shade(color, 40);
+    ctx.beginPath();
+    ctx.arc(16, 17, 8, 0, Math.PI * 2);
     ctx.fill();
   } else {
     px(9, 8, 14, 4, shade(color, 25));

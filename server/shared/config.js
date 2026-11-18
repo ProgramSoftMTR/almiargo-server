@@ -173,6 +173,26 @@ export const ITEMS = Object.freeze({
     use: { healHp: 30 }, cooldownMs: 5000,
     description: 'Coco fresco de la playa. Restaura un poco de salud al consumirlo.',
   },
+  mangrove_wood: {
+    id: 'mangrove_wood', name: 'Madera de Manglar', slot: 'resource', stackable: true,
+    price: 0, sell: 4, icon: { shape: 'mangrove_wood', color: 0x3a3228 },
+    description: 'Madera densa y resistente a la humedad extraída de los manglares del pantano.',
+  },
+  branches: {
+    id: 'branches', name: 'Ramas', slot: 'resource', stackable: true,
+    price: 0, sell: 2, icon: { shape: 'branches', color: 0x6a4a2a },
+    description: 'Ramas secas y retorcidas recolectadas de árboles del pantano. Útiles para fabricar herramientas o encender fuego.',
+  },
+  vines: {
+    id: 'vines', name: 'Lianas', slot: 'resource', stackable: true,
+    price: 0, sell: 2, icon: { shape: 'vines', color: 0x4a5a30 },
+    description: 'Enredaderas flexibles y resistentes que cuelgan de los manglares.',
+  },
+  slime_ball: {
+    id: 'slime_ball', name: 'Bola de Slime', slot: 'resource', stackable: true,
+    price: 0, sell: 3, icon: { shape: 'slime_ball', color: 0x3a8a4a },
+    description: 'Sustancia viscosa y elástica encontrada entre las raíces húmedas del pantano.',
+  },
 
   // Armas — Caballero
   sword_wood: {

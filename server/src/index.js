@@ -31,6 +31,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 23:00:00 ui contador FPS HUD
 // deploy trigger: 2026-11-19 00:00:00 fix palmeras borde playa time-slicing mobs
 // deploy trigger: 2026-11-19 01:00:00 fix tocon transparente hojas palmeras densidad
+// deploy trigger: 2026-11-19 02:00:00 feat manglar drops exclusivos
 
 const store = await createStore();
 const game = new GameServer({ store, config });
