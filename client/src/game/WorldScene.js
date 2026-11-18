@@ -349,11 +349,26 @@ export class WorldScene extends Phaser.Scene {
   emitZone() {
     const p = this.localPred;
     const zones = store.world?.zones;
-    let zone = 'Tierras salvajes';
+    let zone = 'TIERRAS SALVAJES';
     if (zones) {
-      if (p.x >= zones.safe.x1 && p.x <= zones.safe.x2 && p.y >= zones.safe.y1 && p.y <= zones.safe.y2) zone = 'Ciudad segura';
-      else if (p.x >= zones.pvp.x1 && p.x <= zones.pvp.x2 && p.y >= zones.pvp.y1 && p.y <= zones.pvp.y2) zone = 'Arena PvP';
+      if (p.x >= zones.safe.x1 && p.x <= zones.safe.x2 && p.y >= zones.safe.y1 && p.y <= zones.safe.y2) zone = 'CIUDAD';
+      else if (p.x >= zones.pvp.x1 && p.x <= zones.pvp.x2 && p.y >= zones.pvp.y1 && p.y <= zones.pvp.y2) zone = 'ARENA PVP';
+      else {
+        const tile = tileAt(this.worldMap, Math.round(p.x), Math.round(p.y));
+        switch (tile) {
+          case TILE.SAND: zone = 'PLAYA'; break;
+          case TILE.FOREST: zone = 'BOSQUE'; break;
+          case TILE.SWAMP: zone = 'PANTANO'; break;
+          case TILE.SAVANNA: zone = 'SABANA'; break;
+          case TILE.SNOW: zone = 'TIERRAS NEVADAS'; break;
+          case TILE.MOUNTAIN: zone = 'MONTAÑAS'; break;
+          case TILE.WATER: zone = 'OCÉANO'; break;
+          default: zone = 'TIERRAS SALVAJES'; break;
+        }
+      }
     }
+    if (this.lastBiomeLabel === zone) return;
+    this.lastBiomeLabel = zone;
     if (store.zone !== zone) {
       store.zone = zone;
       store.emit('zone', zone);

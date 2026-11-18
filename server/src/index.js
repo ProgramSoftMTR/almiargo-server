@@ -21,6 +21,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-18 13:00:00 feat aumento densidad 180 mobs y 28 spawners playa
 // deploy trigger: 2026-11-18 14:00:00 feat spawners mixtos playa distribucion equitativa espaciado
 // deploy trigger: 2026-11-18 15:00:00 fix sincronizacion silenciosa loot bags y eliminacion alerta bolsa no encontrada
+// deploy trigger: 2026-11-18 16:00:00 feat indicador dinamico bioma minimapa
 
 const store = await createStore();
 const game = new GameServer({ store, config });
