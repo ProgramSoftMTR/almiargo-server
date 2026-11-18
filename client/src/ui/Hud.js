@@ -10,10 +10,10 @@ const $ = (id) => document.getElementById(id);
  * HUD móvil: barras, minimapa, acciones rápidas, objetivo, muerte y toasts.
  */
 export class Hud {
-  constructor({ onInventory, onChat, onStall }) {
+  constructor({ onInventory, onChat, onCrafting }) {
     this.onInventory = onInventory;
     this.onChat = onChat;
-    this.onStall = onStall;
+    this.onCrafting = onCrafting;
     this.hud = $('hud');
     this.formatted = '';
     this.feed = [];
@@ -46,6 +46,7 @@ export class Hud {
     });
     $('btnInventory').addEventListener('click', () => this.onInventory?.());
     $('btnChat').addEventListener('click', () => this.onChat?.());
+    $('btnCrafting')?.addEventListener('click', () => this.onCrafting?.());
     $('btnStall').addEventListener('click', () => this.onStall?.());
     $('chatFeed').addEventListener('click', () => this.onChat?.());
 
@@ -114,6 +115,12 @@ export class Hud {
     if (skullIcon) skullIcon.classList.toggle('hidden', !skull || skull === 'none');
     const goldTextEl = $('goldText'); if (goldTextEl) goldTextEl.textContent = p.gold ?? 0;
     $('onlineText').textContent = `● ${store.online ?? 1}${store.latency ? ` · ${store.latency}ms` : ''}`;
+    const btnCrafting = $('btnCrafting');
+    if (btnCrafting) {
+      const hasTable = store.player?.equipment?.tool?.itemId === 'crafting_table';
+      btnCrafting.classList.toggle('hidden', !hasTable);
+      btnCrafting.title = hasTable ? 'Mesa de Trabajo' : 'Equipa una Mesa de Trabajo';
+    }
 
     for (const btn of document.querySelectorAll('.class-btn')) {
       btn.classList.toggle('active', btn.dataset.class === p.classId);

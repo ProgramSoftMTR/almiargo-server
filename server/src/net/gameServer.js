@@ -413,6 +413,7 @@ export class GameServer {
       case 'stall_close': await this.handleStallClose(session); break;
       case 'stall_view': this.handleStallView(session, msg); break;
       case 'stall_buy': await this.handleStallBuy(session, msg); break;
+      case 'craft_grid': await this.handleCraftGrid(session, msg); break;
       case 'admin_action': this.handleAdminAction(session, msg); break;
       case 'ping': this.send(session, { type: 'pong', t: msg.t ?? 0, serverTime: Date.now() }); break;
       default: this.sendError(session, 'Acción desconocida');
@@ -1268,6 +1269,93 @@ export class GameServer {
         stall: { id: stallId, ...stallMeta, items: result.remainingItems },
       });
     }
+  }
+
+  normalizeGrid(grid) {
+    if (!Array.isArray(grid) || grid.length !== 9) return null;
+    const g = grid.map((v) => (v == null ? null : String(v)));
+    // normaliza por trim de filas/cols vacías
+    let minR = 3, maxR = -1, minC = 3, maxC = -1;
+    for (let r = 0; r < 3; r += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        if (g[r * 3 + c]) { minR = Math.min(minR, r); maxR = Math.max(maxR, r); minC = Math.min(minC, c); maxC = Math.max(maxC, c); }
+      }
+    }
+    if (maxR < 0) return { rows: 0, cols: 0, cells: [] };
+    const rows = maxR - minR + 1;
+    const cols = maxC - minC + 1;
+    const cells = [];
+    for (let r = minR; r <= maxR; r += 1) {
+      for (let c = minC; c <= maxC; c += 1) cells.push(g[r * 3 + c]);
+    }
+    return { rows, cols, cells };
+  }
+
+  matchRecipe(grid) {
+    const norm = this.normalizeGrid(grid);
+    if (!norm || norm.rows === 0) return null;
+    const key = `${norm.rows}x${norm.cols}:${norm.cells.join(',')}`;
+    const recipes = {
+      '1x1:branches': null,
+    };
+    // Definimos recetas normalizadas.
+    const R = (rows, cols, cells, result) => ({ rows, cols, cells, result });
+    const recipesList = [
+      R(3, 3, ['branches','vines',null, null,'vines',null, null,'vines',null], 'braided_rope'),
+      R(3, 1, ['vines','slime_ball','slime_ball'], 'slime_heal_potion'),
+      R(3, 3, [null,'branches',null, 'slime_ball','slime_ball','slime_ball', null,'branches',null], 'swamp_agility_elixir'),
+      R(3, 3, [null,'mangrove_wood','braided_rope', 'mangrove_wood',null,'braided_rope', null,'mangrove_wood','braided_rope'], 'mangrove_longbow'),
+      R(3, 3, [null,null,'slime_ball', null,'branches',null, 'mangrove_wood',null,null], 'swamp_staff'),
+      R(3, 3, ['mangrove_wood','mangrove_wood','mangrove_wood', 'mangrove_wood','slime_ball','mangrove_wood', null,'mangrove_wood',null], 'mangrove_shield'),
+    ];
+    for (const rec of recipesList) {
+      if (rec.rows !== norm.rows || rec.cols !== norm.cols) continue;
+      if (rec.cells.every((v, i) => v === norm.cells[i])) return rec.result;
+    }
+    return null;
+  }
+
+  async handleCraftGrid(session, msg) {
+    const player = session.player;
+    if (!player) return;
+    if (player?.equipment?.tool?.itemId !== 'crafting_table') {
+      return this.sendError(session, 'Equipa una Mesa de Trabajo');
+    }
+    const grid = msg?.grid;
+    if (!Array.isArray(grid) || grid.length !== 9) return this.sendError(session, 'Grilla inválida');
+    // Validar materiales
+    const counts = {};
+    for (const id of grid) {
+      if (id == null) continue;
+      const sid = String(id);
+      counts[sid] = (counts[sid] ?? 0) + 1;
+    }
+    for (const [id, qty] of Object.entries(counts)) {
+      const have = (player.inventory ?? []).filter((it) => it.itemId === id).reduce((a, b) => a + (b.qty ?? 0), 0);
+      if (have < qty) return this.sendError(session, 'Materiales insuficientes');
+    }
+    const resultId = this.matchRecipe(grid);
+    if (!resultId) return this.sendError(session, 'Receta no válida');
+    // Descontar
+    for (const [id, qty] of Object.entries(counts)) {
+      let left = qty;
+      for (const inst of [...(player.inventory ?? [])]) {
+        if (inst.itemId !== id || left <= 0) continue;
+        const take = Math.min(inst.qty ?? 0, left);
+        inst.qty -= take;
+        left -= take;
+        if (inst.qty <= 0) {
+          const idx = player.inventory.indexOf(inst);
+          if (idx >= 0) player.inventory.splice(idx, 1);
+        }
+      }
+    }
+    // Entregar resultado
+    addItem(player.inventory, resultId, 1);
+    player.dirty = true;
+    this.sendProfile(player);
+    await this.savePlayer(player);
+    this.sendEvent(player, 'craft_result', { itemId: resultId });
   }
 
   logTransaction(entry) {

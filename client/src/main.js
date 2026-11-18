@@ -10,18 +10,20 @@ import { ChatUI } from './ui/ChatUI.js';
 import { InventoryUI } from './ui/InventoryUI.js';
 import { ShopUI } from './ui/ShopUI.js';
 import { StallUI } from './ui/StallUI.js';
+import { CraftingUI } from './ui/CraftingUI.js';
 
 const $ = (id) => document.getElementById(id);
 
 // ── Paneles ───────────────────────────────────────────────────
 const shopUI = new ShopUI();
 const stallUI = new StallUI();
+const craftingUI = new CraftingUI();
 const chatUI = new ChatUI();
 const inventoryUI = new InventoryUI({ onStall: () => stallUI.openEditor() });
 const hud = new Hud({
   onInventory: () => inventoryUI.toggle(),
   onChat: () => chatUI.toggle(),
-  onStall: () => stallUI.openEditor(),
+  onCrafting: () => craftingUI.open(),
 });
 window.__hud = hud;
 

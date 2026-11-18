@@ -112,6 +112,26 @@ export function drawItemIcon(canvas, def, size = 32) {
     px(8, 2, 12, 6, hex(color));
     px(6, 4, 4, 4, shade(color, -40));
     px(20, 4, 4, 4, shade(color, -40));
+  } else if (shape === 'crafting_table') {
+    px(4, 12, 24, 14, '#8a6034');
+    px(6, 14, 20, 10, '#b8874e');
+    // superficie cuadriculada
+    px(6, 10, 20, 4, '#5a3a1e');
+    for (let i = 0; i < 3; i += 1) {
+      px(7 + i * 6, 10, 5, 4, '#7a5030');
+    }
+    // herramientas laterales
+    px(2, 14, 3, 8, '#c9c3a4');
+    px(27, 14, 3, 8, '#c9c3a4');
+    px(2, 22, 3, 4, '#4a3320');
+    px(27, 22, 3, 4, '#4a3320');
+  } else if (shape === 'rope') {
+    px(6, 6, 4, 20, hex(color));
+    px(7, 6, 2, 20, shade(color, 30));
+    px(14, 8, 4, 18, shade(color, -10));
+    px(15, 8, 2, 18, shade(color, 25));
+    px(22, 10, 4, 16, hex(color));
+    px(23, 10, 2, 16, shade(color, 30));
   } else if (shape === 'wood') {
     px(6, 10, 20, 14, hex(color));
     px(8, 12, 16, 10, shade(color, 25));

@@ -72,7 +72,7 @@ export const SKULLS = Object.freeze({
 });
 
 export const EQUIP_SLOTS = Object.freeze([
-  'mano', 'helmet', 'armor', 'legs', 'boots', 'weapon', 'shield', 'ring', 'amulet',
+  'mano', 'helmet', 'armor', 'legs', 'boots', 'weapon', 'shield', 'ring', 'amulet', 'tool',
 ]);
 
 export const INVENTORY_SLOTS = 30;
@@ -192,6 +192,41 @@ export const ITEMS = Object.freeze({
     id: 'slime_ball', name: 'Bola de Slime', slot: 'resource', stackable: true,
     price: 0, sell: 3, icon: { shape: 'slime_ball', color: 0x3a8a4a },
     description: 'Sustancia viscosa y elástica encontrada entre las raíces húmedas del pantano.',
+  },
+  crafting_table: {
+    id: 'crafting_table', name: 'Mesa de Trabajo', slot: 'tool', stackable: false,
+    price: 350, sell: 100, icon: { shape: 'crafting_table', color: 0x8a6034 },
+    description: 'Mesa de trabajo para craftear objetos en cuadrícula 3x3.',
+  },
+  braided_rope: {
+    id: 'braided_rope', name: 'Cuerda Trenzada', slot: 'resource', stackable: true,
+    price: 0, sell: 5, icon: { shape: 'rope', color: 0x8a6034 },
+    description: 'Cuerda trenzada de lianas y ramas.',
+  },
+  slime_heal_potion: {
+    id: 'slime_heal_potion', name: 'Poción Viscosa de Curación', slot: 'consumable', stackable: true, consumable: true,
+    price: 0, sell: 10, icon: { shape: 'potion', color: 0x3a8a4a },
+    use: { healHp: 120 }, description: 'Restaura 120 HP.',
+  },
+  swamp_agility_elixir: {
+    id: 'swamp_agility_elixir', name: 'Elixir de Agilidad del Pantano', slot: 'consumable', stackable: true, consumable: true,
+    price: 0, sell: 12, icon: { shape: 'potion', color: 0x4a5a30 },
+    use: { speedBoost: 0.18, durationMs: 30000 }, description: 'Aumenta la velocidad un 18% por 30s.',
+  },
+  mangrove_longbow: {
+    id: 'mangrove_longbow', name: 'Arco Largo de Manglar', slot: 'mano', weaponClass: 'archer', stackable: false,
+    price: 0, sell: 50, tier: 2, levelReq: 1, icon: { shape: 'bow', color: 0x8a6034 },
+    description: 'Arco a distancia de madera de manglar.',
+  },
+  swamp_staff: {
+    id: 'swamp_staff', name: 'Báculo del Pantano', slot: 'mano', weaponClass: 'mage', stackable: false,
+    price: 0, sell: 50, tier: 2, levelReq: 1, icon: { shape: 'staff', color: 0x3a8a4a },
+    description: 'Báculo mágico del pantano.',
+  },
+  mangrove_shield: {
+    id: 'mangrove_shield', name: 'Escudo Reforzado de Manglar', slot: 'shield', stackable: false,
+    price: 0, sell: 40, icon: { shape: 'shield', color: 0x3a3228 },
+    description: 'Escudo que otorga +40 HP.',
   },
 
   // Armas — Caballero
@@ -415,7 +450,7 @@ export const SPAWN_ZONES = Object.freeze([
 export const NPCS = Object.freeze([
   {
     id: 'npc_general', name: 'Mercader Baltazar', x: 96, y: 96, kind: 'shop',
-    shop: ['potion_hp', 'potion_mp', 'arrow', 'axe', 'pickaxe', 'sword_wood', 'bow_wood', 'staff_wood', 'armor_leather', 'helmet_leather'],
+    shop: ['potion_hp', 'potion_mp', 'arrow', 'axe', 'pickaxe', 'sword_wood', 'bow_wood', 'staff_wood', 'armor_leather', 'helmet_leather', 'crafting_table'],
   },
   {
     id: 'npc_weapons', name: 'Herrera Kaia', x: 104, y: 96, kind: 'shop',
