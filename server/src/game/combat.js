@@ -281,7 +281,7 @@ export function monsterRangedAttack(game, monster, player, now = Date.now()) {
   monster.dir = dirTo(monster, player);
 
   const dist = Math.sqrt(dist2(monster, player));
-  const travelMs = Math.round(300 + Math.min(100, dist * 14));
+  const travelMs = Math.round(220 + Math.min(60, dist * 15));
 
   applyDamage(game, monster, player, amount, now, { crit, element: 'ranged' });
 

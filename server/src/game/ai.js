@@ -73,23 +73,6 @@ export function updateMonsters(game, now) {
 
     const def = monster.def;
 
-    // Comportamiento a distancia / torreta estatica (sandcastle).
-    if (def?.isRanged || def?.stationary) {
-      monster.state = 'idle';
-      monster.targetId = null;
-      monster.slot = null;
-      const range = Number(def.attackRange ?? 7);
-      const found = game.world.nearestPlayer(monster.x, monster.y, range);
-      if (found && !isSafeZone(Math.round(found.x), Math.round(found.y))) {
-        const player = game.world.getPlayer(found.id);
-        if (player && !player.isDead) {
-          monster.targetId = found.id;
-          monsterRangedAttack(game, monster, player, now);
-        }
-      }
-      continue;
-    }
-
     const hx = monster.homeX ?? monster.spawnX ?? monster.x;
     const hy = monster.homeY ?? monster.spawnY ?? monster.y;
 
@@ -142,7 +125,15 @@ export function updateMonsters(game, now) {
       const dy = target.y - monster.y;
       const distSq = dx * dx + dy * dy;
 
-      if (distSq <= 1.65 ** 2) {
+      const isRanged = Boolean(def?.isRanged);
+      const attackRange = Number(def?.attackRange ?? (isRanged ? 4 : 1.65));
+      const attackRangeSq = attackRange * attackRange;
+
+      if (isRanged && distSq <= attackRangeSq) {
+        // A distancia: detenerse y disparar.
+        monster.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+        monsterRangedAttack(game, monster, target, now);
+      } else if (distSq <= 1.65 ** 2 && !isRanged) {
         monster.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
         if (now >= monster.nextAttackAt) monsterAttack(game, monster, target, now);
       } else if (now >= monster.nextMoveAt) {
@@ -203,7 +194,8 @@ export function updateMonsters(game, now) {
 
     // Busqueda de objetivos solo en ticks de IA.
     if (runAI) {
-      const found = game.world.nearestPlayer(monster.x, monster.y, AGGRO_RADIUS);
+      const aggroRadius = def?.isRanged ? Number(def.aggroRange ?? 9) : AGGRO_RADIUS;
+      const found = game.world.nearestPlayer(monster.x, monster.y, aggroRadius);
       if (found && !isSafeZone(Math.round(found.x), Math.round(found.y))) {
         monster.targetId = found.id;
         monster.state = 'chasing';
