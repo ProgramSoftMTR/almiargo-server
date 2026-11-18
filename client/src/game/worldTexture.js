@@ -8,6 +8,18 @@ function tileHash(x, y) {
 
 function drawTile(ctx, world, x, y, px, py) {
   const tile = tileAt(world, x, y);
+  const chopped = !!(world?.chopped && world.chopped.has(`${x},${y}`));
+  const treeTiles = [TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD];
+  if (chopped && treeTiles.includes(tile)) {
+    const groundColor = tile === TILE.TREE_PALM ? '#c9b27a'
+      : tile === TILE.TREE_DEAD ? '#2f4a3a'
+      : tile === TILE.TREE_PINE ? '#dfe7f0'
+      : tile === TILE.TREE_ACACIA ? '#b9a05a'
+      : '#2f5730';
+    ctx.fillStyle = groundColor;
+    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+    return;
+  }
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
   const color = `#${Number(base).toString(16).padStart(6, '0')}`;
   ctx.fillStyle = color;
@@ -318,4 +330,24 @@ export function createWorldTexture(scene, world) {
     }
   }
   return images;
+}
+
+export function regenerateWorldChunk(scene, world, cx, cy) {
+  const chunkSize = 64;
+  const key = `world_ground_${cx}_${cy}`;
+  const texture = scene.textures.get(key);
+  if (!texture || !texture.canvas) return;
+  const tilesW = Math.min(chunkSize, world.width - cx * chunkSize);
+  const tilesH = Math.min(chunkSize, world.height - cy * chunkSize);
+  const ctx = texture.getContext();
+  ctx.clearRect(0, 0, texture.width, texture.height);
+  ctx.imageSmoothingEnabled = false;
+  for (let ly = 0; ly < tilesH; ly += 1) {
+    for (let lx = 0; lx < tilesW; lx += 1) {
+      const gx = cx * chunkSize + lx;
+      const gy = cy * chunkSize + ly;
+      drawTile(ctx, world, gx, gy, lx * TILE_SIZE, ly * TILE_SIZE);
+    }
+  }
+  texture.refresh();
 }
