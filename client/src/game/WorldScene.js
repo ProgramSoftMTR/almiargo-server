@@ -281,7 +281,7 @@ export class WorldScene extends Phaser.Scene {
     for (const b of msg.bags) {
       seenBags.add(b.i);
       this.ensureBagView({
-        id: b.i, x: b.x, y: b.y, ownerId: b.o, gold: b.g, itemCount: b.n,
+        id: b.i, x: b.x, y: b.y, ownerId: b.o, gold: b.g, itemCount: b.n, itemId: b.k,
       });
     }
     for (const [id, view] of this.bagViews) {
@@ -552,7 +552,10 @@ export class WorldScene extends Phaser.Scene {
   ensureBagView(bag) {
     let view = this.bagViews.get(bag.id);
     if (view) {
-      if (view.label) view.label.setText(`${bag.gold > 0 ? `${bag.gold}◈` : ''}${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` || 'Bolsa');
+      if (view.label) {
+        const isItemDrop = !!bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1;
+        view.label.setText(isItemDrop ? '' : (`${bag.gold > 0 ? `${bag.gold}◈` : ''}${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` || 'Bolsa'));
+      }
       return view;
     }
     const shadow = this.add.ellipse(0, 5, 20, 7, 0x000000, 0.3);
@@ -569,7 +572,8 @@ export class WorldScene extends Phaser.Scene {
       }
     }
     const sprite = this.add.image(0, 0, textureKey).setOrigin(0.5, 1);
-    const label = this.add.text(0, -27, bag.gold > 0 ? `${bag.gold}◈${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` : 'Bolsa', {
+    const isItemDrop = !!bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1;
+    const label = this.add.text(0, -27, isItemDrop ? '' : (bag.gold > 0 ? `${bag.gold}◈${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` : 'Bolsa'), {
       fontFamily: 'Trebuchet MS, sans-serif', fontSize: '8px', color: '#ffe08a',
       stroke: '#05070a', strokeThickness: 3,
     }).setOrigin(0.5, 1);
