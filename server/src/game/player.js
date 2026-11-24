@@ -12,6 +12,7 @@ import {
   emptyInventory,
   equipmentDefsFrom,
   getItemDef,
+  makeUid,
   normalizeInventory,
   removeItemById,
   removeItemByUid,
@@ -21,6 +22,14 @@ import {
   xpToNextLevel,
 } from '../../shared/index.js';
 import { ENTITY_KIND } from '../../shared/index.js';
+
+export function getPlayerMaxSlots(player) {
+  const bp = player?.equipment?.backpack ?? player?.backpack ?? null;
+  const itemId = typeof bp === 'string' ? bp : bp?.itemId;
+  const def = itemId ? getItemDef(itemId) : null;
+  const slots = def?.slots;
+  return Number.isFinite(slots) && slots > 0 ? slots : 8;
+}
 
 const DEFAULT_OUTFIT = {
   color1: '#c84b4b',
@@ -38,7 +47,9 @@ export function createCharacterState(name, id) {
     magic: { level: 1, xp: 0 },
     defense: { level: 1, xp: 0 },
   };
-  const inventory = emptyInventory();
+  const equipment = Object.fromEntries(EQUIP_SLOTS.map((slot) => [slot, null]));
+  equipment.backpack = { uid: makeUid(), itemId: 'starter_pouch', qty: 1 };
+  const inventory = emptyInventory(getPlayerMaxSlots({ equipment }));
   for (const item of createStarterInventory()) {
     addItem(inventory, item.itemId, item.qty, item.uid);
   }
@@ -46,7 +57,6 @@ export function createCharacterState(name, id) {
   const swordIdx = inventory.findIndex((i) => i?.itemId === 'sword_wood');
   const sword = swordIdx >= 0 ? inventory[swordIdx] : null;
   if (swordIdx >= 0) inventory[swordIdx] = null;
-  const equipment = Object.fromEntries(EQUIP_SLOTS.map((slot) => [slot, null]));
   equipment.mano = sword;
 
   const player = new PlayerState({
@@ -113,8 +123,8 @@ export class PlayerState {
       magic: { level: 1, xp: 0, ...(base.skills?.magic ?? {}) },
       defense: { level: 1, xp: 0, ...(base.skills?.defense ?? {}) },
     };
-    this.inventory = normalizeInventory(base.inventory);
     this.equipment = Object.fromEntries(EQUIP_SLOTS.map((slot) => [slot, base.equipment?.[slot] ?? null]));
+    this.inventory = normalizeInventory(base.inventory, getPlayerMaxSlots(this));
     this.gold = Math.max(0, Math.min(CONSTANTS.MAX_GOLD, Math.floor(Number(this.gold) || 0)));
     this.xp = Math.max(0, Math.floor(Number(this.xp) || 0));
     this.level = clamp(Math.floor(Number(this.level) || 1), 1, 200);
@@ -247,6 +257,14 @@ export class PlayerState {
     if (!EQUIP_SLOTS.includes(def.slot)) return { ok: false, error: 'Este ítem no se puede equipar' };
     if (this.level < (def.levelReq ?? 1)) return { ok: false, error: `Requiere nivel ${def.levelReq}` };
 
+    if (def.slot === 'backpack') {
+      const usedSlots = this.inventory.filter((s) => s !== null).length;
+      const newSlots = def.slots ?? 8;
+      if (newSlots < usedSlots) {
+        return { ok: false, error: 'Vacía tu inventario antes de equipar una mochila más pequeña.' };
+      }
+    }
+
     if (def.slot === 'mano' && now < this.nextSwitchAt) {
       return { ok: false, error: 'Cambio de arma en enfriamiento' };
     }
@@ -256,6 +274,14 @@ export class PlayerState {
     if (previous) this.inventory[idx] = previous;
     this.equipment[def.slot] = inst;
     if (def.slot === 'mano') this.nextSwitchAt = now + CONSTANTS.CLASS_SWITCH_COOLDOWN_MS;
+    if (def.slot === 'backpack') {
+      const newSlots = def.slots ?? 8;
+      if (this.inventory.length < newSlots) {
+        while (this.inventory.length < newSlots) this.inventory.push(null);
+      } else if (this.inventory.length > newSlots) {
+        this.inventory.length = newSlots;
+      }
+    }
     this.recalc();
     this.dirty = true;
     return { ok: true, slot: def.slot };
@@ -263,6 +289,7 @@ export class PlayerState {
 
   unequipSlot(slot, now = Date.now()) {
     if (!EQUIP_SLOTS.includes(slot)) return { ok: false, error: 'Slot inválido' };
+    if (slot === 'backpack') return { ok: false, error: 'Vacía tu inventario antes de equipar una mochila más pequeña.' };
     const inst = this.equipment[slot];
     if (!inst) return { ok: false, error: 'Slot vacío' };
     if (slot === 'mano' && now < this.nextSwitchAt) {

@@ -16,6 +16,8 @@ import {
   ZONES,
   addItem,
   hasSpaceFor,
+  makeUid,
+  normalizeInventory,
   tileAt,
   encodeSelf,
   isPvPZone,
@@ -34,7 +36,7 @@ import { ADMIN_CHARACTER_NAME, ADMIN_NAME_COLOR, normalizeAdminEmails } from '..
 import { executeAdminAction, adminState } from '../game/admin.js';
 import { World } from '../game/world.js';
 import { ResourceManager } from '../game/resourceManager.js';
-import { PlayerState, createCharacterState } from '../game/player.js';
+import { PlayerState, createCharacterState, getPlayerMaxSlots } from '../game/player.js';
 import { updateMonsters } from '../game/ai.js';
 import {
   handleAttackIntent,
@@ -629,6 +631,14 @@ export class GameServer {
     if (!character) throw new Error('Personaje desapareció');
 
     const player = new PlayerState(character);
+    // Entrega mochila inicial si no tiene ninguna equipada.
+    if (!player.equipment?.backpack) {
+      const used = player.inventory.filter((s) => s !== null).length;
+      const bpId = used > 12 ? 'leather_backpack' : 'starter_pouch';
+      player.equipment.backpack = { uid: makeUid(), itemId: bpId, qty: 1 };
+      player.inventory = normalizeInventory(player.inventory, getPlayerMaxSlots(player));
+      player.dirty = true;
+    }
     // Los privilegios admin se re-aplican en cada login (por si el guardado es
     // anterior a esta función) y se persisten en el siguiente guardado.
     const adminSync = this.syncAdminFlags(player, this.isAdminAccount(account));
@@ -860,10 +870,6 @@ export class GameServer {
     if (!this.hasAxe(player)) {
       return this.sendEvent(player, 'system_message', { message: 'Debes equiparte el hacha para talar.' });
     }
-    if (!hasSpaceFor(player.inventory, 'wood', CONSTANTS.WOOD_PER_CHOP)) {
-      return this.sendEvent(player, 'system_message', { message: 'Inventario lleno.' });
-    }
-
     const result = this.resources.chop(x, y);
     if (!result) {
       return this.sendEvent(player, 'system_message', { message: 'Ese arbol ya fue talado.' });
@@ -872,29 +878,61 @@ export class GameServer {
     const tile = this.world.map?.tiles?.[y * this.world.width + x];
     const isPalm = tile === TILE.TREE_PALM;
     const isSwamp = tile === TILE.TREE_DEAD;
+    const dropList = [];
     const drops = [];
     if (isPalm) {
       const palmAmount = 1 + (Math.random() < 0.5 ? 1 : 0);
-      addItem(player.inventory, 'palm_wood', palmAmount);
+      dropList.push({ itemId: 'palm_wood', qty: palmAmount });
       drops.push(`+${palmAmount} Madera de Palmera`);
       if (Math.random() < 0.45) {
-        addItem(player.inventory, 'coconut', 1);
+        dropList.push({ itemId: 'coconut', qty: 1 });
         drops.push('+1 Coco');
       }
     } else if (isSwamp) {
       const mangroveAmount = 1 + (Math.random() < 0.5 ? 1 : 0);
-      addItem(player.inventory, 'mangrove_wood', mangroveAmount);
+      dropList.push({ itemId: 'mangrove_wood', qty: mangroveAmount });
       drops.push(`+${mangroveAmount} Madera de Manglar`);
-      if (Math.random() < 0.25) { addItem(player.inventory, 'branches', 1); drops.push('+1 Ramas'); }
-      if (Math.random() < 0.14) { addItem(player.inventory, 'vines', 1); drops.push('+1 Lianas'); }
-      if (Math.random() < 0.10) { addItem(player.inventory, 'slime_ball', 1); drops.push('+1 Bola de Slime'); }
+      if (Math.random() < 0.25) { dropList.push({ itemId: 'branches', qty: 1 }); drops.push('+1 Ramas'); }
+      if (Math.random() < 0.14) { dropList.push({ itemId: 'vines', qty: 1 }); drops.push('+1 Lianas'); }
+      if (Math.random() < 0.10) { dropList.push({ itemId: 'slime_ball', qty: 1 }); drops.push('+1 Bola de Slime'); }
     } else {
       const amount = Math.random() < 0.05
         ? 9
         : Math.floor(Math.random() * (5 - 2 + 1)) + 2;
-      addItem(player.inventory, 'wood', amount);
+      dropList.push({ itemId: 'wood', qty: amount });
       drops.push(`+${amount} Madera`);
     }
+
+    const now2 = Date.now();
+    for (const d of dropList) {
+      let bx = x, by = y;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const signX = Math.random() < 0.5 ? -1 : 1;
+        const signY = Math.random() < 0.5 ? -1 : 1;
+        const ox = signX * (0.25 + Math.random() * 0.15);
+        const oy = signY * (0.25 + Math.random() * 0.15);
+        const nx = x + ox;
+        const ny = y + oy;
+        const tx = Math.round(nx);
+        const ty = Math.round(ny);
+        if (this.world.canWalk(tx, ty)) { bx = nx; by = ny; break; }
+      }
+      const bag = this.world.createBag({
+        x: bx,
+        y: by,
+        ownerId: player.id,
+        items: [{ uid: makeUid(), itemId: d.itemId, qty: d.qty }],
+        gold: 0,
+        freeAt: now2 + 5000,
+        expiresAt: now2 + CONSTANTS.BAG_EXPIRE_MS,
+      });
+      bag.despawnTimeout = setTimeout(() => {
+        this.world.removeBag(bag.id);
+        this.broadcastNear(bag.x, bag.y, 30, { type: 'drop_despawn', bagId: bag.id });
+      }, 60000);
+      this.broadcastNear(bx, by, 24, { type: 'loot', bagId: bag.id, x: bag.x, y: bag.y, ownerId: player.id });
+    }
+
     player.nextChopAt = now + CONSTANTS.CHOP_COOLDOWN_MS;
     player.dirty = true;
     this.sendProfile(player);
@@ -1133,6 +1171,15 @@ export class GameServer {
 
     const picked = [];
     for (const item of [...bag.items]) {
+      const def = ITEMS[item.itemId];
+      const isStackable = !!def?.stackable;
+      const hasStack = isStackable && player.inventory.some((s) => s?.itemId === item.itemId);
+      const usedSlots = player.inventory.filter((s) => s !== null).length;
+      if (!hasStack && usedSlots >= getPlayerMaxSlots(player)) {
+        // rechaza recogida, deja objeto intacto
+        this.sendEvent(player, 'system_message', { message: 'Inventario lleno. Equipa una mochila más grande.' });
+        continue;
+      }
       const res = addItem(player.inventory, item.itemId, item.qty, item.uid);
       if (res.added > 0) {
         picked.push({ itemId: item.itemId, qty: res.added });
@@ -1307,6 +1354,7 @@ export class GameServer {
       R(3, 3, [null,'mangrove_wood','braided_rope', 'mangrove_wood',null,'braided_rope', null,'mangrove_wood','braided_rope'], 'mangrove_longbow'),
       R(3, 3, [null,null,'slime_ball', null,'branches',null, 'mangrove_wood',null,null], 'swamp_staff'),
       R(3, 3, ['mangrove_wood','mangrove_wood','mangrove_wood', 'mangrove_wood','slime_ball','mangrove_wood', null,'mangrove_wood',null], 'mangrove_shield'),
+      R(3, 3, ['mangrove_wood','vines','mangrove_wood', 'mangrove_wood','braided_rope','mangrove_wood', null,'vines',null], 'mangrove_backpack'),
     ];
     for (const rec of recipesList) {
       if (rec.rows !== norm.rows || rec.cols !== norm.cols) continue;
@@ -1336,6 +1384,13 @@ export class GameServer {
     }
     const resultId = this.matchRecipe(grid);
     if (!resultId) return this.sendError(session, 'Receta no válida');
+    const resultDef = ITEMS[resultId];
+    const isStackable = !!resultDef?.stackable;
+    const hasStack = isStackable && player.inventory.some((s) => s?.itemId === resultId);
+    const usedSlots = player.inventory.filter((s) => s !== null).length;
+    if (!(isStackable && hasStack) && usedSlots >= getPlayerMaxSlots(player)) {
+      return this.sendError(session, 'Inventario lleno. Equipa una mochila más grande.');
+    }
     // Descontar
     for (const [id, qty] of Object.entries(counts)) {
       let left = qty;

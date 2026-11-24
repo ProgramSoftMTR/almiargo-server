@@ -6,6 +6,7 @@ import {
   hasSpaceFor,
   isSafeZone,
 } from '../../shared/index.js';
+import { getPlayerMaxSlots } from './player.js';
 
 const dist2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
 const MERCHANT_RANGE = 3.5;
@@ -31,6 +32,13 @@ export function npcBuy(game, player, npcId, itemId, qty = 1) {
   const count = Math.floor(Number(qty) || 1);
   if (count < 1 || count > 999) return { ok: false, error: 'Cantidad inválida' };
   if (!def.stackable && count > 1) return { ok: false, error: 'Sólo puedes comprar 1' };
+  const isStackable = !!def.stackable;
+  const hasStack = isStackable && player.inventory.some((s) => s?.itemId === itemId);
+  const usedSlots = player.inventory.filter((s) => s !== null).length;
+  const maxSlots = getPlayerMaxSlots(player);
+  if (!(isStackable && hasStack) && usedSlots >= maxSlots) {
+    return { ok: false, error: 'Inventario lleno. Equipa una mochila más grande.' };
+  }
   if (!hasSpaceFor(player.inventory, itemId, count)) return { ok: false, error: 'Inventario lleno' };
 
   const cost = def.price * count;

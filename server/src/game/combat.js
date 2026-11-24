@@ -402,7 +402,7 @@ export function killPlayer(game, target, source, now) {
 
   const droppedItems = [];
   if (wasRed) {
-    const equipped = Object.entries(target.equipment).filter(([, inst]) => inst);
+    const equipped = Object.entries(target.equipment).filter(([slot, inst]) => inst && slot !== 'backpack');
     if (equipped.length > 0) {
       const [slot, inst] = equipped[randInt(0, equipped.length - 1)];
       target.equipment[slot] = null;

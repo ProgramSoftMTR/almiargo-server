@@ -38,7 +38,7 @@ export class CraftingUI {
           <div id="craftOutput" style="width:52px;height:52px;background:#8B8B8B;border:2px inset #373737;display:flex;align-items:center;justify-content:center;cursor:pointer;"></div>
         </div>
         <div id="craftRecipesPanel" class="hidden" style="font-size:11px;margin-bottom:8px;"></div>
-        <div style="font-size:10px;margin-bottom:4px;">Inventario</div>
+        <div style="font-size:10px;margin-bottom:4px;">Inventario <span id="craftCapacity"></span></div>
         <div id="craftInventory" style="display:grid;grid-template-columns:repeat(9,38px);gap:4px;"></div>
       </div>
     `;
@@ -115,6 +115,16 @@ export class CraftingUI {
     if (!this.modal || this.modal.classList.contains('hidden')) return;
     const el = this.modal.querySelector('#craftInventory');
     el.innerHTML = '';
+    const cap = this.modal.querySelector('#craftCapacity');
+    if (cap) {
+      const p = store.player;
+      const used = (p?.inventory ?? []).filter((s) => s !== null).length;
+      const bp = p?.equipment?.backpack;
+      const bpDef = bp ? ITEMS[bp.itemId] : null;
+      const max = bpDef?.slots ?? 8;
+      cap.textContent = `(${used} / ${max})`;
+      cap.style.color = used >= max ? '#c0392b' : '';
+    }
     const inv = store.player?.inventory ?? [];
     for (const it of inv) {
       const def = ITEMS[it.itemId];

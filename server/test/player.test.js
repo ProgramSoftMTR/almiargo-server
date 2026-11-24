@@ -15,7 +15,7 @@ test('el personaje nuevo empieza como caballero con espada y equipo básico', ()
   assert.ok(player.countItem('bow_wood') >= 1);
   assert.ok(player.countItem('staff_wood') >= 1);
   assert.ok(player.countItem('potion_hp') >= 1);
-  assert.equal(player.inventory.length, 30);
+  assert.equal(player.inventory.length, 12);
 });
 
 test('cambiar de clase equipa el mejor arma y respeta el cooldown de 1s', () => {
@@ -105,5 +105,5 @@ test('el perfil serializado incluye skills, equipo y tienda', () => {
   assert.equal(profile.stall, null);
   assert.equal(profile.skills.melee.level, 1);
   assert.equal(profile.equipment.mano.itemId, 'sword_wood');
-  assert.equal(profile.inventory.length, 30);
+  assert.equal(profile.inventory.length, 12);
 });

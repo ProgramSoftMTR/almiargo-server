@@ -28,13 +28,14 @@ export function createStarterInventory() {
   return STARTER_ITEMS.map((s) => createItem(s.itemId, s.qty));
 }
 
-export function emptyInventory() {
-  return new Array(INVENTORY_SLOTS).fill(null);
+export function emptyInventory(size = INVENTORY_SLOTS) {
+  return new Array(size).fill(null);
 }
 
-export function normalizeInventory(inventory) {
-  const out = Array.isArray(inventory) ? inventory.slice(0, INVENTORY_SLOTS) : [];
-  while (out.length < INVENTORY_SLOTS) out.push(null);
+export function normalizeInventory(inventory, size = INVENTORY_SLOTS) {
+  const s = Math.max(1, Number(size) || INVENTORY_SLOTS);
+  const out = Array.isArray(inventory) ? inventory.slice(0, s) : [];
+  while (out.length < s) out.push(null);
   return out;
 }
 
@@ -53,7 +54,8 @@ export function addItem(inventory, itemId, qty = 1, uid = makeUid()) {
   const def = ITEMS[itemId];
   if (!def) return { added: 0, left: qty };
   let left = qty;
-  const inv = normalizeInventory(inventory);
+  const size = (Array.isArray(inventory) && inventory.length) ? inventory.length : INVENTORY_SLOTS;
+  const inv = normalizeInventory(inventory, size);
 
   if (def.stackable) {
     for (const slot of inv) {
@@ -80,7 +82,7 @@ export function addItem(inventory, itemId, qty = 1, uid = makeUid()) {
   }
 
   // Copia los slots al array original para conservar la referencia.
-  for (let i = 0; i < INVENTORY_SLOTS; i += 1) inventory[i] = inv[i];
+  for (let i = 0; i < size; i += 1) inventory[i] = inv[i];
   return { added: qty - left, left };
 }
 

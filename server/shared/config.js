@@ -72,10 +72,10 @@ export const SKULLS = Object.freeze({
 });
 
 export const EQUIP_SLOTS = Object.freeze([
-  'mano', 'helmet', 'armor', 'legs', 'boots', 'weapon', 'shield', 'ring', 'amulet', 'tool',
+  'mano', 'helmet', 'armor', 'legs', 'boots', 'weapon', 'shield', 'ring', 'amulet', 'tool', 'backpack',
 ]);
 
-export const INVENTORY_SLOTS = 30;
+export const INVENTORY_SLOTS = 40;
 
 // ── Tiempos y límites ──────────────────────────────────────────
 export const CONSTANTS = Object.freeze({
@@ -227,6 +227,38 @@ export const ITEMS = Object.freeze({
     id: 'mangrove_shield', name: 'Escudo Reforzado de Manglar', slot: 'shield', stackable: false,
     price: 0, sell: 40, icon: { shape: 'shield', color: 0x3a3228 },
     description: 'Escudo que otorga +40 HP.',
+  },
+
+  // Mochilas equipables
+  starter_pouch: {
+    id: 'starter_pouch', name: 'Bolsita de Principiante', slot: 'backpack', type: 'backpack', stackable: false,
+    price: 0, sell: 0, slots: 12,
+    icon: { shape: 'backpack', color: 0x8a6034 },
+    description: 'Bolsita pequeña para principiantes. 12 espacios.',
+  },
+  leather_backpack: {
+    id: 'leather_backpack', name: 'Mochila de Cuero', slot: 'backpack', type: 'backpack', stackable: false,
+    price: 450, sell: 150, slots: 20,
+    icon: { shape: 'backpack', color: 0x6b4a2a },
+    description: 'Mochila de cuero. 20 espacios.',
+  },
+  mangrove_backpack: {
+    id: 'mangrove_backpack', name: 'Mochila Tejida de Manglar', slot: 'backpack', type: 'backpack', stackable: false,
+    price: 0, sell: 120, slots: 26,
+    icon: { shape: 'backpack', color: 0x3a5a30 },
+    description: 'Mochila tejida de manglar. 26 espacios.',
+  },
+  explorer_backpack: {
+    id: 'explorer_backpack', name: 'Mochila de Explorador', slot: 'backpack', type: 'backpack', stackable: false,
+    price: 2500, sell: 800, slots: 32,
+    icon: { shape: 'backpack', color: 0x3a6ea8 },
+    description: 'Mochila de explorador. 32 espacios.',
+  },
+  adventurer_backpack: {
+    id: 'adventurer_backpack', name: 'Mochila Real de Aventurero', slot: 'backpack', type: 'backpack', stackable: false,
+    price: 8000, sell: 2500, slots: 40,
+    icon: { shape: 'backpack', color: 0xc9a227 },
+    description: 'Mochila real de aventurero. 40 espacios.',
   },
 
   // Armas — Caballero
@@ -450,7 +482,7 @@ export const SPAWN_ZONES = Object.freeze([
 export const NPCS = Object.freeze([
   {
     id: 'npc_general', name: 'Mercader Baltazar', x: 96, y: 96, kind: 'shop',
-    shop: ['potion_hp', 'potion_mp', 'arrow', 'axe', 'pickaxe', 'sword_wood', 'bow_wood', 'staff_wood', 'armor_leather', 'helmet_leather', 'crafting_table'],
+    shop: ['potion_hp', 'potion_mp', 'arrow', 'axe', 'pickaxe', 'sword_wood', 'bow_wood', 'staff_wood', 'armor_leather', 'helmet_leather', 'crafting_table', 'leather_backpack', 'explorer_backpack', 'adventurer_backpack'],
   },
   {
     id: 'npc_weapons', name: 'Herrera Kaia', x: 104, y: 96, kind: 'shop',

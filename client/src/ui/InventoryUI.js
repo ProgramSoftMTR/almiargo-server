@@ -180,14 +180,21 @@ export class InventoryUI {
     const invClass = $('invClass');
     if (invClass) invClass.textContent = className;
     const invFree = $('invFree');
-    if (invFree) invFree.textContent = `${p.inventory?.length ?? 0} items`;
+    const usedSlots = (p.inventory ?? []).filter((s) => s !== null).length;
+    const bp = p.equipment?.backpack;
+    const bpDef = bp ? ITEMS[bp.itemId] : null;
+    const maxSlots = bpDef?.slots ?? 8;
+    if (invFree) {
+      invFree.textContent = `Inventario (${usedSlots} / ${maxSlots})`;
+      invFree.style.color = usedSlots >= maxSlots ? '#c0392b' : '';
+    }
 
     // Siluetas de equipamiento (16 slots) en orden Rucoy.
     const SILHOUETTES = ['sil-weapon','sil-shield','sil-neck','sil-helm','sil-bag','sil-bow','sil-quiver','sil-gloves','sil-armor','sil-bracer','sil-staff','sil-ring1','sil-pants','sil-ring2','sil-boots','sil-potion'];
     const equipGrid = $('equipGrid');
     if (equipGrid) {
       equipGrid.textContent = '';
-      const EQUIP_ORDER = ['mano','shield','helmet','armor','legs','boots','ring','amulet'];
+      const EQUIP_ORDER = ['mano','shield','helmet','armor','legs','boots','ring','amulet','backpack'];
       for (let i = 0; i < 16; i++) {
         const slotName = EQUIP_ORDER[i] || null;
         const inst = slotName ? p.equipment?.[slotName] : null;

@@ -200,6 +200,15 @@ export function drawItemIcon(canvas, def, size = 32) {
     ctx.beginPath();
     ctx.arc(16, 17, 8, 0, Math.PI * 2);
     ctx.fill();
+  } else if (shape === 'backpack') {
+    // bolsa/mochila pixel art
+    px(6, 10, 20, 16, hex(color));
+    px(8, 12, 16, 12, shade(color, 20));
+    px(10, 6, 12, 6, shade(color, -15));
+    px(12, 4, 8, 4, shade(color, -30));
+    px(9, 14, 3, 8, shade(color, -40));
+    px(20, 14, 3, 8, shade(color, -40));
+    px(11, 18, 10, 3, shade(color, 35));
   } else {
     px(9, 8, 14, 4, shade(color, 25));
     px(14, 12, 4, 12, shade(color, -40));
@@ -218,5 +227,6 @@ export function slotLabel(slot) {
   return {
     helmet: 'Casco', armor: 'Armadura', legs: 'Pantalón', boots: 'Botas',
     mano: 'Mano', shield: 'Escudo', ring: 'Anillo', amulet: 'Collar', tool: 'Herramienta',
+    backpack: 'Mochila',
   }[slot] ?? slot;
 }
