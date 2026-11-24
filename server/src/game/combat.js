@@ -350,9 +350,11 @@ export function killMonster(game, monster, source, now) {
     const partyId = partyMembers.length > 0 ? source.partyId : null;
     const freeAt = partyMembers.length > 0 ? 0 : lootNow + CONSTANTS.BAG_FREE_AFTER_MS;
     let idx = 0;
+    const usedTiles = new Set();
     for (const d of dropList) {
       let bx = monster.x, by = monster.y;
-      for (let attempt = 0; attempt < 12; attempt += 1) {
+      let found = false;
+      for (let attempt = 0; attempt < 24; attempt += 1) {
         const signX = Math.random() < 0.5 ? -1 : 1;
         const signY = Math.random() < 0.5 ? -1 : 1;
         const ox = signX * (0.3 + Math.random() * 0.25);
@@ -361,7 +363,29 @@ export function killMonster(game, monster, source, now) {
         const ny = monster.y + oy;
         const tx = Math.round(nx);
         const ty = Math.round(ny);
-        if (game.world.canWalk(tx, ty)) { bx = nx; by = ny; break; }
+        const key = `${tx},${ty}`;
+        if (game.world.canWalk(tx, ty) && !usedTiles.has(key)) { bx = nx; by = ny; usedTiles.add(key); found = true; break; }
+      }
+      if (!found) {
+        // buscar siguiente casilla transitable disponible
+        for (let r = 1; r <= 4 && !found; r += 1) {
+          for (let oy = -r; oy <= r && !found; oy += 1) {
+            for (let ox = -r; ox <= r && !found; ox += 1) {
+              if (Math.max(Math.abs(ox), Math.abs(oy)) !== r) continue;
+              const tx = Math.round(monster.x) + ox;
+              const ty = Math.round(monster.y) + oy;
+              const key = `${tx},${ty}`;
+              if (game.world.canWalk(tx, ty) && !usedTiles.has(key)) {
+                bx = tx; by = ty; usedTiles.add(key); found = true;
+              }
+            }
+          }
+        }
+      }
+      if (!found) {
+        const tx = Math.round(monster.x);
+        const ty = Math.round(monster.y);
+        usedTiles.add(`${tx},${ty}`);
       }
       const bag = game.world.createBag({
         x: bx,

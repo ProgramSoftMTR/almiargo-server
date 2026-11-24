@@ -44,6 +44,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-25 01:00:00 fix bloquear crafteo si el inventario esta lleno
 // deploy trigger: 2026-11-25 03:00:00 feat drops de mobs sin bolsa con sprite pixel art de monedas e items
 // deploy trigger: 2026-11-25 05:00:00 feat boton de oro y selector de mob en panel admin
+// deploy trigger: 2026-11-25 07:00:00 fix separar drops de monedas e items en tiles distintos al morir mobs
 
 const store = await createStore();
 const game = new GameServer({ store, config });
