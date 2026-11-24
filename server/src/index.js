@@ -39,6 +39,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-24 16:00:00 fix renderizar sprite real del item en suelo en lugar de bolsa
 // deploy trigger: 2026-11-24 18:00:00 fix quitar avisos y mejorar mesa de trabajo
 // deploy trigger: 2026-11-24 20:00:00 fix crafteo, icono de trabajo, sprite de casco y proteccion inventario lleno
+// deploy trigger: 2026-11-24 22:00:00 fix icono martillo y llave al craftear y bloqueo compra con inventario lleno
 
 const store = await createStore();
 const game = new GameServer({ store, config });

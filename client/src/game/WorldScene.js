@@ -151,7 +151,31 @@ export class WorldScene extends Phaser.Scene {
     this.localSprite.setOrigin(0.5, 0.9);
     this.localWeapon = null;
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
-    this.localCraftIcon = this.add.image(0, -46, 'tool_axe').setOrigin(0.5).setScale(0.7).setVisible(false);
+    if (!this.textures.exists('craft_hammer_wrench')) {
+      const c = document.createElement('canvas');
+      c.width = 32; c.height = 32;
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      // mango marrón
+      ctx.fillStyle = '#8a6034';
+      ctx.fillRect(14, 4, 4, 24);
+      // cabeza martillo azul/gris
+      ctx.fillStyle = '#9aa0a6';
+      ctx.fillRect(8, 2, 16, 8);
+      ctx.fillStyle = '#6f8ce8';
+      ctx.fillRect(10, 3, 12, 6);
+      // llave inglesa cruzada
+      ctx.save();
+      ctx.translate(16, 16);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#b9c2cf';
+      ctx.fillRect(-2, -14, 4, 20);
+      ctx.fillStyle = '#5a6a7a';
+      ctx.fillRect(-6, -14, 12, 6);
+      ctx.restore();
+      this.textures.addCanvas('craft_hammer_wrench', c);
+    }
+    this.localCraftIcon = this.add.image(0, -46, 'craft_hammer_wrench').setOrigin(0.5).setScale(0.9).setVisible(false);
 
     // Name tag + barra de vida del jugador local (mismo diseño que enemigos).
     this.localBarBg = this.add.rectangle(0, -30, 30, 4, 0x05070a, 0.7).setOrigin(0.5);

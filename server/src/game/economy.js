@@ -155,8 +155,15 @@ export async function buyStallListing(game, buyer, stallId, itemUid) {
   const listing = stall.items.find((it) => it.uid === itemUid);
   if (!listing) return { ok: false, error: 'Listado ya vendido' };
   if (buyer.gold < listing.price) return { ok: false, error: 'Oro insuficiente' };
+  const isStackable = !!ITEMS[listing.itemId]?.stackable;
+  const hasStack = isStackable && buyer.inventory.some((s) => s?.itemId === listing.itemId);
+  const usedSlots = buyer.inventory.filter((s) => s !== null).length;
+  const maxSlots = getPlayerMaxSlots(buyer);
+  if (!(isStackable && hasStack) && usedSlots >= maxSlots) {
+    return { ok: false, error: 'Inventario lleno. Equipa una mochila más grande.' };
+  }
   if (!hasSpaceFor(buyer.inventory, listing.itemId, listing.qty)) {
-    return { ok: false, error: 'Inventario lleno' };
+    return { ok: false, error: 'Inventario lleno. Equipa una mochila más grande.' };
   }
 
   // Reserva el oro antes de la transacción: si dos compras del mismo
