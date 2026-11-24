@@ -117,6 +117,7 @@ function summonMob(game, player, msg = {}) {
       defId,
       spawn: spot ?? { x: Math.round(player.x), y: Math.round(player.y) },
     });
+    monster.noRespawn = true;
     monster.nextMoveAt = Date.now() + 400;
     game.world.addMonster(monster);
     spawned += 1;

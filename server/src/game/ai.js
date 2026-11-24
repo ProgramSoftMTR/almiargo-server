@@ -36,6 +36,12 @@ export function updateMonsters(game, now) {
   for (const monster of game.world.monsters.values()) {
     const mi = monsterIndex++;
     if (!monster.alive) {
+      if (monster.noRespawn) {
+        if (now >= (monster.deathAt ?? 0) + 700) {
+          game.world.removeMonster(monster.id);
+        }
+        continue;
+      }
       if (monster.spawnerId) continue;
       if (now >= monster.respawnAt) {
         monster.reset(now, monster.spawn, game.world);
