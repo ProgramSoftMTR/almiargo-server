@@ -1085,7 +1085,6 @@ export class WorldScene extends Phaser.Scene {
       if (path.length && path.length < bestLen) { bestLen = path.length; best = path; }
     }
     if (!best || !best.length) {
-      uiBus.emit('toast', { text: 'No hay camino hasta ahí', type: 'error' });
       return;
     }
     this.path = best;

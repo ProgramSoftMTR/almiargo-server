@@ -862,7 +862,7 @@ export class GameServer {
     const now = Date.now();
     if (now < (player.nextChopAt ?? 0)) return;
     if ((player.x - x) ** 2 + (player.y - y) ** 2 > CONSTANTS.CHOP_RANGE ** 2) {
-      return this.sendEvent(player, 'system_message', { message: 'Estas demasiado lejos del arbol.' });
+      return;
     }
     if (!this.resources.isAlive(x, y)) {
       return this.sendEvent(player, 'system_message', { message: 'Ese arbol ya fue talado. Espera a que vuelva a crecer.' });

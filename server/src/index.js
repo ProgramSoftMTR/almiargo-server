@@ -37,6 +37,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-24 12:00:00 feat soltar items en el suelo al talar arboles y sistema mochilas
 // deploy trigger: 2026-11-24 14:00:00 feat drops directos con sprite de item sin banner de tala y pathfinding universal
 // deploy trigger: 2026-11-24 16:00:00 fix renderizar sprite real del item en suelo en lugar de bolsa
+// deploy trigger: 2026-11-24 18:00:00 fix quitar avisos y mejorar mesa de trabajo
 
 const store = await createStore();
 const game = new GameServer({ store, config });
