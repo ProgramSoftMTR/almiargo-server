@@ -33,6 +33,9 @@ export class Monster {
     this.nextPatrolAt = 0;
     this.patrolTarget = null;
     this.slot = null;
+    this.path = null;
+    this.pathTargetKey = null;
+    this.pathExpiresAt = 0;
     this.damageBy = new Map();
     this.deathAt = 0;
     this.lastAttackerId = null;
@@ -62,6 +65,9 @@ export class Monster {
     this.targetId = null;
     this.state = 'idle';
     this.patrolTarget = null;
+    this.path = null;
+    this.pathTargetKey = null;
+    this.pathExpiresAt = 0;
     this.damageBy.clear();
     this.deathAt = 0;
     this.nextMoveAt = now + randInt(200, 1200);

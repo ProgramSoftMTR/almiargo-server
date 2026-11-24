@@ -13,6 +13,7 @@ import {
   ITEMS,
 } from '@almiargo/shared';
 import { store } from '../core/store.js';
+import { drawItemIcon } from '../ui/icons.js';
 import { socket } from '../net/socket.js';
 import { uiBus } from '../core/uiBus.js';
 import { createEntityTextures, addZoneLabels, ensurePlayerTexture, createResourceTextures, createToolTextures, createWeaponTextures } from './textures.js';
@@ -555,7 +556,19 @@ export class WorldScene extends Phaser.Scene {
       return view;
     }
     const shadow = this.add.ellipse(0, 5, 20, 7, 0x000000, 0.3);
-    const sprite = this.add.image(0, 0, 'bag').setOrigin(0.5, 1);
+    let textureKey = 'bag';
+    if (bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1) {
+      const def = ITEMS[bag.itemId];
+      if (def) {
+        textureKey = `item_${bag.itemId}`;
+        if (!this.textures.exists(textureKey)) {
+          const canvas = document.createElement('canvas');
+          drawItemIcon(canvas, def, 32);
+          this.textures.addCanvas(textureKey, canvas);
+        }
+      }
+    }
+    const sprite = this.add.image(0, 0, textureKey).setOrigin(0.5, 1);
     const label = this.add.text(0, -27, bag.gold > 0 ? `${bag.gold}◈${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` : 'Bolsa', {
       fontFamily: 'Trebuchet MS, sans-serif', fontSize: '8px', color: '#ffe08a',
       stroke: '#05070a', strokeThickness: 3,

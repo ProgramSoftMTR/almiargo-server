@@ -142,10 +142,59 @@ export function updateMonsters(game, now) {
         monster.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
         if (now >= monster.nextAttackAt) monsterAttack(game, monster, target, now);
       } else if (now >= monster.nextMoveAt) {
-        // Movimiento directo con deslizamiento simple (sin A*/BFS).
         const sx = Math.sign(target.x - monster.x);
         const sy = Math.sign(target.y - monster.y);
-        moveMonster(game.world, monster, sx, sy, now);
+        const tx = Math.round(target.x);
+        const ty = Math.round(target.y);
+        const key = `${tx},${ty}`;
+        const directWalkable = (sx === 0 && sy === 0)
+          || (worldCanWalk(game.world, monster.x + sx, monster.y + sy)
+            && !game.world.isTileOccupied(monster.x + sx, monster.y + sy, monster.id));
+
+        if (directWalkable && !(sx === 0 && sy === 0)) {
+          monster.path = null;
+          monster.pathTargetKey = key;
+          monster.pathExpiresAt = now + 300;
+          moveMonster(game.world, monster, sx, sy, now);
+        } else {
+          // Pathfinding con cache.
+          if (!monster.path || monster.pathTargetKey !== key || now >= monster.pathExpiresAt) {
+            monster.path = findPath(game.world, monster.x, monster.y, target.x, target.y, 180);
+            monster.pathTargetKey = key;
+            monster.pathExpiresAt = now + 300;
+          }
+          // Invalidar si el siguiente paso está bloqueado.
+          if (Array.isArray(monster.path) && monster.path.length > 0) {
+            const first = monster.path[0];
+            if (!game.world.canWalk(first.x, first.y) || game.world.isTileOccupied(first.x, first.y, monster.id)) {
+              monster.path = findPath(game.world, monster.x, monster.y, target.x, target.y, 180);
+              monster.pathExpiresAt = now + 300;
+            }
+          }
+
+          if (Array.isArray(monster.path) && monster.path.length > 0) {
+            const first = monster.path[0];
+            const dx = Math.sign(first.x - monster.x);
+            const dy = Math.sign(first.y - monster.y);
+            if (game.world.isTileOccupied(first.x, first.y, monster.id) || reservedTiles.has(tileKeyLocal(first.x, first.y))) {
+              // Buscar tile adyacente libre que reduzca distancia.
+              const best = findFreeAdjacentTowards(game.world, monster, target);
+              if (best) {
+                moveMonster(game.world, monster, best.dx, best.dy, now);
+              } else {
+                monster.nextMoveAt = now + 700;
+              }
+            } else {
+              moveMonster(game.world, monster, dx, dy, now);
+              // Consumir paso si se movió.
+              if (Math.round(monster.x) === first.x && Math.round(monster.y) === first.y) {
+                monster.path.shift();
+              }
+            }
+          } else {
+            monster.nextMoveAt = now + 700;
+          }
+        }
       }
       continue;
     }
@@ -220,6 +269,30 @@ function isSlotOccupied(world, slot, selfId) {
   }
   if (reservedTiles.has(tileKeyLocal(slot.x, slot.y))) return true;
   return false;
+}
+
+function worldCanWalk(world, x, y) {
+  return world.canWalk(x, y);
+}
+
+function findFreeAdjacentTowards(world, monster, target) {
+  const mx = Math.round(monster.x);
+  const my = Math.round(monster.y);
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  let best = null;
+  let bestDist = Infinity;
+  for (const [dx, dy] of dirs) {
+    const nx = mx + dx;
+    const ny = my + dy;
+    if (!world.canWalk(nx, ny)) continue;
+    if (world.isTileOccupied(nx, ny, monster.id)) continue;
+    if (reservedTiles.has(tileKeyLocal(nx, ny))) continue;
+    const d = (nx - target.x) ** 2 + (ny - target.y) ** 2;
+    if (d < bestDist) { bestDist = d; best = { dx, dy }; }
+  }
+  const curDist = (mx - target.x) ** 2 + (my - target.y) ** 2;
+  if (best && bestDist < curDist) return best;
+  return best;
 }
 
 function moveMonster(world, monster, dx, dy, now) {

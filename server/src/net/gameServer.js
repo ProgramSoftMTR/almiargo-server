@@ -909,8 +909,8 @@ export class GameServer {
       for (let attempt = 0; attempt < 12; attempt += 1) {
         const signX = Math.random() < 0.5 ? -1 : 1;
         const signY = Math.random() < 0.5 ? -1 : 1;
-        const ox = signX * (0.25 + Math.random() * 0.15);
-        const oy = signY * (0.25 + Math.random() * 0.15);
+        const ox = signX * (0.3 + Math.random() * 0.25);
+        const oy = signY * (0.3 + Math.random() * 0.25);
         const nx = x + ox;
         const ny = y + oy;
         const tx = Math.round(nx);
@@ -937,7 +937,6 @@ export class GameServer {
     player.dirty = true;
     this.sendProfile(player);
     await this.savePlayer(player);
-    this.sendEvent(player, 'notice', { text: drops.join(' · ') });
     this.broadcastResource(x, y, 'stump');
   }
 

@@ -97,7 +97,7 @@ class ClientStore extends Emitter {
     for (const bag of msg.bags) {
       this.bags.set(bag.i, {
         id: bag.i, x: bag.x, y: bag.y, ownerId: bag.o, gold: bag.g,
-        itemCount: bag.n, freeAt: bag.f, expiresAt: bag.t,
+        itemCount: bag.n, itemId: bag.k, freeAt: bag.f, expiresAt: bag.t,
       });
     }
     this.stalls.clear();

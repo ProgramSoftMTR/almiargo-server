@@ -384,6 +384,7 @@ export class World {
         o: bag.ownerId,
         g: bag.gold,
         n: bag.items.length,
+k: bag.items.length === 1 ? bag.items[0].itemId : null,
         f: bag.freeAt,
         t: bag.expiresAt,
       });
