@@ -290,6 +290,9 @@ export class PlayerState {
   unequipSlot(slot, now = Date.now()) {
     if (!EQUIP_SLOTS.includes(slot)) return { ok: false, error: 'Slot inválido' };
     if (slot === 'backpack') return { ok: false, error: 'Vacía tu inventario antes de equipar una mochila más pequeña.' };
+    const usedSlots = this.inventory.filter((s) => s !== null).length;
+    const maxSlots = getPlayerMaxSlots(this);
+    if (usedSlots >= maxSlots) return { ok: false, error: 'Inventario lleno. Libera espacio antes de desequipar.' };
     const inst = this.equipment[slot];
     if (!inst) return { ok: false, error: 'Slot vacío' };
     if (slot === 'mano' && now < this.nextSwitchAt) {

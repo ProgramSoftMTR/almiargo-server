@@ -79,6 +79,7 @@ export class CraftingUI {
     this.selected = null;
     this.updateSelectedName();
     this.modal.classList.remove('hidden');
+    uiBus.emit('crafting', { open: true });
     this.renderGrid();
     this.renderInventory();
   }
@@ -87,6 +88,7 @@ export class CraftingUI {
     // devolver materiales (solo limpiar grilla)
     this.grid = Array(9).fill(null);
     this.modal.classList.add('hidden');
+    uiBus.emit('crafting', { open: false });
     this.renderGrid();
   }
 

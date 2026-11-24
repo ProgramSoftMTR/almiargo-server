@@ -71,6 +71,18 @@ export function drawItemIcon(canvas, def, size = 32) {
     for (let i = 0; i < 4; i += 1) px(13 + i * 2, 18 - i * 2, 2, 4, '#c9c3a4');
     px(21, 4, 4, 4, '#d8dde6');
     px(22, 6, 2, 2, '#8f99a8');
+  } else if (shape === 'helmet') {
+    // Yelmo/casco metálico con visera
+    ctx.fillStyle = hex(color);
+    ctx.beginPath();
+    ctx.arc(16, 13, 10, Math.PI, 0); // cúpula
+    ctx.fill();
+    px(6, 13, 20, 6, hex(color)); // banda
+    px(8, 19, 16, 3, shade(color, -40)); // visera
+    px(10, 15, 12, 3, shade(color, 20));
+    px(12, 16, 8, 2, shade(color, -60)); // ranura
+    px(7, 12, 3, 3, shade(color, 30));
+    px(22, 12, 3, 3, shade(color, 30));
   } else if (shape === 'armor') {
     ctx.fillStyle = hex(color);
     ctx.beginPath();

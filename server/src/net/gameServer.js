@@ -1378,7 +1378,7 @@ export class GameServer {
       counts[sid] = (counts[sid] ?? 0) + 1;
     }
     for (const [id, qty] of Object.entries(counts)) {
-      const have = (player.inventory ?? []).filter((it) => it.itemId === id).reduce((a, b) => a + (b.qty ?? 0), 0);
+      const have = (player.inventory ?? []).filter((it) => it?.itemId === id).reduce((a, b) => a + (b.qty ?? 0), 0);
       if (have < qty) return this.sendError(session, 'Materiales insuficientes');
     }
     const resultId = this.matchRecipe(grid);
@@ -1394,7 +1394,7 @@ export class GameServer {
     for (const [id, qty] of Object.entries(counts)) {
       let left = qty;
       for (const inst of [...(player.inventory ?? [])]) {
-        if (inst.itemId !== id || left <= 0) continue;
+        if (!inst || inst.itemId !== id || left <= 0) continue;
         const take = Math.min(inst.qty ?? 0, left);
         inst.qty -= take;
         left -= take;

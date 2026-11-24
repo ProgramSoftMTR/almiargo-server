@@ -96,6 +96,9 @@ export class WorldScene extends Phaser.Scene {
     addZoneLabels(this, this.worldMap);
 
     this.setupLocalPlayer();
+    uiBus.on('crafting', (msg) => {
+      if (this.localCraftIcon) this.localCraftIcon.setVisible(!!msg?.open);
+    });
     this.setupCamera();
     this.setupJoystick();
     this.setupInput();
@@ -148,6 +151,7 @@ export class WorldScene extends Phaser.Scene {
     this.localSprite.setOrigin(0.5, 0.9);
     this.localWeapon = null;
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
+    this.localCraftIcon = this.add.image(0, -46, 'tool_axe').setOrigin(0.5).setScale(0.7).setVisible(false);
 
     // Name tag + barra de vida del jugador local (mismo diseño que enemigos).
     this.localBarBg = this.add.rectangle(0, -30, 30, 4, 0x05070a, 0.7).setOrigin(0.5);
@@ -166,7 +170,7 @@ export class WorldScene extends Phaser.Scene {
     this.localBarFill.y = top - 1;
 
     this.localContainer = this.add.container(toWorld(this.localVisual.x), toWorld(this.localVisual.y), [
-      shadow, this.localSprite, this.localAxe, this.localBarBg, this.localBarFill, this.localNameText,
+      shadow, this.localSprite, this.localAxe, this.localBarBg, this.localBarFill, this.localNameText, this.localCraftIcon,
     ].filter(Boolean));
     this.localContainer.setDepth(toWorld(this.localVisual.y) + (this.localSprite?.displayHeight ?? 0) / 2);
     this.updateLocalWeapon();

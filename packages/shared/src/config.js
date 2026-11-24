@@ -345,7 +345,7 @@ export const ITEMS = Object.freeze({
   helmet_leather: {
     id: 'helmet_leather', name: 'Casco de Cuero', slot: 'helmet', stackable: false,
     price: 45, sell: 15, levelReq: 1, stats: { defense: 1, maxHp: 5 },
-    icon: { shape: 'armor', color: 0x9b6b3f },
+    icon: { shape: 'helmet', color: 0x9b6b3f },
   },
   armor_leather: {
     id: 'armor_leather', name: 'Armadura de Cuero', slot: 'armor', stackable: false,
@@ -375,7 +375,7 @@ export const ITEMS = Object.freeze({
   helmet_iron: {
     id: 'helmet_iron', name: 'Casco de Hierro', slot: 'helmet', stackable: false,
     price: 260, sell: 86, levelReq: 6, stats: { defense: 3, maxHp: 12 },
-    icon: { shape: 'armor', color: 0xb9c2cf },
+    icon: { shape: 'helmet', color: 0xb9c2cf },
   },
   ring_str: {
     id: 'ring_str', name: 'Anillo de Fuerza', slot: 'ring', stackable: false,
