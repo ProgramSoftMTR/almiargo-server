@@ -228,10 +228,14 @@ export class InventoryUI {
       }
     }
 
+    const bp2 = p.equipment?.backpack;
+    const bpDef2 = bp2 ? ITEMS[bp2.itemId] : null;
+    const maxSlots2 = bpDef2?.slots ?? 8;
+    this.pageSize = maxSlots2;
     const grid = $('inventoryGrid');
     if (grid) {
       grid.textContent = '';
-      const start = this.page * this.pageSize;
+      const start = 0;
       const pageSlots = p.inventory.slice(start, start + this.pageSize);
       pageSlots.forEach((inst, index) => {
         const btn = document.createElement('button');
