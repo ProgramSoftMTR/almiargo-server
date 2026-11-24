@@ -1388,7 +1388,7 @@ export class GameServer {
     const hasStack = isStackable && player.inventory.some((s) => s?.itemId === resultId);
     const usedSlots = player.inventory.filter((s) => s !== null).length;
     if (!(isStackable && hasStack) && usedSlots >= getPlayerMaxSlots(player)) {
-      return this.sendError(session, 'Inventario lleno. Equipa una mochila más grande.');
+      return this.sendError(session, 'Inventario lleno. Libera espacio antes de craftear.');
     }
     // Descontar
     for (const [id, qty] of Object.entries(counts)) {
