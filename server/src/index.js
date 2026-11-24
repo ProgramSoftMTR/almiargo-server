@@ -46,6 +46,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-25 05:00:00 feat boton de oro y selector de mob en panel admin
 // deploy trigger: 2026-11-25 07:00:00 fix separar drops de monedas e items en tiles distintos al morir mobs
 // deploy trigger: 2026-11-25 09:00:00 fix mobs invocados desde panel admin no reaparecen al morir
+// deploy trigger: 2026-11-25 11:00:00 fix capacidad de mochila equipada y ventana de inventario mas amplia
 
 const store = await createStore();
 const game = new GameServer({ store, config });
