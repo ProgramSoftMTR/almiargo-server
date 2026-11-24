@@ -417,6 +417,11 @@ export class GameServer {
       case 'stall_buy': await this.handleStallBuy(session, msg); break;
       case 'craft_grid': await this.handleCraftGrid(session, msg); break;
       case 'admin_action': this.handleAdminAction(session, msg); break;
+      case 'private_message': await this.handlePrivateMessage(session, msg); break;
+      case 'gift': await this.handleGift(session, msg); break;
+      case 'team_invite': await this.handleTeamInvite(session, msg); break;
+      case 'friend_add': await this.handleFriendAdd(session, msg); break;
+      case 'trade_request': await this.handleTradeRequest(session, msg); break;
       case 'ping': this.send(session, { type: 'pong', t: msg.t ?? 0, serverTime: Date.now() }); break;
       default: this.sendError(session, 'Acción desconocida');
     }
@@ -1211,6 +1216,93 @@ export class GameServer {
   handleChatMessage(session, msg) {
     const result = handleChat(this, session, msg, Date.now());
     if (!result.ok) this.sendError(session, result.error);
+  }
+
+  async handlePrivateMessage(session, msg) {
+    const player = session.player;
+    if (!player) return;
+    const targetId = String(msg?.targetId ?? '');
+    const text = String(msg?.text ?? '').slice(0, 200);
+    if (!text) return;
+    const target = this.world.getPlayer(targetId);
+    if (!target) return this.sendError(session, 'Jugador no conectado');
+    this.sendEvent(player, 'private_message', { from: player.name, fromId: player.id, text });
+    this.sendEvent(target, 'private_message', { from: player.name, fromId: player.id, text });
+  }
+
+  async handleGift(session, msg) {
+    const player = session.player;
+    if (!player) return;
+    const targetId = String(msg?.targetId ?? '');
+    const target = this.world.getPlayer(targetId);
+    if (!target) return this.sendError(session, 'Jugador no conectado');
+    const payload = String(msg?.payload ?? '');
+    if (/^\\d+$/.test(payload)) {
+      const amount = Math.min(Number(payload), player.gold);
+      if (amount <= 0) return this.sendError(session, 'Cantidad invalida');
+      player.gold -= amount;
+      target.gold = Math.min(CONSTANTS.MAX_GOLD, target.gold + amount);
+      player.dirty = true; target.dirty = true;
+      this.sendProfile(player); this.sendProfile(target);
+      this.sendEvent(player, 'notice', { text: `Regalaste ${amount} oro a ${target.name}` });
+      this.sendEvent(target, 'notice', { text: `Recibiste ${amount} oro de ${player.name}` });
+      await this.savePlayer(player); await this.savePlayer(target);
+      return;
+    }
+    const parts = payload.split(':');
+    const itemId = parts[0];
+    const qty = Math.max(1, Number(parts[1] ?? 1));
+    const removed = player.removeItemId(itemId, qty);
+    if (removed.removed <= 0) return this.sendError(session, 'No tienes ese item');
+    const maxSlots = getPlayerMaxSlots(target);
+    const usedSlots = target.inventory.filter((s) => s !== null).length;
+    const def = ITEMS[itemId];
+    const isStack = !!def?.stackable;
+    const hasStack = isStack && target.inventory.some((s) => s?.itemId === itemId);
+    if (!(isStack && hasStack) && usedSlots >= maxSlots) {
+      player.addItem(itemId, removed.removed);
+      return this.sendError(session, 'Inventario del jugador lleno');
+    }
+    addItem(target.inventory, itemId, removed.removed);
+    player.dirty = true; target.dirty = true;
+    this.sendProfile(player); this.sendProfile(target);
+    this.sendEvent(player, 'notice', { text: `Regalaste ${removed.removed}x ${ITEMS[itemId]?.name ?? itemId} a ${target.name}` });
+    this.sendEvent(target, 'notice', { text: `Recibiste ${removed.removed}x ${ITEMS[itemId]?.name ?? itemId} de ${player.name}` });
+    await this.savePlayer(player); await this.savePlayer(target);
+  }
+
+  async handleTeamInvite(session, msg) {
+    const player = session.player;
+    if (!player) return;
+    const targetId = String(msg?.targetId ?? '');
+    const target = this.world.getPlayer(targetId);
+    if (!target) return this.sendError(session, 'Jugador no conectado');
+    this.sendEvent(target, 'team_invite', { from: player.name, fromId: player.id });
+    this.sendEvent(player, 'notice', { text: `Invitacion enviada a ${target.name}` });
+  }
+
+  async handleFriendAdd(session, msg) {
+    const player = session.player;
+    if (!player) return;
+    const targetId = String(msg?.targetId ?? '');
+    const target = this.world.getPlayer(targetId);
+    if (!target) return this.sendError(session, 'Jugador no conectado');
+    if (!Array.isArray(player.friends)) player.friends = [];
+    if (!player.friends.includes(targetId)) player.friends.push(targetId);
+    player.dirty = true;
+    await this.savePlayer(player);
+    this.sendEvent(player, 'notice', { text: `${target.name} agregado a amigos` });
+    this.sendProfile(player);
+  }
+
+  async handleTradeRequest(session, msg) {
+    const player = session.player;
+    if (!player) return;
+    const targetId = String(msg?.targetId ?? '');
+    const target = this.world.getPlayer(targetId);
+    if (!target) return this.sendError(session, 'Jugador no conectado');
+    this.sendEvent(target, 'trade_request', { from: player.name, fromId: player.id });
+    this.sendEvent(player, 'notice', { text: `Solicitud de trade enviada a ${target.name}` });
   }
 
   handleAdminAction(session, msg) {

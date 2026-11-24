@@ -1016,7 +1016,7 @@ export class WorldScene extends Phaser.Scene {
       const e = picked.view.data;
       if (!e) return;
       if (e.kind === ENTITY_KIND.PLAYER && e.id !== store.player?.id) {
-        this.showPartyMenu(picked.view, e);
+        this.showInteractionPanel(picked.view, e);
         return;
       }
       if (e.kind === ENTITY_KIND.NPC) {
@@ -1267,6 +1267,69 @@ export class WorldScene extends Phaser.Scene {
     if (this.partyMenu) {
       this.partyMenu.remove();
       this.partyMenu = null;
+    }
+  }
+
+  showInteractionPanel(view, entity) {
+    this.hidePartyMenu();
+    if (this.interactionPanel) this.interactionPanel.remove();
+    const menu = document.createElement('div');
+    menu.className = 'interaction-panel';
+    menu.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;max-width:90vw;background:rgba(10,12,18,.95);border:2px solid #fff;border-radius:8px;padding:12px;z-index:100;color:#fff;font-family:monospace;';
+    const level = entity.level ?? 1;
+    const cls = entity.classId ?? 'adventurer';
+    const className = (CLASSES?.[cls]?.name) ?? cls;
+    menu.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:40px;height:40px;background:#333;border:1px solid #888;"></div>
+        <div>
+          <div style="font-weight:bold;font-size:14px;">${entity.name ?? ''}</div>
+          <div style="font-size:11px;color:#aaa;">Lv. ${level}</div>
+          <div style="font-size:11px;color:#ffd700;">${className}</div>
+        </div>
+        <button id="ipClose" style="margin-left:auto;background:none;border:none;color:#fff;font-size:18px;cursor:pointer;">✕</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button data-act="message" style="padding:8px;background:#7b5aa6;border:none;color:#fff;border-radius:4px;cursor:pointer;">Message</button>
+        <button data-act="follow" style="padding:8px;background:#3a8a4a;border:none;color:#fff;border-radius:4px;cursor:pointer;">Follow</button>
+        <button data-act="trade" style="padding:8px;background:#3a8a4a;border:none;color:#fff;border-radius:4px;cursor:pointer;">Trade</button>
+        <button data-act="gift" style="padding:8px;background:#3a6ea8;border:none;color:#fff;border-radius:4px;cursor:pointer;">Gift</button>
+        <button data-act="invite" style="padding:8px;background:#c9a227;border:none;color:#000;border-radius:4px;cursor:pointer;">Invite to team</button>
+        <button data-act="friend" style="padding:8px;background:#3a8a4a;border:none;color:#fff;border-radius:4px;cursor:pointer;">Add friend</button>
+      </div>
+    `;
+    document.body.appendChild(menu);
+    this.interactionPanel = menu;
+    menu.querySelector('#ipClose').addEventListener('click', (ev) => { ev.stopPropagation(); this.hideInteractionPanel(); });
+    menu.querySelectorAll('button[data-act]').forEach((btn) => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const act = btn.dataset.act;
+        if (act === 'message') {
+          const text = prompt('Mensaje privado:');
+          if (text) socket.send('private_message', { targetId: entity.id, text });
+        } else if (act === 'follow') {
+          this.followTargetId = entity.id;
+          uiBus.emit('toast', { text: 'Siguiendo a ' + entity.name, type: 'good' });
+        } else if (act === 'trade') {
+          socket.send('trade_request', { targetId: entity.id });
+        } else if (act === 'gift') {
+          const t = prompt('Regalar oro (número) o itemId:cantidad');
+          if (t) socket.send('gift', { targetId: entity.id, payload: t });
+        } else if (act === 'invite') {
+          socket.send('team_invite', { targetId: entity.id });
+        } else if (act === 'friend') {
+          socket.send('friend_add', { targetId: entity.id });
+        }
+        this.hideInteractionPanel();
+      });
+    });
+  }
+
+  hideInteractionPanel() {
+    if (this.interactionPanel) {
+      this.interactionPanel.remove();
+      this.interactionPanel = null;
     }
   }
 

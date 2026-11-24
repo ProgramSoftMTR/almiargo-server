@@ -133,6 +133,7 @@ export class PlayerState {
     this.x = Number(this.x);
     this.y = Number(this.y);
     this.clan = typeof this.clan === 'string' ? this.clan.slice(0, 16) : null;
+    this.friends = Array.isArray(base.friends) ? base.friends : [];
     // Privilegios del personaje: sólo el servidor los asigna (ver admin.js).
     this.isAdmin = base.isAdmin === true;
     this.nameColor = typeof base.nameColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(base.nameColor)
