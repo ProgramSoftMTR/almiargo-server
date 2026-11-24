@@ -339,30 +339,52 @@ export function killMonster(game, monster, source, now) {
   // Loot: compartido por party si aplica.
   const drops = rollLootTable(monster.def.loot);
   const gold = partyMembers.length > 0 ? 0 : randInt(monster.def.gold[0], monster.def.gold[1]);
-  if (gold > 0 || drops.length > 0 || partyMembers.length > 0) {
-    const now = Date.now();
-    const bag = game.world.createBag({
-      x: monster.x,
-      y: monster.y,
-      ownerId: partyMembers.length > 0 ? null : topId,
-      partyId: partyMembers.length > 0 ? source.partyId : null,
-      items: drops,
-      gold,
-      freeAt: now + CONSTANTS.BAG_FREE_AFTER_MS,
-      expiresAt: now + CONSTANTS.BAG_EXPIRE_MS,
-    });
-    // Establecer tiempo de desaparición automática de 60 segundos si no es recogido
-    bag.despawnAt = now + 60000;
-    // Iniciar temporizador de auto-destrucción
-    bag.despawnTimeout = setTimeout(() => {
-      game.world.removeBag(bag.id);
-      game.broadcastNear(monster.x, monster.y, eventRadius(game), {
-        type: 'drop_despawn', bagId: bag.id,
+  const lootNow = Date.now();
+  const dropList = [];
+  if (gold > 0) dropList.push({ kind: 'gold', gold });
+  for (const d of drops) dropList.push({ kind: 'item', item: d });
+  // Party: si hay party, el oro ya se repartió; no drop.
+
+  if (dropList.length > 0 || partyMembers.length > 0) {
+    const ownerId = partyMembers.length > 0 ? null : topId;
+    const partyId = partyMembers.length > 0 ? source.partyId : null;
+    const freeAt = partyMembers.length > 0 ? 0 : lootNow + CONSTANTS.BAG_FREE_AFTER_MS;
+    let idx = 0;
+    for (const d of dropList) {
+      let bx = monster.x, by = monster.y;
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const signX = Math.random() < 0.5 ? -1 : 1;
+        const signY = Math.random() < 0.5 ? -1 : 1;
+        const ox = signX * (0.3 + Math.random() * 0.25);
+        const oy = signY * (0.3 + Math.random() * 0.25);
+        const nx = monster.x + ox;
+        const ny = monster.y + oy;
+        const tx = Math.round(nx);
+        const ty = Math.round(ny);
+        if (game.world.canWalk(tx, ty)) { bx = nx; by = ny; break; }
+      }
+      const bag = game.world.createBag({
+        x: bx,
+        y: by,
+        ownerId,
+        partyId,
+        items: d.kind === 'item' ? [d.item] : [],
+        gold: d.kind === 'gold' ? d.gold : 0,
+        freeAt,
+        expiresAt: lootNow + CONSTANTS.BAG_EXPIRE_MS,
       });
-    }, 60000);
-    game.broadcastNear(monster.x, monster.y, eventRadius(game), {
-      type: 'loot', bagId: bag.id, x: bag.x, y: bag.y, ownerId: topId,
-    });
+      bag.despawnAt = lootNow + 60000;
+      bag.despawnTimeout = setTimeout(() => {
+        game.world.removeBag(bag.id);
+        game.broadcastNear(monster.x, monster.y, eventRadius(game), {
+          type: 'drop_despawn', bagId: bag.id,
+        });
+      }, 60000);
+      game.broadcastNear(monster.x, monster.y, eventRadius(game), {
+        type: 'loot', bagId: bag.id, x: bag.x, y: bag.y, ownerId: topId,
+      });
+      idx += 1;
+    }
   }
 
   // Limpia objetivos que apuntaban al monstruo.

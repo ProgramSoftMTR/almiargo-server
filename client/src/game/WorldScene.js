@@ -588,13 +588,45 @@ export class WorldScene extends Phaser.Scene {
     if (view) {
       if (view.label) {
         const isItemDrop = !!bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1;
-        view.label.setText(isItemDrop ? '' : (`${bag.gold > 0 ? `${bag.gold}◈` : ''}${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` || 'Bolsa'));
+        const isGoldDrop = bag.gold > 0 && !bag.itemId;
+        let txt = '';
+        if (isGoldDrop) {
+          txt = bag.gold > 1 ? `${bag.gold}` : '';
+        } else if (!isItemDrop) {
+          txt = `${bag.gold > 0 ? `${bag.gold}◈` : ''}${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` || 'Bolsa';
+        }
+        view.label.setText(txt);
       }
       return view;
     }
     const shadow = this.add.ellipse(0, 5, 20, 7, 0x000000, 0.3);
     let textureKey = 'bag';
-    if (bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1) {
+    if (bag.gold > 0 && !bag.itemId) {
+      textureKey = 'gold_coin';
+      if (!this.textures.exists(textureKey)) {
+        const c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        // pila de monedas doradas
+        const drawCoin = (x, y, r) => {
+          ctx.fillStyle = '#b8860b';
+          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#ffd700';
+          ctx.beginPath(); ctx.arc(x - 1, y - 1, r - 2, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#fff3a0';
+          ctx.beginPath(); ctx.arc(x - 2, y - 2, r - 4, 0, Math.PI * 2); ctx.fill();
+        };
+        if (bag.gold > 5) {
+          drawCoin(12, 22, 8);
+          drawCoin(20, 18, 8);
+          drawCoin(16, 14, 8);
+        } else {
+          drawCoin(16, 18, 9);
+        }
+        this.textures.addCanvas(textureKey, c);
+      }
+    } else if (bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1) {
       const def = ITEMS[bag.itemId];
       if (def) {
         textureKey = `item_${bag.itemId}`;
@@ -607,7 +639,9 @@ export class WorldScene extends Phaser.Scene {
     }
     const sprite = this.add.image(0, 0, textureKey).setOrigin(0.5, 1);
     const isItemDrop = !!bag.itemId && !bag.gold && (bag.itemCount ?? 1) === 1;
-    const label = this.add.text(0, -27, isItemDrop ? '' : (bag.gold > 0 ? `${bag.gold}◈${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` : 'Bolsa'), {
+    const isGoldDrop = bag.gold > 0 && !bag.itemId;
+    const labelText = isItemDrop ? '' : (isGoldDrop ? (bag.gold > 1 ? `${bag.gold}` : '') : (bag.gold > 0 ? `${bag.gold}◈${bag.itemCount ? ` ${bag.itemCount}▣` : ''}` : 'Bolsa'));
+    const label = this.add.text(0, -27, labelText, {
       fontFamily: 'Trebuchet MS, sans-serif', fontSize: '8px', color: '#ffe08a',
       stroke: '#05070a', strokeThickness: 3,
     }).setOrigin(0.5, 1);
