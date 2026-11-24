@@ -1,4 +1,4 @@
-import { ITEMS, MONSTERS } from '../../shared/index.js';
+import { CONSTANTS, ITEMS, MONSTERS } from '../../shared/index.js';
 import { Monster } from './monster.js';
 
 /**
@@ -22,6 +22,7 @@ export const ADMIN_ACTIONS = Object.freeze([
   'god',
   'summon',
   'op_weapon',
+  'add_gold',
 ]);
 
 /** Estado que el cliente usa para pintar los botones del panel. */
@@ -34,13 +35,14 @@ export function adminState(player) {
 }
 
 /** Ejecuta una acción y devuelve { ok, message?, error? }. */
-export function executeAdminAction(game, player, action) {
+export function executeAdminAction(game, player, action, msg = {}) {
   switch (action) {
     case 'level_up': return levelUp(game, player);
     case 'invisible': return toggleInvisible(game, player);
     case 'god': return toggleGod(game, player);
-    case 'summon': return summonMob(game, player);
+    case 'summon': return summonMob(game, player, msg);
     case 'op_weapon': return grantOpWeapon(game, player);
+    case 'add_gold': return addGold(game, player);
     default: return { ok: false, error: 'Acción de administrador desconocida' };
   }
 }
@@ -89,23 +91,46 @@ function toggleGod(game, player) {
   };
 }
 
-function summonMob(game, player) {
+function summonMob(game, player, msg = {}) {
+  const mobType = String(msg.mobType ?? msg.mob ?? '').trim();
   const defIds = Object.keys(MONSTERS);
   if (!defIds.length) return { ok: false, error: 'No hay monstruos definidos' };
-  const idx = (player.adminSummonSeq ?? 0) % defIds.length;
-  player.adminSummonSeq = (player.adminSummonSeq ?? 0) + 1;
-  const defId = defIds[idx];
+  let defId = mobType;
+  if (!defId || !MONSTERS[defId]) {
+    const idx = (player.adminSummonSeq ?? 0) % defIds.length;
+    player.adminSummonSeq = (player.adminSummonSeq ?? 0) + 1;
+    defId = defIds[idx];
+  }
+  if (!MONSTERS[defId]) return { ok: false, error: 'Mob inválido' };
 
-  const spot = game.world.findFreeAdjacent(Math.round(player.x), Math.round(player.y))
-    ?? { x: Math.round(player.x), y: Math.round(player.y) };
-  const monster = new Monster({
-    id: `m_${++game.world.monsterCounter}`,
-    defId,
-    spawn: spot,
-  });
-  monster.nextMoveAt = Date.now() + 400;
-  game.world.addMonster(monster);
-  return { ok: true, message: `Invocado: ${MONSTERS[defId].name}` };
+  let qty = Math.floor(Number(msg.quantity ?? msg.qty ?? 1));
+  if (!Number.isFinite(qty) || qty < 1) qty = 1;
+  if (qty > 25) qty = 25;
+
+  let spawned = 0;
+  for (let i = 0; i < qty; i += 1) {
+    const spot = game.world.findFreeTile
+      ? game.world.findFreeTile(Math.round(player.x), Math.round(player.y), player.id, 6)
+      : game.world.findFreeAdjacent(Math.round(player.x), Math.round(player.y));
+    const monster = new Monster({
+      id: `m_${++game.world.monsterCounter}`,
+      defId,
+      spawn: spot ?? { x: Math.round(player.x), y: Math.round(player.y) },
+    });
+    monster.nextMoveAt = Date.now() + 400;
+    game.world.addMonster(monster);
+    spawned += 1;
+  }
+  return { ok: true, message: `Invocados: ${spawned}x ${MONSTERS[defId].name}` };
+}
+
+function addGold(game, player) {
+  const amount = 10000;
+  player.gold = Math.min(CONSTANTS.MAX_GOLD, (player.gold ?? 0) + amount);
+  player.dirty = true;
+  game.sendProfile(player);
+  game.savePlayer(player);
+  return { ok: true, message: `+${amount} oro añadido` };
 }
 
 function grantOpWeapon(game, player) {

@@ -43,6 +43,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-24 23:30:00 fix icono cruzado martillo llave y bloqueo compra antes de cobrar oro
 // deploy trigger: 2026-11-25 01:00:00 fix bloquear crafteo si el inventario esta lleno
 // deploy trigger: 2026-11-25 03:00:00 feat drops de mobs sin bolsa con sprite pixel art de monedas e items
+// deploy trigger: 2026-11-25 05:00:00 feat boton de oro y selector de mob en panel admin
 
 const store = await createStore();
 const game = new GameServer({ store, config });

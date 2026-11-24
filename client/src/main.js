@@ -589,10 +589,73 @@ btnAdmin.addEventListener('click', () => {
 });
 
 // Admin action buttons
+function openSummonModal() {
+  const existing = document.getElementById('summonModal');
+  if (existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'summonModal';
+  modal.className = 'sheet';
+  modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:9999;';
+  const mobs = Object.keys(store.monsters ?? {});
+  let selectedMob = mobs[0] ?? '';
+  let qty = 1;
+  modal.innerHTML = `
+    <div style="background:#222;border:2px solid #555;padding:12px;max-width:360px;width:90%;color:#fff;">
+      <h3 style="margin:0 0 8px;">Invocar Mob</h3>
+      <div id="summonMobList" style="max-height:180px;overflow:auto;margin-bottom:8px;"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <span>Cantidad:</span>
+        <button data-q="1">1</button>
+        <button data-q="3">3</button>
+        <button data-q="5">5</button>
+        <button data-q="10">10</button>
+        <button id="summonMinus">-</button>
+        <span id="summonQty">1</span>
+        <button id="summonPlus">+</button>
+      </div>
+      <div style="display:flex;gap:6px;justify-content:flex-end;">
+        <button id="summonCancel">Cancelar</button>
+        <button id="summonConfirm">Invocar</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const list = modal.querySelector('#summonMobList');
+  const renderList = () => {
+    list.innerHTML = '';
+    for (const id of mobs) {
+      const def = store.monsters[id];
+      const btn = document.createElement('button');
+      btn.style.cssText = 'display:block;width:100%;text-align:left;padding:4px;margin-bottom:2px;background:' + (selectedMob === id ? '#444' : '#333') + ';color:#fff;border:1px solid #666;cursor:pointer;';
+      btn.textContent = def?.name ?? id;
+      btn.addEventListener('click', () => { selectedMob = id; renderList(); });
+      list.appendChild(btn);
+    }
+  };
+  renderList();
+  const qtySpan = modal.querySelector('#summonQty');
+  const updateQty = () => { qtySpan.textContent = qty; };
+  modal.querySelectorAll('button[data-q]').forEach((b) => {
+    b.addEventListener('click', () => { qty = Number(b.dataset.q); updateQty(); });
+  });
+  modal.querySelector('#summonMinus').addEventListener('click', () => { qty = Math.max(1, qty - 1); updateQty(); });
+  modal.querySelector('#summonPlus').addEventListener('click', () => { qty = Math.min(25, qty + 1); updateQty(); });
+  modal.querySelector('#summonCancel').addEventListener('click', () => modal.remove());
+  modal.querySelector('#summonConfirm').addEventListener('click', () => {
+    if (!selectedMob) return;
+    socket.send('admin_action', { action: 'summon', mobType: selectedMob, quantity: qty });
+    modal.remove();
+  });
+}
+
 for (const btn of document.querySelectorAll('.admin-action-btn')) {
   btn.addEventListener('click', () => {
     if (!isAdmin) return;
     const action = btn.dataset.action;
+    if (action === 'summon') {
+      openSummonModal();
+      return;
+    }
     const sent = socket.send('admin_action', { action });
     if (!sent) {
       hud.toast('Sin conexión con el servidor', 'error');

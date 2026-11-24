@@ -1227,7 +1227,7 @@ export class GameServer {
       return;
     }
     const action = String(msg.action ?? '');
-    const result = executeAdminAction(this, player, action);
+    const result = executeAdminAction(this, player, action, msg);
     if (result.ok) {
       this.sendEvent(player, 'admin_result', { action, ok: true, message: result.message });
       this.sendEvent(player, 'admin_state', adminState(player));
