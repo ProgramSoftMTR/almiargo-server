@@ -40,6 +40,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-24 18:00:00 fix quitar avisos y mejorar mesa de trabajo
 // deploy trigger: 2026-11-24 20:00:00 fix crafteo, icono de trabajo, sprite de casco y proteccion inventario lleno
 // deploy trigger: 2026-11-24 22:00:00 fix icono martillo y llave al craftear y bloqueo compra con inventario lleno
+// deploy trigger: 2026-11-24 23:30:00 fix icono cruzado martillo llave y bloqueo compra antes de cobrar oro
 
 const store = await createStore();
 const game = new GameServer({ store, config });

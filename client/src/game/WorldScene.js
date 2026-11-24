@@ -156,22 +156,28 @@ export class WorldScene extends Phaser.Scene {
       c.width = 32; c.height = 32;
       const ctx = c.getContext('2d');
       ctx.imageSmoothingEnabled = false;
-      // mango marrón
-      ctx.fillStyle = '#8a6034';
-      ctx.fillRect(14, 4, 4, 24);
-      // cabeza martillo azul/gris
-      ctx.fillStyle = '#9aa0a6';
-      ctx.fillRect(8, 2, 16, 8);
-      ctx.fillStyle = '#6f8ce8';
-      ctx.fillRect(10, 3, 12, 6);
-      // llave inglesa cruzada
+      // Martillo (diagonal)
       ctx.save();
-      ctx.translate(16, 16);
+      ctx.translate(10, 8);
+      ctx.rotate(-Math.PI / 4);
+      ctx.fillStyle = '#8a6034';
+      ctx.fillRect(0, 0, 4, 18); // mango
+      ctx.fillStyle = '#9aa0a6';
+      ctx.fillRect(-6, -6, 16, 8); // cabeza
+      ctx.fillStyle = '#6f8ce8';
+      ctx.fillRect(-4, -4, 12, 4);
+      ctx.restore();
+      // Llave inglesa (diagonal opuesta)
+      ctx.save();
+      ctx.translate(22, 8);
       ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#8a6034';
+      ctx.fillRect(-2, 0, 4, 18); // mango
       ctx.fillStyle = '#b9c2cf';
-      ctx.fillRect(-2, -14, 4, 20);
+      ctx.fillRect(-6, -6, 12, 8); // cabeza abierta
       ctx.fillStyle = '#5a6a7a';
-      ctx.fillRect(-6, -14, 12, 6);
+      ctx.fillRect(-4, -4, 8, 4);
+      ctx.fillRect(-2, -6, 4, 2);
       ctx.restore();
       this.textures.addCanvas('craft_hammer_wrench', c);
     }

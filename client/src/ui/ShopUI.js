@@ -2,6 +2,7 @@ import { store } from '../core/store.js';
 import { socket } from '../net/socket.js';
 import { uiBus } from '../core/uiBus.js';
 import { drawItemIcon } from './icons.js';
+import { ITEMS } from '@almiargo/shared';
 
 const $ = (id) => document.getElementById(id);
 
@@ -77,6 +78,10 @@ export class ShopUI {
 
     const level = store.player?.level ?? 1;
     const gold = store.player?.gold ?? 0;
+    const usedSlots = (store.player?.inventory ?? []).filter((s) => s !== null).length;
+    const bp = store.player?.equipment?.backpack;
+    const bpDef = bp ? ITEMS[bp.itemId] : null;
+    const maxSlots = bpDef?.slots ?? 8;
 
     for (const item of shop.items) {
       const row = document.createElement('div');
@@ -112,7 +117,9 @@ export class ShopUI {
       buy1.dataset.buy = item.id;
       buy1.dataset.qty = '1';
       buy1.textContent = 'x1';
-      buy1.disabled = level < (item.levelReq ?? 1) || gold < item.price;
+      const hasStack = (store.player?.inventory ?? []).some((s) => s?.itemId === item.id);
+      const noSpace = !(item.stackable && hasStack) && usedSlots >= maxSlots;
+      buy1.disabled = level < (item.levelReq ?? 1) || gold < item.price || noSpace;
       row.appendChild(buy1);
 
       if (item.stackable) {
@@ -121,7 +128,7 @@ export class ShopUI {
         buy5.dataset.buy = item.id;
         buy5.dataset.qty = '5';
         buy5.textContent = 'x5';
-        buy5.disabled = level < (item.levelReq ?? 1) || gold < item.price * 5;
+        buy5.disabled = level < (item.levelReq ?? 1) || gold < item.price * 5 || noSpace;
         row.appendChild(buy5);
       }
 
