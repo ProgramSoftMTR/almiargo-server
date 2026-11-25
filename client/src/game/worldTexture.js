@@ -21,7 +21,7 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   const chopped = !!(world?.chopped && world.chopped.has(`${x},${y}`));
   const treeTiles = [TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD];
   // Bioma base de pradera: se tratan como el mismo suelo para bordes/transiciones.
-  const prairieBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.TREE, TILE.ROCK];
+  const prairieBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.TREE, TILE.ROCK, TILE.STONE, TILE.CITY, TILE.PATH, TILE.PLAZA];
   if (chopped && treeTiles.includes(tile)) {
     const groundColor = tile === TILE.TREE_PALM ? '#c9b27a'
       : tile === TILE.TREE_DEAD ? '#2f4a3a'
@@ -37,7 +37,7 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   const wy0 = y * TILE_SIZE;
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
   const baseColor = `#${Number(base).toString(16).padStart(6, '0')}`;
-  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE, TILE.ROCK];
+  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE, TILE.ROCK, TILE.STONE, TILE.CITY, TILE.PATH, TILE.PLAZA];
   // Seleccion de textura de suelo para la pradera (mezcla deterministica).
   let groundKey = null;
   if (grassBaseTiles.includes(tile)) {
@@ -70,10 +70,12 @@ function drawTile(ctx, scene, world, x, y, px, py) {
       ctx.fillStyle = baseColor;
       ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
     }
-  } else {
-    ctx.fillStyle = baseColor;
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+    // Si el tile usa sprite de cesped, no se dibuja ningun adorno procedural posterior.
+    return;
   }
+  ctx.fillStyle = baseColor;
+  ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+  if (grassBaseTiles.includes(tile)) return;
 
   const h = tileHash(x, y);
 
@@ -185,11 +187,6 @@ function drawTile(ctx, scene, world, x, y, px, py) {
     ctx.fillRect(px, py + TILE_SIZE - 4, TILE_SIZE, 4);
     ctx.fillStyle = 'rgba(255,255,255,.08)';
     ctx.fillRect(px, py, TILE_SIZE, 2);
-    ctx.strokeStyle = 'rgba(20,18,16,.4)';
-    ctx.lineWidth = 1;
-    const off = Math.round(h * 8);
-    ctx.strokeRect(px + 2.5, py + 2.5 + off, 13, 9);
-    ctx.strokeRect(px + 17.5, py + 2.5 + off, 12, 9);
   } else if (tile === TILE.SWAMP) {
     ctx.fillStyle = '#2f4a3a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);

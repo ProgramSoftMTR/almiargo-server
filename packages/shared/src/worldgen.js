@@ -36,6 +36,9 @@ export const TILE = Object.freeze({
   TREE_ACACIA: 14, // Acacia
   TREE_DEAD: 15,    // Árbol muerto/manglar
   SAVANNA: 16,     // Sabana
+  CITY: 18,        // Suelo transitable de ciudad
+  PATH: 19,        // Camino principal
+  PLAZA: 20,       // Plaza transitable
 });
 
 export const TILE_COLORS = Object.freeze({
@@ -57,6 +60,9 @@ export const TILE_COLORS = Object.freeze({
   15: [0x3a322a, 0x332c25, 0x42382f],  // dead tree
   16: [0xb9a05a, 0xaf9450, 0xc4aa64],  // savanna
   17: [0x3d6b3a, 0x356236, 0x447540],  // rock prairie
+  18: [0x3d6b3a, 0x356236, 0x447540],  // city transitable
+  19: [0x3d6b3a, 0x356236, 0x447540],  // path
+  20: [0x3d6b3a, 0x356236, 0x447540],  // plaza
 });
 
 export function tileAt(world, x, y) {
