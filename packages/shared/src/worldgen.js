@@ -273,13 +273,22 @@ export function generateWorld(seed = WORLD_SEED) {
     }
   }
 
-  // Rocas en pradera (densidad reducida).
+  // Rocas en pradera (densidad muy baja y separadas).
   for (let y = 1; y < height - 1; y += 1) {
     for (let x = 1; x < width - 1; x += 1) {
       const t = get(x, y);
       if (t !== TILE.GRASS && t !== TILE.DIRT && t !== TILE.FLOWERS) continue;
       if (isSafeZone(x, y) || isPvPZone(x, y)) continue;
-      if (rng() < 0.032) set(x, y, TILE.ROCK);
+      // Separacion minima de 4 tiles entre rocas.
+      let tooClose = false;
+      for (let oy = -3; oy <= 3 && !tooClose; oy += 1) {
+        for (let ox = -3; ox <= 3; ox += 1) {
+          if (ox === 0 && oy === 0) continue;
+          if (get(x + ox, y + oy) === TILE.ROCK) { tooClose = true; break; }
+        }
+      }
+      if (tooClose) continue;
+      if (rng() < 0.008) set(x, y, TILE.ROCK);
     }
   }
   // Caminos: conectan ciudad, zonas de farmeo y arena.

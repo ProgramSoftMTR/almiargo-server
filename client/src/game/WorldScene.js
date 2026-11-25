@@ -1228,7 +1228,7 @@ export class WorldScene extends Phaser.Scene {
           this.addEnvSprite(x, y, 'tree');
         } else if (tile === TILE.GRASS) {
           const h = tileHash(x, y);
-          if (h > 0.96) {
+          if (h > 0.996) {
             const tex = ((x + y) % 2 === 0) ? 'sprite_rock' : 'sprite_rockgrass';
             this.addEnvSprite(x, y, 'rock', tex);
           } else if (h > 0.84) {
