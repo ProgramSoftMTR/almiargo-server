@@ -59,6 +59,11 @@ export class WorldScene extends Phaser.Scene {
     this.entityViews = new Map();
     this.stumpViews = new Map();
     this.envSprites = new Map();
+    this.navGrid = null;
+    this.navBlockers = new Map();
+    this.envDescriptors = [];
+    this.envVisibleKeys = new Set();
+    this.envUpdateDue = 0;
     this.bagViews = new Map();
     this.stallViews = new Map();
     this.path = [];
@@ -108,7 +113,7 @@ export class WorldScene extends Phaser.Scene {
     this.worldSeed = store.world?.seed ?? 1337;
     this.worldMap = generateWorld(this.worldSeed);
     this.worldMap.chopped = new Set();
-    this.rebuildNav();
+    this.initNavGrid();
 
     createEntityTextures(this);
     createResourceTextures(this);
@@ -320,10 +325,14 @@ export class WorldScene extends Phaser.Scene {
         view.serverX = toWorld(e.x);
         view.serverY = toWorld(e.y);
         this.updateEntityVisual(view, e);
+        if (e.kind === ENTITY_KIND.NPC || e.kind === ENTITY_KIND.MONSTER || e.kind === ENTITY_KIND.PLAYER) {
+          this.addNavBlocker(`ent:${e.id}`, Math.round(e.x), Math.round(e.y));
+        }
       }
     }
     if (delta) {
       for (const id of removed) {
+        this.removeNavBlocker(`ent:${id}`);
         const view = this.entityViews.get(id);
         if (view) { view.container.destroy(true); this.entityViews.delete(id); }
       }
@@ -353,11 +362,15 @@ export class WorldScene extends Phaser.Scene {
       this.ensureStallView({
         id: s.i, x: s.x, y: s.y, ownerName: s.n, itemCount: s.c, online: s.on,
       });
+      this.addNavBlocker(`stall:${s.i}`, Math.round(s.x), Math.round(s.y));
     }
     for (const [id, view] of this.stallViews) {
-      if (!seenStalls.has(id)) { view.destroy(true); this.stallViews.delete(id); }
+      if (!seenStalls.has(id)) {
+        this.removeNavBlocker(`stall:${id}`);
+        view.destroy(true);
+        this.stallViews.delete(id);
+      }
     }
-    this.rebuildNav();
     if (this.path.length > 0 && this.pathGoal) {
       const next = this.path[0];
       if (!isWalkable(this.navWorld, next.x, next.y)) this.recomputePath();
@@ -405,27 +418,62 @@ export class WorldScene extends Phaser.Scene {
     // La apariencia base depende solo del outfit; el arma se dibuja como overlay.
   }
 
-  rebuildNav() {
+  initNavGrid() {
     const tiles = Uint8Array.from(this.worldMap.tiles);
     const nav = { width: this.worldMap.width, height: this.worldMap.height, tiles };
-    const block = (x, y) => {
-      if (x >= 0 && y >= 0 && x < nav.width && y < nav.height) tiles[y * nav.width + x] = 4;
+    this.navGrid = nav;
+    this.navWorld = nav;
+    this.navBlockers = new Map();
+    const block = (id, x, y) => {
+      if (x < 0 || y < 0 || x >= nav.width || y >= nav.height) return;
+      this.navBlockers.set(id, { x, y });
+      this.refreshNavCell(x, y);
     };
-    for (const npc of store.npcs.values()) block(Math.round(npc.x), Math.round(npc.y));
+    for (const npc of store.npcs.values()) block(`npc:${npc.id}`, Math.round(npc.x), Math.round(npc.y));
     for (const e of store.entities.values()) {
       if (e.kind === ENTITY_KIND.NPC || e.kind === ENTITY_KIND.MONSTER || e.kind === ENTITY_KIND.PLAYER) {
-        block(Math.round(e.x), Math.round(e.y));
+        block(`ent:${e.id}`, Math.round(e.x), Math.round(e.y));
       }
     }
-    for (const stall of store.stalls.values()) block(Math.round(stall.x), Math.round(stall.y));
-    // Los tocones (árboles talados) no tienen colisión.
+    for (const stall of store.stalls.values()) block(`stall:${stall.id}`, Math.round(stall.x), Math.round(stall.y));
     for (const key of this.stumpViews.keys()) {
       const [sx, sy] = key.split(',').map((v) => Number.parseInt(v, 10));
       if (Number.isInteger(sx) && Number.isInteger(sy) && sx >= 0 && sy >= 0 && sx < nav.width && sy < nav.height) {
+        this.worldMap.tiles[sy * nav.width + sx] = 0;
         nav.tiles[sy * nav.width + sx] = 0;
       }
     }
-    this.navWorld = nav;
+  }
+
+  refreshNavCell(x, y) {
+    if (!this.navGrid || x < 0 || y < 0 || x >= this.navGrid.width || y >= this.navGrid.height) return;
+    const idx = y * this.navGrid.width + x;
+    let value = this.worldMap.tiles[idx];
+    for (const blocker of this.navBlockers.values()) {
+      if (blocker.x === x && blocker.y === y) { value = 4; break; }
+    }
+    this.navGrid.tiles[idx] = value;
+  }
+
+  addNavBlocker(id, x, y) {
+    const prev = this.navBlockers.get(id);
+    if (prev) {
+      this.navBlockers.delete(id);
+      this.refreshNavCell(prev.x, prev.y);
+    }
+    this.navBlockers.set(id, { x, y });
+    this.refreshNavCell(x, y);
+  }
+
+  removeNavBlocker(id) {
+    const prev = this.navBlockers.get(id);
+    if (!prev) return;
+    this.navBlockers.delete(id);
+    this.refreshNavCell(prev.x, prev.y);
+  }
+
+  rebuildNav() {
+    this.initNavGrid();
   }
 
   emitZone() {
@@ -816,6 +864,7 @@ export class WorldScene extends Phaser.Scene {
       view.sprite.y = 2 - (moved ? Math.abs(Math.sin(now / 110 + view.id.length)) * 1.6 : 0) - remoteBreathOffset;
       if (view.shadow) view.shadow.scaleX = 1 + (moved ? 0 : (remoteBreathPhase * 0.02));
     }
+    this.updateEnvSprites();
 
     // Proyectiles de arena (mobs a distancia)
     const pg = this.projectileGraphics;
@@ -943,7 +992,6 @@ export class WorldScene extends Phaser.Scene {
         if (n) this.pathGoal = { x: Math.round(n.x), y: Math.round(n.y) };
       }
 
-      this.rebuildNav();
       const cx = Math.round(this.localPred.x);
       const cy = Math.round(this.localPred.y);
 
@@ -966,14 +1014,22 @@ export class WorldScene extends Phaser.Scene {
       }
       this._trappedToastShown = false;
 
-      // Re-pathfinding continuo (A*) considerando mobs/jugadores como obstáculos.
-      const path = findPath(this.navWorld, cx, cy, this.pathGoal.x, this.pathGoal.y, 5000);
-      if (!path.length) {
-        this.path = [];
-        this.nextStepAt = now + 120;
-        return;
+      // Re-pathfinding continuo (A*) solo si el camino actual ya no es valido.
+      const goalKey = `${this.pathGoal.x},${this.pathGoal.y}`;
+      const firstStep = this.path[0];
+      const pathInvalid = !this.path.length || !firstStep ||
+        !isWalkable(this.navWorld, firstStep.x, firstStep.y) ||
+        this._lastPathGoal !== goalKey;
+      if (pathInvalid) {
+        const path = findPath(this.navWorld, cx, cy, this.pathGoal.x, this.pathGoal.y, 5000);
+        if (!path.length) {
+          this.path = [];
+          this.nextStepAt = now + 120;
+          return;
+        }
+        this.path = path;
+        this._lastPathGoal = goalKey;
       }
-      this.path = path;
 
       const next = this.path[0];
       const dx = Math.sign(next.x - cx);
@@ -1026,7 +1082,6 @@ export class WorldScene extends Phaser.Scene {
     this.path = [];
     const goal = this.pathGoal;
     if (!goal) return;
-    this.rebuildNav();
     const start = { x: Math.round(this.localPred.x), y: Math.round(this.localPred.y) };
     const path = findPath(this.navWorld, start.x, start.y, goal.x, goal.y, 5000);
     if (path.length) {
@@ -1220,22 +1275,21 @@ export class WorldScene extends Phaser.Scene {
   createEnvSprites() {
     const world = this.worldMap;
     if (!world) return;
+    const descriptors = [];
     for (let y = 0; y < world.height; y += 1) {
       for (let x = 0; x < world.width; x += 1) {
         const tile = tileAt(world, x, y);
         const chopped = !!(world.chopped && world.chopped.has(`${x},${y}`));
         if (tile === TILE.TREE && !chopped) {
-          this.addEnvSprite(x, y, 'tree');
+          descriptors.push({ x, y, type: 'tree', textureKey: null });
         } else if (tile === TILE.GRASS) {
           const h = tileHash(x, y);
           if (h > 0.996) {
-            const tex = ((x + y) % 2 === 0) ? 'sprite_rock' : 'sprite_rockgrass';
-            this.addEnvSprite(x, y, 'rock', tex);
+            descriptors.push({ x, y, type: 'rock', textureKey: ((x + y) % 2 === 0) ? 'sprite_rock' : 'sprite_rockgrass' });
           } else if (h > 0.84) {
-            this.addEnvSprite(x, y, 'grass_tall');
+            descriptors.push({ x, y, type: 'grass_tall', textureKey: null });
           }
         } else if (tile === TILE.ROCK) {
-          // Musgo solo cerca de arboles (radio 1-2), con ~55% de probabilidad.
           let nearTree = false;
           for (let dy = -2; dy <= 2 && !nearTree; dy += 1) {
             for (let dx = -2; dx <= 2; dx += 1) {
@@ -1246,9 +1300,40 @@ export class WorldScene extends Phaser.Scene {
             }
           }
           const useMoss = nearTree && tileHash(x, y) < 0.55;
-          this.addEnvSprite(x, y, 'rock', useMoss ? 'sprite_rock_moss' : 'sprite_rock');
+          descriptors.push({ x, y, type: 'rock', textureKey: useMoss ? 'sprite_rock_moss' : 'sprite_rock' });
         }
       }
+    }
+    this.envDescriptors = descriptors;
+    this.updateEnvSprites(true);
+  }
+
+  updateEnvSprites(force = false) {
+    if (!this.envDescriptors.length) return;
+    const now = Date.now();
+    if (!force && now < this.envUpdateDue) return;
+    this.envUpdateDue = now + 250;
+    const cam = this.cameras.main;
+    const view = cam.worldView;
+    const margin = 3 * TILE_SIZE;
+    const minX = Math.floor((view.x - margin) / TILE_SIZE);
+    const maxX = Math.ceil((view.x + view.width + margin) / TILE_SIZE);
+    const minY = Math.floor((view.y - margin) / TILE_SIZE);
+    const maxY = Math.ceil((view.y + view.height + margin) / TILE_SIZE);
+    const visibleKeys = new Set();
+    for (const d of this.envDescriptors) {
+      if (d.x < minX || d.x > maxX || d.y < minY || d.y > maxY) continue;
+      const key = `${d.x},${d.y}`;
+      visibleKeys.add(key);
+      if (!this.envSprites.has(key)) {
+        this.addEnvSprite(d.x, d.y, d.type, d.textureKey);
+      }
+    }
+    for (const key of [...this.envSprites.keys()]) {
+      if (visibleKeys.has(key)) continue;
+      const sprite = this.envSprites.get(key);
+      if (sprite) { try { sprite.destroy(); } catch (e) {} }
+      this.envSprites.delete(key);
     }
   }
 
@@ -1280,7 +1365,6 @@ export class WorldScene extends Phaser.Scene {
     const key = `${x},${y}`;
     if (msg.state === 'stump') this.addStump(x, y, key);
     else this.removeStump(key);
-    this.rebuildNav();
   }
 
   addStump(x, y, key) {
@@ -1296,8 +1380,10 @@ export class WorldScene extends Phaser.Scene {
     const esk = `${x},${y}`;
     const es = this.envSprites.get(esk);
     if (es) { try { es.destroy(); } catch (e) {} this.envSprites.delete(esk); }
+    this.envDescriptors = this.envDescriptors.filter((d) => !(d.x === x && d.y === y));
     const chunkSize = 64;
     regenerateWorldChunk(this, this.worldMap, Math.floor(x / chunkSize), Math.floor(y / chunkSize));
+    this.refreshNavCell(x, y);
     const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, texKey)
       .setOrigin(0.5, 0.5).setDepth(-50);
     this.stumpViews.set(key, { container: null, sprite, cover: null });
@@ -1318,8 +1404,12 @@ export class WorldScene extends Phaser.Scene {
       }
       const chunkSize = 64;
       regenerateWorldChunk(this, this.worldMap, Math.floor(sx / chunkSize), Math.floor(sy / chunkSize));
+      this.refreshNavCell(sx, sy);
       const tile = tileAt(this.worldMap, sx, sy);
-      if (tile === TILE.TREE) this.addEnvSprite(sx, sy, 'tree');
+      if (tile === TILE.TREE) {
+        this.envDescriptors.push({ x: sx, y: sy, type: 'tree', textureKey: null });
+        this.addEnvSprite(sx, sy, 'tree');
+      }
     }
   }
 
@@ -1329,7 +1419,6 @@ export class WorldScene extends Phaser.Scene {
       const [x, y] = key.split(',').map((v) => Number.parseInt(v, 10));
       if (Number.isInteger(x) && Number.isInteger(y)) this.addStump(x, y, key);
     }
-    this.rebuildNav();
   }
 
   updatePendingAction() {

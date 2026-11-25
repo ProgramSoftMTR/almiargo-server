@@ -25,8 +25,14 @@ export class Hud {
 
     this.minimapTimer = setInterval(() => {
       if (store.authenticated) this.minimap.render();
-    }, 300);
+    }, 600);
     this.updateTimer = setInterval(() => this.updateTarget(), 250);
+    this.cachedDom = {};
+    for (const id of ['playerName','levelBadge','classLabel','hpFill','mpFill','hpText','mpText','xpFill','xpText','skullIcon','goldText','onlineText','btnCrafting','btnSpecial','hpPotCount','mpPotCount','targetPlate','targetName','targetFill','deathOverlay','deathTimer','deathInfo','chatFeed','fpsText']) {
+      this.cachedDom[id] = document.getElementById(id);
+    }
+    this.classButtons = Array.from(document.querySelectorAll('.class-btn'));
+    this._lastHud = {};
   }
 
   show() {
@@ -96,24 +102,27 @@ export class Hud {
     const xp = self?.xp ?? p.xp ?? 0;
     const xpNext = self?.xpNext ?? p.xpNext ?? 1;
 
-    const playerNameEl = $('playerName');
-    if (playerNameEl) { playerNameEl.textContent = p.name; if (p.nameColor) playerNameEl.style.color = p.nameColor; }
-    const levelBadgeEl = $('levelBadge'); if (levelBadgeEl) levelBadgeEl.textContent = p.level;
+    const playerNameEl = this.cachedDom.playerName;
+    if (playerNameEl && playerNameEl.textContent !== (p.name ?? '')) { playerNameEl.textContent = p.name; if (p.nameColor) playerNameEl.style.color = p.nameColor; }
+    const levelBadgeEl = this.cachedDom.levelBadge; if (levelBadgeEl && levelBadgeEl.textContent !== String(p.level)) levelBadgeEl.textContent = p.level;
     const classDef = CLASSES[p.classId] ?? CLASSES.knight;
-    const classLabelEl = $('classLabel'); if (classLabelEl) classLabelEl.textContent = classDef.name;
-    const hpFillEl = $('hpFill'); if (hpFillEl) hpFillEl.style.width = `${Math.max(0, Math.min(100, (hp / maxHp) * 100))}%`;
-    const mpFillEl = $('mpFill'); if (mpFillEl) mpFillEl.style.width = `${Math.max(0, Math.min(100, (mp / maxMp) * 100))}%`;
-    const hpTextEl = $('hpText'); if (hpTextEl) hpTextEl.textContent = `${Math.ceil(hp)} / ${maxHp}`;
-    const mpTextEl = $('mpText'); if (mpTextEl) mpTextEl.textContent = `${Math.ceil(mp)} / ${maxMp}`;
-    const xpFill = $('xpFill');
-    const xpText = $('xpText');
-    if (xpFill) xpFill.style.width = `${Math.max(0, Math.min(100, (xp / Math.max(1, xpNext)) * 100))}%`;
-    if (xpText) xpText.textContent = `${xp} / ${xpNext} XP`;
+    const classLabelEl = this.cachedDom.classLabel; if (classLabelEl && classLabelEl.textContent !== classDef.name) classLabelEl.textContent = classDef.name;
+    const hpPct = `${Math.max(0, Math.min(100, (hp / maxHp) * 100))}%`;
+    const hpFillEl = this.cachedDom.hpFill; if (hpFillEl && hpFillEl.style.width !== hpPct) hpFillEl.style.width = hpPct;
+    const mpPct = `${Math.max(0, Math.min(100, (mp / maxMp) * 100))}%`;
+    const mpFillEl = this.cachedDom.mpFill; if (mpFillEl && mpFillEl.style.width !== mpPct) mpFillEl.style.width = mpPct;
+    const hpTextVal = `${Math.ceil(hp)} / ${maxHp}`;
+    const hpTextEl = this.cachedDom.hpText; if (hpTextEl && hpTextEl.textContent !== hpTextVal) hpTextEl.textContent = hpTextVal;
+    const mpTextVal = `${Math.ceil(mp)} / ${maxMp}`;
+    const mpTextEl = this.cachedDom.mpText; if (mpTextEl && mpTextEl.textContent !== mpTextVal) mpTextEl.textContent = mpTextVal;
+    const xpPct = `${Math.max(0, Math.min(100, (xp / Math.max(1, xpNext)) * 100))}%`;
+    const xpFill = this.cachedDom.xpFill; if (xpFill && xpFill.style.width !== xpPct) xpFill.style.width = xpPct;
+    const xpText = this.cachedDom.xpText; const xpTextVal = `${xp} / ${xpNext} XP`; if (xpText && xpText.textContent !== xpTextVal) xpText.textContent = xpTextVal;
     const skull = self?.skull ?? p.skull ?? 'none';
-    const skullIcon = $('skullIcon');
+    const skullIcon = this.cachedDom.skullIcon;
     if (skullIcon) skullIcon.classList.toggle('hidden', !skull || skull === 'none');
-    const goldTextEl = $('goldText'); if (goldTextEl) goldTextEl.textContent = p.gold ?? 0;
-    $('onlineText').textContent = `● ${store.online ?? 1}${store.latency ? ` · ${store.latency}ms` : ''}`;
+    const goldTextEl = this.cachedDom.goldText; const goldVal = String(p.gold ?? 0); if (goldTextEl && goldTextEl.textContent !== goldVal) goldTextEl.textContent = goldVal;
+    const onlineEl = this.cachedDom.onlineText; const onlineVal = `● ${store.online ?? 1}${store.latency ? ` · ${store.latency}ms` : ''}`; if (onlineEl && onlineEl.textContent !== onlineVal) onlineEl.textContent = onlineVal;
     const btnCrafting = $('btnCrafting');
     if (btnCrafting) {
       const hasTable = store.player?.equipment?.tool?.itemId === 'crafting_table';
@@ -121,7 +130,7 @@ export class Hud {
       btnCrafting.title = hasTable ? 'Mesa de Trabajo' : 'Equipa una Mesa de Trabajo';
     }
 
-    for (const btn of document.querySelectorAll('.class-btn')) {
+    for (const btn of this.classButtons) {
       btn.classList.toggle('active', btn.dataset.class === p.classId);
     }
 

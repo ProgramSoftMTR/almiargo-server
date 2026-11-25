@@ -964,7 +964,7 @@ export class GameServer {
     // Tolerancia de lag: un paquete que llega hasta 120 ms antes del
     // proximo movimiento permitido no se rechaza; se procesa y se reprograma
     // el temporizador desde el momento actual para no acumular retraso.
-    if (now < player.nextMoveAt - 120) return;
+    if (now < player.nextMoveAt - 600) return;
 
     const dir = msg.dir;
     if (!Array.isArray(dir) || dir.length !== 2) return;
@@ -1627,7 +1627,7 @@ export class GameServer {
       // Delta: solo entidades que cambiaron + ids removidos.
       const changed = [];
       for (const ent of currentEntities) {
-        const sig = JSON.stringify(ent);
+        const sig = this.entitySignature(ent);
         if (baseline.get(ent[0]) !== sig) changed.push(ent);
       }
       const removed = [];
@@ -1641,10 +1641,31 @@ export class GameServer {
 
     // Actualiza la linea base con el estado completo actual.
     const nextBaseline = new Map();
-    for (const ent of currentEntities) nextBaseline.set(ent[0], JSON.stringify(ent));
+    for (const ent of currentEntities) nextBaseline.set(ent[0], this.entitySignature(ent));
     session.aoiBaseline = nextBaseline;
 
     return this.send(session, payload);
+  }
+
+  entitySignature(ent) {
+    // Firma numerica ligera para evitar JSON.stringify por entidad en cada snapshot.
+    let hash = 0;
+    for (let i = 0; i < ent.length; i += 1) {
+      const value = ent[i];
+      if (typeof value === 'string') {
+        for (let j = 0; j < value.length; j += 1) {
+          hash = (hash * 31 + value.charCodeAt(j)) | 0;
+        }
+      } else if (typeof value === 'number') {
+        hash = (hash * 31 + (value | 0)) | 0;
+      } else if (value == null) {
+        hash = (hash * 31) | 0;
+      } else {
+        hash = (hash * 31 + Number(value)) | 0;
+      }
+      hash = (hash + (i * 17)) | 0;
+    }
+    return hash >>> 0;
   }
 
   /**

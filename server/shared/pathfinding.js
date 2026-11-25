@@ -16,6 +16,21 @@ function heuristic(x1, y1, x2, y2) {
   return dx + dy + (1.4142 - 2) * Math.min(dx, dy);
 }
 
+const PATH_BUFFERS = new Map();
+function getPathBuffers(size) {
+  let buffers = PATH_BUFFERS.get(size);
+  if (!buffers) {
+    buffers = {
+      gScore: new Float32Array(size),
+      fScore: new Float32Array(size),
+      cameFrom: new Int32Array(size),
+      closed: new Uint8Array(size),
+    };
+    PATH_BUFFERS.set(size, buffers);
+  }
+  return buffers;
+}
+
 export function findPath(world, sx, sy, tx, ty, maxNodes = 6000) {
   sx = Math.round(sx); sy = Math.round(sy);
   tx = Math.round(tx); ty = Math.round(ty);
@@ -25,10 +40,15 @@ export function findPath(world, sx, sy, tx, ty, maxNodes = 6000) {
   const w = world.width;
   const h = world.height;
   const size = w * h;
-  const gScore = new Float32Array(size).fill(Infinity);
-  const fScore = new Float32Array(size).fill(Infinity);
-  const cameFrom = new Int32Array(size).fill(-1);
-  const closed = new Uint8Array(size);
+  const buffers = getPathBuffers(size);
+  const gScore = buffers.gScore;
+  const fScore = buffers.fScore;
+  const cameFrom = buffers.cameFrom;
+  const closed = buffers.closed;
+  gScore.fill(Infinity);
+  fScore.fill(Infinity);
+  cameFrom.fill(-1);
+  closed.fill(0);
   const open = [];
 
   const start = sy * w + sx;
