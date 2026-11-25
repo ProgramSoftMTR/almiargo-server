@@ -1111,9 +1111,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   sendStep(dx, dy, now) {
-    // Limita el envio a ~20 Hz y evita paquetes identicos/redundantes.
-    if (now - this.lastStepSentAt < 50) return;
-    if (this._lastSentMove && this._lastSentMove.dx === dx && this._lastSentMove.dy === dy &&
+    const freshTap = this._freshTap === true;
+    if (freshTap) this._freshTap = false;
+    // El throttle de ~20 Hz solo aplica al caminar continuo, nunca a un toque nuevo.
+    if (!freshTap && now - this.lastStepSentAt < 50) return;
+    if (!freshTap && this._lastSentMove && this._lastSentMove.dx === dx && this._lastSentMove.dy === dy &&
         now - this._lastSentMove.at < 66) return;
     this.moveSeq += 1;
     // Payload compacto [1, dx, dy, seq] en lugar de un objeto JSON.
@@ -1271,6 +1273,7 @@ export class WorldScene extends Phaser.Scene {
     this.pathGoal = tile;
     this.pending = null;
     this.nextStepAt = now + 30;
+    this._freshTap = true;
   }
 
   startChase(e, range) {
@@ -1332,6 +1335,7 @@ export class WorldScene extends Phaser.Scene {
     this.pathGoal = best[best.length - 1];
     this.pending = pending;
     this.nextStepAt = Date.now() + 30;
+    this._freshTap = true;
   }
 
   createEnvSprites() {
