@@ -491,6 +491,13 @@ export const NPCS = Object.freeze([
 
 export const SPAWN_POINT = Object.freeze({ x: 100, y: 100 });
 
+// ── Ciudades modulares (zonas seguras / marcadores) ─────────────
+// Agregar una ciudad nueva solo requiere un elemento aquí.
+export const CITIES = Object.freeze([
+  { id: 'city_central', name: 'Ciudad Central', x: 100, y: 100, radius: 10, safeZone: true, biome: 'grass' },
+  { id: 'city_norte', name: 'Ciudad del Norte', x: 100, y: 55, radius: 8, safeZone: true, biome: 'snow' },
+]);
+
 export const ZONES = Object.freeze({
   safe: { x1: 90, y1: 90, x2: 110, y2: 110 },
   pvp: { x1: 20, y1: 20, x2: 40, y2: 40 },

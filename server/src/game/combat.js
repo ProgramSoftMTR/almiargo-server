@@ -6,6 +6,7 @@ import {
   defenseXpForHit,
   grantCharacterXp,
   isPvPZone,
+  isSafeZone,
   mitigate,
   monsterXp,
   randInt,
@@ -582,6 +583,10 @@ export function handleAttackIntent(game, player, targetId) {
   const target = game.world.getEntity(targetId);
   if (!target || target.kind === 2) return { ok: false, error: 'Objetivo inválido' };
   if (target.kind === 0 && target.id === player.id) return { ok: false, error: 'No puedes atacarte' };
+  // Bloquear PvP en zonas seguras (ciudades).
+  if (isSafeZone(Math.round(player.x), Math.round(player.y)) || isSafeZone(Math.round(target.x), Math.round(target.y))) {
+    return { ok: false, error: 'No puedes atacar en zona segura', silent: true };
+  }
   player.targetId = target.id;
   const now = Date.now();
   const result = performPlayerAttack(game, player, target, now);

@@ -51,6 +51,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-25 15:00:00 feat panel de interaccion al tocar jugador estilo rucoy online
 // deploy trigger: 2026-11-24 22:00:00 feat generar e integrar texturas pixel art de pasto, tierra, hierba alta y arboles con sombra
 // deploy trigger: 2026-11-24 23:00:00 feat rediseño renderizado mapa orgánico estilo PokeSurvivor
+// deploy trigger: 2026-11-25 00:00:00 feat continente modular ciudades zonas seguras
 
 const store = await createStore();
 const game = new GameServer({ store, config });

@@ -6,6 +6,7 @@ import {
   SPAWN_ZONES,
   WORLD_SEED,
   ZONES,
+  CITIES,
 } from './config.js';
 
 /**
@@ -71,7 +72,15 @@ export function isWalkable(world, x, y) {
   return isWalkableTile(tileAt(world, x, y));
 }
 
+export function isCityAt(x, y) {
+  return (CITIES || []).find((c) => {
+    const r = c.radius ?? 10;
+    return x >= c.x - r && x <= c.x + r && y >= c.y - r && y <= c.y + r;
+  }) || null;
+}
 export function isSafeZone(x, y) {
+  const city = isCityAt(x, y);
+  if (city) return !!city.safeZone;
   return x >= ZONES.safe.x1 && x <= ZONES.safe.x2 && y >= ZONES.safe.y1 && y <= ZONES.safe.y2;
 }
 
@@ -221,8 +230,12 @@ export function generateWorld(seed = WORLD_SEED) {
     }
   }
 
-  for (let y = ZONES.safe.y1; y <= ZONES.safe.y2; y += 1) {
-    for (let x = ZONES.safe.x1; x <= ZONES.safe.x2; x += 1) set(x, y, TILE.STONE);
+  // Ciudades modulares: relleno de piedra para cada ciudad segura.
+  for (const city of (CITIES || [])) {
+    const r = city.radius ?? 10;
+    for (let y = city.y - r; y <= city.y + r; y += 1) {
+      for (let x = city.x - r; x <= city.x + r; x += 1) set(x, y, TILE.STONE);
+    }
   }
 
   // Árboles (clusters) fuera de ciudad y arena, con espaciado para evitar bloques pegados.
@@ -282,22 +295,25 @@ export function generateWorld(seed = WORLD_SEED) {
   carve(90, 100, 40, 40, 2);      // salida oeste -> arena
   carve(40, 40, 40, 20, 2);
 
-  // Muros de la ciudad con 4 puertas.
-  for (let x = ZONES.safe.x1; x <= ZONES.safe.x2; x += 1) {
-    set(x, ZONES.safe.y1, TILE.WALL);
-    set(x, ZONES.safe.y2, TILE.WALL);
-  }
-  for (let y = ZONES.safe.y1; y <= ZONES.safe.y2; y += 1) {
-    set(ZONES.safe.x1, y, TILE.WALL);
-    set(ZONES.safe.x2, y, TILE.WALL);
-  }
-  for (let x = 99; x <= 101; x += 1) {
-    set(x, ZONES.safe.y1, TILE.STONE);
-    set(x, ZONES.safe.y2, TILE.STONE);
-  }
-  for (let y = 99; y <= 101; y += 1) {
-    set(ZONES.safe.x1, y, TILE.STONE);
-    set(ZONES.safe.x2, y, TILE.STONE);
+  // Muros de cada ciudad con 4 puertas.
+  for (const city of (CITIES || [])) {
+    const r = city.radius ?? 10;
+    const x1 = city.x - r, x2 = city.x + r, y1 = city.y - r, y2 = city.y + r;
+    for (let x = x1; x <= x2; x += 1) {
+      set(x, y1, TILE.WALL);
+      set(x, y2, TILE.WALL);
+    }
+    for (let y = y1; y <= y2; y += 1) {
+      set(x1, y, TILE.WALL);
+      set(x2, y, TILE.WALL);
+    }
+    // puertas (3 tiles) en los 4 lados
+    for (let d = -1; d <= 1; d += 1) {
+      set(city.x + d, y1, TILE.STONE);
+      set(city.x + d, y2, TILE.STONE);
+      set(x1, city.y + d, TILE.STONE);
+      set(x2, city.y + d, TILE.STONE);
+    }
   }
 
   // Fuente central y pequeños edificios decorativos (bloqueados).

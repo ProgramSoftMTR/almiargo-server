@@ -428,8 +428,7 @@ export const MONSTERS = Object.freeze({
   },
   sandcastle: {
     id: 'sandcastle', name: 'Castillo de Arena Viviente', level: 4, maxHp: 85, atkMin: 7, atkMax: 12, defense: 4,
-    xp: 70, gold: [6, 16], aggro: 9, moveMs: 600, attackMs: 1300, color: 0xc9b27a, size: 1.1,
-    isRanged: true, stationary: false, attackRange: 4, aggroRange: 9, attackCooldownMs: 1800,
+    xp: 70, gold: [6, 16], aggro: 5, moveMs: 600, attackMs: 1300, color: 0xc9b27a, size: 1.1,
     loot: [
       { itemId: 'potion_hp', chance: 0.25, min: 1, max: 2 },
       { itemId: 'arrow', chance: 0.25, min: 3, max: 10 },
@@ -492,6 +491,13 @@ export const NPCS = Object.freeze([
 
 export const SPAWN_POINT = Object.freeze({ x: 100, y: 100 });
 
+// ── Ciudades modulares (zonas seguras / marcadores) ─────────────
+// Agregar una ciudad nueva solo requiere un elemento aquí.
+export const CITIES = Object.freeze([
+  { id: 'city_central', name: 'Ciudad Central', x: 100, y: 100, radius: 10, safeZone: true, biome: 'grass' },
+  { id: 'city_norte', name: 'Ciudad del Norte', x: 100, y: 55, radius: 8, safeZone: true, biome: 'snow' },
+]);
+
 export const ZONES = Object.freeze({
   safe: { x1: 90, y1: 90, x2: 110, y2: 110 },
   pvp: { x1: 20, y1: 20, x2: 40, y2: 40 },
@@ -509,31 +515,9 @@ export const MAP_ZONES = Object.freeze([
 export const SPAWNER_ZONES = Object.freeze([
   { id: 'slime_forest', name: 'Bosque de Slimes', startX: 60, startY: 60, width: 31, height: 31, mobType: 'slime', maxMobs: 16, respawnTime: 6000 },
   { id: 'goblin_camp', name: 'Campamento Goblin', startX: 140, startY: 140, width: 31, height: 31, mobType: 'goblin', maxMobs: 12, respawnTime: 8000 },
-  // Playa: 24 spawners mixtos (pool equitativo, 6 mobs, radio 11 tiles, respawn 9s).
-  { id: 'beach_mix_0', name: 'Playa Mix 0', startX: 13, startY: -1, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_1', name: 'Playa Mix 1', startX: 59, startY: -1, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_2', name: 'Playa Mix 2', startX: 105, startY: -1, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_3', name: 'Playa Mix 3', startX: 151, startY: -1, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_4', name: 'Playa Mix 4', startX: 197, startY: -1, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_5', name: 'Playa Mix 5', startX: 243, startY: -1, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_6', name: 'Playa Mix 6', startX: 13, startY: 259, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_7', name: 'Playa Mix 7', startX: 59, startY: 259, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_8', name: 'Playa Mix 8', startX: 105, startY: 259, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_9', name: 'Playa Mix 9', startX: 151, startY: 259, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_10', name: 'Playa Mix 10', startX: 197, startY: 259, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_11', name: 'Playa Mix 11', startX: 243, startY: 259, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_12', name: 'Playa Mix 12', startX: -1, startY: 13, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_13', name: 'Playa Mix 13', startX: -1, startY: 59, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_14', name: 'Playa Mix 14', startX: -1, startY: 105, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_15', name: 'Playa Mix 15', startX: -1, startY: 151, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_16', name: 'Playa Mix 16', startX: -1, startY: 197, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_17', name: 'Playa Mix 17', startX: -1, startY: 243, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_18', name: 'Playa Mix 18', startX: 259, startY: 13, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_19', name: 'Playa Mix 19', startX: 259, startY: 59, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_20', name: 'Playa Mix 20', startX: 259, startY: 105, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_21', name: 'Playa Mix 21', startX: 259, startY: 151, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_22', name: 'Playa Mix 22', startX: 259, startY: 197, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
-  { id: 'beach_mix_23', name: 'Playa Mix 23', startX: 259, startY: 243, width: 23, height: 23, mobPool: ['crab', 'starfish', 'sandcastle'], maxMobs: 6, respawnTime: 9000, beachOnly: true },
+  { id: 'beach_crab', name: 'Playa Cangrejos', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'crab', maxMobs: 14, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_starfish', name: 'Playa Estrellas', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'starfish', maxMobs: 12, respawnTime: 7000, beachOnly: true },
+  { id: 'beach_sandcastle', name: 'Playa Castillos', startX: 0, startY: 0, width: MAP_WIDTH, height: MAP_HEIGHT, mobType: 'sandcastle', maxMobs: 10, respawnTime: 8000, beachOnly: true },
 ]);
 
 export const BIOMES = MAP_ZONES;

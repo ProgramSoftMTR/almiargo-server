@@ -11,6 +11,7 @@ import {
   isWalkable,
   tileAt,
   ITEMS,
+  isCityAt,
 } from '@almiargo/shared';
 import { store } from '../core/store.js';
 import { drawItemIcon } from '../ui/icons.js';
@@ -76,6 +77,9 @@ export class WorldScene extends Phaser.Scene {
     this._fpsFrames = 0;
     this._fpsLast = 0;
     this.fps = 60;
+    this._lastSafeCityId = null;
+    this._prevHadCity = false;
+    this.safeCityBanner = null;
   }
 
   create() {
@@ -697,6 +701,23 @@ export class WorldScene extends Phaser.Scene {
     return view;
   }
 
+  showSafeCityBanner(text) {
+    try {
+      if (this.safeCityBanner) this.safeCityBanner.destroy();
+      const t = this.add.text(this.scale.width / 2, 60, text, {
+        fontFamily: 'Trebuchet MS, sans-serif',
+        fontSize: '14px',
+        color: '#7ef29b',
+        stroke: '#05070a',
+        strokeThickness: 4,
+        align: 'center',
+      }).setOrigin(0.5).setScrollFactor(0).setDepth(9999).setAlpha(0);
+      this.safeCityBanner = t;
+      this.tweens.add({ targets: t, alpha: 1, duration: 250 });
+      this.tweens.add({ targets: t, alpha: 0, delay: 2200, duration: 400, onComplete: () => { if (t && t.destroy) t.destroy(); if (this.safeCityBanner === t) this.safeCityBanner = null; } });
+    } catch (e) {}
+  }
+
   // ── Update loop ──────────────────────────────────────────────
   update(time, delta) {
     try {
@@ -741,7 +762,21 @@ export class WorldScene extends Phaser.Scene {
     this.localSprite.y = 2 - (this.localMoving ? Math.abs(Math.sin(now / 120)) * 1.8 : 0) - localBreathOffset;
     if (this.localShadow) this.localShadow.scaleX = 1 + (this.localMoving ? 0 : (localBreathPhase * 0.02));
     this.updateLocalOverhead();
-
+    // Aviso visual de entrada/salida de zona segura (ciudad).
+    try {
+      const city = isCityAt(Math.round(this.localVisual.x), Math.round(this.localVisual.y));
+      const cityId = city?.id ?? null;
+      if (cityId !== this._lastSafeCityId) {
+        this._lastSafeCityId = cityId;
+        if (city) {
+          this.showSafeCityBanner(`Entraste a ${city.name} — Zona Segura`);
+          this._prevHadCity = true;
+        } else if (this._prevHadCity) {
+          this.showSafeCityBanner('Saliendo de Zona Segura');
+          this._prevHadCity = false;
+        }
+      }
+    } catch (e) {}
     // Interpolación de entidades remotas hacia serverX/serverY con deltaTime.
     const remoteSmooth = 1 - Math.pow(0.001, Math.min(delta, 50) / 1000);
     for (const view of this.entityViews.values()) {
