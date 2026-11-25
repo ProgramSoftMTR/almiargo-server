@@ -1390,7 +1390,8 @@ export class WorldScene extends Phaser.Scene {
       else if (type === 'grass_tall') texKey = 'sprite_grass_tall';
     }
     if (!texKey || !this.textures.exists(texKey)) return;
-    const container = this.add.container(toWorld(gx), gy * TILE_SIZE + TILE_SIZE * 0.9);
+    const containerY = gy * TILE_SIZE + TILE_SIZE * 0.9 + (type === 'tree' ? -1 : 0);
+    const container = this.add.container(toWorld(gx), containerY);
     const sprite = this.add.image(0, 0, texKey).setOrigin(0.5, 0.9);
     if (type === 'tree') {
       sprite.setDisplaySize(52, 64);
@@ -1399,8 +1400,8 @@ export class WorldScene extends Phaser.Scene {
     } else if (type === 'rock') sprite.setDisplaySize(34, 34);
     else if (type === 'grass_tall') sprite.setDisplaySize(30, 32);
     container.add(sprite);
-    const baseY = container.y;
-    container.setDepth(baseY + (sprite.displayHeight ?? 0) * 0.5);
+    const depthY = container.y;
+    container.setDepth(depthY + (sprite.displayHeight ?? 0) * 0.5);
     this.envSprites.set(key, container);
   }
 
