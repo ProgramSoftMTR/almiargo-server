@@ -253,11 +253,24 @@ export function generateWorld(seed = WORLD_SEED) {
     const cx = 1 + Math.floor(rng() * (width - 2));
     const cy = 1 + Math.floor(rng() * (height - 2));
     if (isSafeZone(cx, cy) || isPvPZone(cx, cy)) continue;
+    // Evita muros cerrados de arboles pegados al perimetro urbano.
+    let nearCity = false;
+    for (const city of (CITIES || [])) {
+      const r = (city.radius ?? 10) + 2;
+      if (Math.max(Math.abs(cx - city.x), Math.abs(cy - city.y)) <= r) { nearCity = true; break; }
+    }
+    if (nearCity) continue;
     const cluster = 1 + Math.floor(rng() * 2);
     for (let j = 0; j < cluster; j += 1) {
       const x = cx + Math.floor(rng() * 3) - 1;
       const y = cy + Math.floor(rng() * 3) - 1;
       if (isSafeZone(x, y) || isPvPZone(x, y)) continue;
+      let nearCityTile = false;
+      for (const city of (CITIES || [])) {
+        const r = (city.radius ?? 10) + 2;
+        if (Math.max(Math.abs(x - city.x), Math.abs(y - city.y)) <= r) { nearCityTile = true; break; }
+      }
+      if (nearCityTile) continue;
       // Evitar árboles adyacentes (sin espacio).
       let adjacentTree = false;
       for (let oy = -1; oy <= 1 && !adjacentTree; oy += 1) {

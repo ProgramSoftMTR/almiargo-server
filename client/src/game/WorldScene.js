@@ -9,6 +9,7 @@ import {
   findPath,
   generateWorld,
   isWalkable,
+  isWalkableTile,
   tileAt,
   ITEMS,
   isCityAt,
@@ -59,6 +60,8 @@ export class WorldScene extends Phaser.Scene {
     this.entityViews = new Map();
     this.stumpViews = new Map();
     this.envSprites = new Map();
+    this.debugCollision = false;
+    this.debugCollisionGraphics = null;
     this.navGrid = null;
     this.navBlockers = new Map();
     this.envDescriptors = [];
@@ -130,6 +133,7 @@ export class WorldScene extends Phaser.Scene {
     addZoneLabels(this, this.worldMap);
 
     this.setupLocalPlayer();
+    this.debugCollision = !!store.player?.isAdmin;
     uiBus.on('crafting', (msg) => {
       if (this.localCraftIcon) this.localCraftIcon.setVisible(!!msg?.open);
     });
@@ -270,6 +274,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   setupInput() {
+    this.input.keyboard?.on('keydown-F2', () => {
+      this.debugCollision = !this.debugCollision;
+      if (!this.debugCollision && this.debugCollisionGraphics) {
+        this.debugCollisionGraphics.clear();
+      }
+    });
     this.input.on('pointerdown', (pointer) => {
       this.tapStart = { x: pointer.x, y: pointer.y, time: Date.now() };
     });
@@ -308,7 +318,10 @@ export class WorldScene extends Phaser.Scene {
     for (const npc of store.npcs.values()) this.ensureEntityView(npc, true);
     for (const e of store.entities.values()) this.ensureEntityView(e, true);
     for (const bag of store.bags.values()) this.ensureBagView(bag);
-    for (const stall of store.stalls.values()) this.ensureStallView(stall);
+    for (const stall of store.stalls.values()) {
+      this.ensureStallView(stall);
+      this.addNavBlocker(`stall:${stall.id}`, Math.round(stall.x), Math.round(stall.y));
+    }
   }
 
   onSnapshot(msg) {
@@ -608,6 +621,9 @@ export class WorldScene extends Phaser.Scene {
     };
     this.entityViews.set(e.id, view);
     this.updateEntityVisual(view, e);
+    if (e.kind === ENTITY_KIND.NPC || e.kind === ENTITY_KIND.MONSTER || e.kind === ENTITY_KIND.PLAYER) {
+      this.addNavBlocker(`ent:${e.id}`, Math.round(e.x), Math.round(e.y));
+    }
     return view;
   }
 
@@ -916,6 +932,7 @@ export class WorldScene extends Phaser.Scene {
       }
     }
     this.updateEnvSprites();
+    this.updateDebugCollision();
 
     // Proyectiles de arena (mobs a distancia)
     const pg = this.projectileGraphics;
@@ -1397,6 +1414,38 @@ export class WorldScene extends Phaser.Scene {
     }
     this.envDescriptors = descriptors;
     this.updateEnvSprites(true);
+  }
+
+  updateDebugCollision() {
+    if (!this.debugCollision || !this.navGrid || !this.worldMap) return;
+    if (!this.debugCollisionGraphics) {
+      this.debugCollisionGraphics = this.add.graphics().setDepth(100000);
+    }
+    const g = this.debugCollisionGraphics;
+    g.clear();
+    const cam = this.cameras.main;
+    const view = cam.worldView;
+    const margin = 2 * TILE_SIZE;
+    const minX = Math.floor((view.x - margin) / TILE_SIZE);
+    const maxX = Math.ceil((view.x + view.width + margin) / TILE_SIZE);
+    const minY = Math.floor((view.y - margin) / TILE_SIZE);
+    const maxY = Math.ceil((view.y + view.height + margin) / TILE_SIZE);
+    for (let y = minY; y <= maxY; y += 1) {
+      for (let x = minX; x <= maxX; x += 1) {
+        if (x < 0 || y < 0 || x >= this.worldMap.width || y >= this.worldMap.height) continue;
+        const baseTile = this.worldMap.tiles[y * this.worldMap.width + x];
+        const navTile = this.navGrid.tiles[y * this.navGrid.width + x];
+        const px = x * TILE_SIZE;
+        const py = y * TILE_SIZE;
+        if (!isWalkableTile(baseTile)) {
+          g.fillStyle(0xff3333, 0.28);
+          g.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        } else if (navTile === 4) {
+          g.lineStyle(2, 0xff3333, 0.9);
+          g.strokeRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+        }
+      }
+    }
   }
 
   updateEnvSprites(force = false) {
