@@ -435,6 +435,122 @@ function hexToNum(h) {
   return parseInt(String(h ?? '').replace('#', ''), 16) || 0xffffff;
 }
 
+const PLAYER_DIR_ORDER = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
+const PLAYER_BASE_GROUPS = [
+  { key: 'skin', anchor: [249, 188, 150] },
+  { key: 'hair', anchor: [244, 173, 0] },
+  { key: 'shirt', anchor: [196, 26, 27] },
+  { key: 'pants', anchor: [46, 86, 133] },
+  { key: 'boots', anchor: [125, 71, 38] },
+];
+
+function hexToRgb(hex) {
+  const n = parseInt(String(hex ?? '').replace('#', ''), 16) || 0xffffff;
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function colorDistance(a, b) {
+  return Math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2);
+}
+
+function luminance(rgb) {
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+function classifyPlayerPixel(r, g, b) {
+  if (r > 225 && g > 225 && b > 225) return null; // luces puras
+  if (r < 45 && g < 45 && b < 45) return null; // contornos negros
+  const px = [r, g, b];
+  let best = null;
+  let bestDist = Infinity;
+  for (const group of PLAYER_BASE_GROUPS) {
+    const d = colorDistance(px, group.anchor);
+    if (d < bestDist) { bestDist = d; best = group.key; }
+  }
+  return bestDist < 150 ? best : null;
+}
+
+function recolorPlayerCanvas(canvas, outfit) {
+  const ctx = canvas.getContext('2d');
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imgData.data;
+  const colors = {
+    skin: hexToRgb(outfit?.color5 ?? '#e0b08a'),
+    hair: hexToRgb(outfit?.color3 ?? '#5a3a24'),
+    shirt: hexToRgb(outfit?.color1 ?? '#c84b4b'),
+    pants: hexToRgb(outfit?.color2 ?? '#2a2f3a'),
+    boots: hexToRgb(outfit?.color4 ?? '#4a3520'),
+  };
+  const anchors = {
+    skin: [249, 188, 150],
+    hair: [244, 173, 0],
+    shirt: [196, 26, 27],
+    pants: [46, 86, 133],
+    boots: [125, 71, 38],
+  };
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    if (a === 0) continue;
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const group = classifyPlayerPixel(r, g, b);
+    if (!group) continue;
+    const target = colors[group];
+    const anchorLum = luminance(anchors[group]);
+    const pixelLum = luminance([r, g, b]);
+    const scale = anchorLum > 0 ? pixelLum / anchorLum : 1;
+    data[i] = Math.max(0, Math.min(255, Math.round(target.r * scale)));
+    data[i + 1] = Math.max(0, Math.min(255, Math.round(target.g * scale)));
+    data[i + 2] = Math.max(0, Math.min(255, Math.round(target.b * scale)));
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+export function ensurePlayerSpriteTexture(scene, classId, outfit) {
+  const o = outfit || {};
+  for (const k of ['color1','color2','color3','color4','color5']) if (String(o[k] ?? '').toUpperCase() === '#000000') o[k] = '#010101';
+  const key = 'player_sprite_' +
+    (o.color1 ?? '#c84b4b').replace('#', '') + '_' +
+    (o.color2 ?? '#2a2f3a').replace('#', '') + '_' +
+    (o.color3 ?? '#5a3a24').replace('#', '') + '_' +
+    (o.color4 ?? '#4a3520').replace('#', '') + '_' +
+    (o.color5 ?? '#e0b08a').replace('#', '');
+  if (scene.textures.exists(key)) return key;
+
+  const base = scene.textures.get('player_base');
+  if (!base) return 'player_base';
+  const source = base.getSourceImage();
+  const canvas = document.createElement('canvas');
+  canvas.width = source.width || 480;
+  canvas.height = source.height || 1020;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(source, 0, 0);
+  recolorPlayerCanvas(canvas, o);
+  scene.textures.addSpriteSheet(key, canvas, { frameWidth: 60, frameHeight: 60 });
+
+  const idleStart = 1;
+  const walkStart = 9;
+  for (let i = 0; i < PLAYER_DIR_ORDER.length; i += 1) {
+    const dir = PLAYER_DIR_ORDER[i];
+    if (!scene.anims.exists(`${key}_idle_${dir}`)) {
+      scene.anims.create({
+        key: `${key}_idle_${dir}`,
+        frames: scene.anims.generateFrameNumbers(key, { start: (idleStart + i) * 8, end: (idleStart + i) * 8 + 7 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
+    if (!scene.anims.exists(`${key}_walking_${dir}`)) {
+      scene.anims.create({
+        key: `${key}_walking_${dir}`,
+        frames: scene.anims.generateFrameNumbers(key, { start: (walkStart + i) * 8, end: (walkStart + i) * 8 + 7 }),
+        frameRate: 10,
+        repeat: -1,
+      });
+    }
+  }
+  return key;
+}
+
 export function ensurePlayerTexture(scene, classId, outfit) {
   const cls = classId || 'knight';
   const o = outfit || {};

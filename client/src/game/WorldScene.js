@@ -17,7 +17,7 @@ import { store } from '../core/store.js';
 import { drawItemIcon } from '../ui/icons.js';
 import { socket } from '../net/socket.js';
 import { uiBus } from '../core/uiBus.js';
-import { createEntityTextures, addZoneLabels, ensurePlayerTexture, createResourceTextures, createToolTextures, createWeaponTextures } from './textures.js';
+import { createEntityTextures, addZoneLabels, ensurePlayerTexture, ensurePlayerSpriteTexture, createResourceTextures, createToolTextures, createWeaponTextures } from './textures.js';
 import { createWorldTexture, regenerateWorldChunk } from './worldTexture.js';
 import { VirtualJoystick } from '../input/Joystick.js';
 
@@ -101,6 +101,8 @@ export class WorldScene extends Phaser.Scene {
     this.load.image('sprite_rock', '/assets/sprites/rock.png.png');
     this.load.image('sprite_rock_moss', '/assets/sprites/rock_moss.png.png');
     this.load.image('sprite_rockgrass', '/assets/sprites/rockgrass.png.png');
+    this.load.spritesheet('player_base', '/assets/sprites/player/player.png', { frameWidth: 60, frameHeight: 60 });
+    this.load.json('player_data', '/assets/sprites/player/player.json');
   }
 
   create() {
@@ -176,9 +178,10 @@ export class WorldScene extends Phaser.Scene {
 
     const shadow = this.add.ellipse(0, 8, 24, 9, 0x000000, 0.35);
     this.localShadow = shadow;
-    const localTexture = ensurePlayerTexture(this, 'base', p.outfit);
+    const localTexture = ensurePlayerSpriteTexture(this, 'base', p.outfit);
     this.localSprite = this.add.sprite(0, 0, localTexture);
-    this.localSprite.setOrigin(0.5, 0.9);
+    this.localSprite.setOrigin(0.5, 0.85);
+    this.localDir = 'south';
     this.localWeapon = null;
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
     if (!this.textures.exists('craft_hammer_wrench')) {
@@ -519,13 +522,13 @@ export class WorldScene extends Phaser.Scene {
       texture = `monster_${e.classId}`;
       if (!this.textures.exists(texture)) texture = 'monster_slime';
     } else if (e.kind === ENTITY_KIND.PLAYER) {
-      texture = ensurePlayerTexture(this, 'base', e.outfit);
+      texture = ensurePlayerSpriteTexture(this, 'base', e.outfit);
     }
 
     const size = monsterDef?.size ?? 1;
     const ring = this.add.ellipse(0, 3, 32, 17).setStrokeStyle(2, 0xf2c94c, 0.95).setVisible(false);
     const shadow = this.add.ellipse(0, 8, 24 * size, 9 * size, 0x000000, 0.33);
-    const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.9).setScale(size);
+    const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.85).setScale(size);
     const handItem = e?.equipment?.mano ?? null;
     const weaponKey = handTextureKey(handItem);
     const isTool = weaponKey === 'tool_axe' || weaponKey === 'tool_pickaxe';
@@ -827,9 +830,13 @@ export class WorldScene extends Phaser.Scene {
     this.localMoving = Math.hypot(this.localPred.x - this.localVisual.x, this.localPred.y - this.localVisual.y) > 0.05
       || (this.joystick?.active && this.joystick.dir && now < this.nextStepAt + this.moveMs);
     const localBreathPhase = Math.sin(performance.now() * 0.0032);
-    const localBreathOffset = this.localMoving ? 0 : (localBreathPhase * 1.2);
-    this.localSprite.y = 2 - (this.localMoving ? Math.abs(Math.sin(now / 120)) * 1.8 : 0) - localBreathOffset;
     if (this.localShadow) this.localShadow.scaleX = 1 + (this.localMoving ? 0 : (localBreathPhase * 0.02));
+    const ldx = this.localPred.x - this.localVisual.x;
+    const ldy = this.localPred.y - this.localVisual.y;
+    if (Math.hypot(ldx, ldy) > 0.05) this.localDir = this.vectorTo8Dir(ldx, ldy);
+    const localAnim = `${this.localSprite.texture.key}_${this.localMoving ? 'walking' : 'idle'}_${this.localDir}`;
+    if (this.localSprite.anims.currentAnim?.key !== localAnim) this.localSprite.play(localAnim, true);
+    this.localSprite.anims.frameRate = this.localMoving ? 10 : 6;
     this.updateLocalOverhead();
     // Aviso visual de entrada/salida de zona segura (ciudad).
     try {
@@ -853,16 +860,26 @@ export class WorldScene extends Phaser.Scene {
       if (!Number.isFinite(view.serverY)) view.serverY = view.container.y;
       view.container.x += (view.serverX - view.container.x) * remoteSmooth;
       view.container.y += (view.serverY - view.container.y) * remoteSmooth;
-      const moved = Math.hypot(view.container.x - view.lastX, view.container.y - view.lastY) > 0.15;
+      const prevX = view.lastX ?? view.container.x;
+      const prevY = view.lastY ?? view.container.y;
+      const moved = Math.hypot(view.container.x - prevX, view.container.y - prevY) > 0.15;
       view.moving = moved;
+      const rdx = view.container.x - prevX;
+      const rdy = view.container.y - prevY;
+      if (Math.hypot(rdx, rdy) > 0.05 && view.sprite?.texture?.key) view.dir = this.vectorTo8Dir(rdx, rdy);
+      if (!view.dir) view.dir = 'south';
       view.lastX = view.container.x; view.lastY = view.container.y;
       // Y-sorting: mayor Y (pies más abajo) se dibuja delante.
       view.container.setDepth(view.container.y + (view.displayHeight ?? 0) * 0.5);
       const breathSeed = (view.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 0.37;
       const remoteBreathPhase = Math.sin((performance.now() + breathSeed) * 0.0032);
       const remoteBreathOffset = moved ? 0 : (remoteBreathPhase * 1.2);
-      view.sprite.y = 2 - (moved ? Math.abs(Math.sin(now / 110 + view.id.length)) * 1.6 : 0) - remoteBreathOffset;
       if (view.shadow) view.shadow.scaleX = 1 + (moved ? 0 : (remoteBreathPhase * 0.02));
+      if (view.sprite && view.sprite.texture && view.sprite.texture.key) {
+        const remoteAnim = `${view.sprite.texture.key}_${moved ? 'walking' : 'idle'}_${view.dir || 'south'}`;
+        if (view.sprite.anims.currentAnim?.key !== remoteAnim) view.sprite.play(remoteAnim, true);
+        view.sprite.anims.frameRate = moved ? 10 : 6;
+      }
     }
     this.updateEnvSprites();
 
@@ -951,6 +968,28 @@ export class WorldScene extends Phaser.Scene {
     const pct = Phaser.Math.Clamp(hp / maxHp, 0, 1);
     this.localBarFill.displayWidth = Math.max(0.1, 30 * pct);
     if (p?.name && this.localNameText.text !== p.name) this.localNameText.setText(p.name);
+  }
+
+  vectorTo8Dir(dx, dy) {
+    const deg = Math.atan2(dy, dx) * 180 / Math.PI;
+    const norm = (deg + 360) % 360;
+    const dirs = [
+      { name: 'east', angle: 0 },
+      { name: 'south-east', angle: 45 },
+      { name: 'south', angle: 90 },
+      { name: 'south-west', angle: 135 },
+      { name: 'west', angle: 180 },
+      { name: 'north-west', angle: 225 },
+      { name: 'north', angle: 270 },
+      { name: 'north-east', angle: 315 },
+    ];
+    let best = dirs[0], bestDiff = 360;
+    for (const d of dirs) {
+      let diff = Math.abs(norm - d.angle);
+      if (diff > 180) diff = 360 - diff;
+      if (diff < bestDiff) { bestDiff = diff; best = d; }
+    }
+    return best.name;
   }
 
   handleMovementInput(now) {
