@@ -20,6 +20,8 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   const tile = tileAt(world, x, y);
   const chopped = !!(world?.chopped && world.chopped.has(`${x},${y}`));
   const treeTiles = [TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD];
+  // Bioma base de pradera: se tratan como el mismo suelo para bordes/transiciones.
+  const prairieBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.TREE, TILE.ROCK];
   if (chopped && treeTiles.includes(tile)) {
     const groundColor = tile === TILE.TREE_PALM ? '#c9b27a'
       : tile === TILE.TREE_DEAD ? '#2f4a3a'
@@ -35,7 +37,7 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   const wy0 = y * TILE_SIZE;
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
   const baseColor = `#${Number(base).toString(16).padStart(6, '0')}`;
-  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.FOREST, TILE.TREE];
+  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE];
   const grassTex = scene?.textures?.get?.('sprite_tile_grass');
   if (grassBaseTiles.includes(tile) && grassTex && typeof grassTex.getSourceImage === 'function') {
     try {
@@ -53,8 +55,8 @@ function drawTile(ctx, scene, world, x, y, px, py) {
 
   // --- Capa de ruido organico continuo para evitar cuadricula marcada ---
   // Parches suaves de sombra/luz posicionados en coords de mundo.
-  if (tile === TILE.GRASS || tile === TILE.FLOWERS || tile === TILE.FOREST ||
-      tile === TILE.DIRT || tile === TILE.SAND || tile === TILE.SAVANNA ||
+  if (tile === TILE.FOREST ||
+      tile === TILE.SAND || tile === TILE.SAVANNA ||
       tile === TILE.SWAMP) {
     for (let i = 0; i < 14; i += 1) {
       const gx = wx0 + ((h * 97 + i * 13) % TILE_SIZE);
@@ -78,6 +80,8 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   for (const n of neighbors) {
     const nt = tileAt(world, x + n.dx, y + n.dy);
     if (nt === tile) continue;
+    // Mismo bioma base de pradera: sin bordes/transiciones entre ellos ni alrededor de arboles.
+    if (prairieBaseTiles.includes(tile) && prairieBaseTiles.includes(nt)) continue;
     // color aproximado del vecino
     const nb = tileRenderColor(nt ?? TILE.GRASS, x + n.dx, y + n.dy) ?? 0x3d6b3a;
     const ncolor = `#${Number(nb).toString(16).padStart(6, '0')}`;
@@ -114,60 +118,9 @@ function drawTile(ctx, scene, world, x, y, px, py) {
 
   // --- Detalles por bioma ---
   if (tile === TILE.GRASS || tile === TILE.FLOWERS) {
-    // briznas suaves
-    ctx.fillStyle = h > 0.5 ? 'rgba(20,45,20,.22)' : 'rgba(90,130,70,.18)';
-    for (let i = 0; i < 5; i += 1) {
-      const bx = px + ((h * 97 + i * 13) % (TILE_SIZE - 2));
-      const by = py + ((h * 53 + i * 19) % (TILE_SIZE - 3));
-      ctx.fillRect(bx, by, 1, 3);
-    }
+    // Prairia base 100% limpia: sin adornos procedurales.
     // (Hierba alta ahora se renderiza como sprite independiente en WorldScene.)
-    if (tile === TILE.FLOWERS) {
-      ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
-      for (let i = 0; i < 3; i += 1) {
-        const bx = px + 5 + ((h * 71 + i * 23) % 22);
-        const by = py + 5 + ((h * 41 + i * 17) % 22);
-        ctx.fillRect(bx, by, 3, 3);
-        ctx.fillStyle = 'rgba(255,255,255,.55)';
-        ctx.fillRect(bx, by, 1, 1);
-        ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
-      }
-    }
-    // piedras redondeadas ocasionales
-    if (contNoise(wx0 + 11, wy0 + 17) > 0.86) {
-      const sx = px + 6 + Math.floor(contNoise(wx0, wy0 + 3) * 16);
-      const sy = py + 8 + Math.floor(contNoise(wx0 + 7, wy0) * 12);
-      ctx.fillStyle = 'rgba(0,0,0,.3)';
-      ctx.beginPath(); ctx.ellipse(sx + 1, sy + 4, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#8a8a82';
-      ctx.beginPath(); ctx.ellipse(sx, sy, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#b0b0a8';
-      ctx.beginPath(); ctx.ellipse(sx - 1, sy - 1, 1.5, 1.2, 0, 0, Math.PI * 2); ctx.fill();
-    }
-  } else if (tile === TILE.DIRT) {
-    ctx.fillStyle = 'rgba(30,20,10,.28)';
-    for (let i = 0; i < 6; i += 1) {
-      const bx = px + ((h * 83 + i * 29) % TILE_SIZE);
-      const by = py + ((h * 61 + i * 11) % TILE_SIZE);
-      ctx.fillRect(bx, by, 2, 2);
-    }
-    ctx.fillStyle = 'rgba(20,12,6,.32)';
-    for (let i = 0; i < 3; i += 1) {
-      const bx = px + ((h * 47 + i * 31) % (TILE_SIZE - 4));
-      const by = py + ((h * 59 + i * 13) % (TILE_SIZE - 4));
-      ctx.fillRect(bx, by, 3, 2);
-    }
-    // piedras en tierra
-    if (contNoise(wx0 + 3, wy0 + 9) > 0.84) {
-      const sx = px + 8 + Math.floor(contNoise(wx0 + 2, wy0) * 12);
-      const sy = py + 10 + Math.floor(contNoise(wx0, wy0 + 4) * 10);
-      ctx.fillStyle = 'rgba(0,0,0,.3)';
-      ctx.beginPath(); ctx.ellipse(sx + 1, sy + 3, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#7a6a52';
-      ctx.beginPath(); ctx.ellipse(sx, sy, 3, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#9a8a72';
-      ctx.beginPath(); ctx.ellipse(sx - 1, sy - 1, 1.3, 1, 0, 0, Math.PI * 2); ctx.fill();
-    }
+    // (Flores y relieve se dejan a los sprites grass_tall, rock y rockgrass.)
   } else if (tile === TILE.SAND) {
     ctx.fillStyle = 'rgba(255,235,180,.18)';
     for (let i = 0; i < 5; i += 1) {
@@ -402,7 +355,7 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   }
 
   // destellos sutiles muy moderados
-  if (contNoise(wx0 + 23, wy0 + 29) > 0.93) {
+  if (!prairieBaseTiles.includes(tile) && contNoise(wx0 + 23, wy0 + 29) > 0.93) {
     ctx.fillStyle = 'rgba(255,255,240,.6)';
     ctx.fillRect(px + 4 + Math.floor(contNoise(wx0, wy0) * 20), py + 4 + Math.floor(contNoise(wx0 + 1, wy0) * 20), 1, 1);
   }

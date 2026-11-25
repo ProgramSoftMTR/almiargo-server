@@ -21,6 +21,7 @@ export const TILE = Object.freeze({
   GRASS: 0,        // Pradera (Grassland)
   DIRT: 1,
   STONE: 2,
+  ROCK: 2,         // alias de STONE (pradera base)
   WATER: 3,
   TREE: 4,         // Árbol normal
   WALL: 5,
