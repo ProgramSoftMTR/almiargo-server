@@ -1386,14 +1386,18 @@ export class WorldScene extends Phaser.Scene {
       else if (type === 'grass_tall') texKey = 'sprite_grass_tall';
     }
     if (!texKey || !this.textures.exists(texKey)) return;
-    const sprite = this.add.image(toWorld(gx), gy * TILE_SIZE + TILE_SIZE * 0.9, texKey);
-    sprite.setOrigin(0.5, 0.9);
-    if (type === 'tree') sprite.setDisplaySize(52, 64);
-    else if (type === 'rock') sprite.setDisplaySize(34, 34);
+    const container = this.add.container(toWorld(gx), gy * TILE_SIZE + TILE_SIZE * 0.9);
+    const sprite = this.add.image(0, 0, texKey).setOrigin(0.5, 0.9);
+    if (type === 'tree') {
+      sprite.setDisplaySize(52, 64);
+      const shadow = this.add.ellipse(0, 10, 34, 12, 0x000000, 0.32);
+      container.addAt(shadow, 0);
+    } else if (type === 'rock') sprite.setDisplaySize(34, 34);
     else if (type === 'grass_tall') sprite.setDisplaySize(30, 32);
-    const baseY = sprite.y;
-    sprite.setDepth(baseY + (sprite.displayHeight ?? 0) * 0.5);
-    this.envSprites.set(key, sprite);
+    container.add(sprite);
+    const baseY = container.y;
+    container.setDepth(baseY + (sprite.displayHeight ?? 0) * 0.5);
+    this.envSprites.set(key, container);
   }
 
   handleUpdateResource(msg) {
