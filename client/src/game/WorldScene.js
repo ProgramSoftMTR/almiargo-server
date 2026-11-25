@@ -179,7 +179,7 @@ export class WorldScene extends Phaser.Scene {
     const shadow = this.add.ellipse(0, 7, 18, 7, 0x000000, 0.35);
     this.localShadow = shadow;
     const localTexture = ensurePlayerSpriteTexture(this, 'base', p.outfit);
-    this.localSprite = this.add.sprite(0, 0, localTexture);
+    this.localSprite = this.add.sprite(0, 8, localTexture);
     this.localSprite.setOrigin(0.492, 0.85).setScale(0.75);
     this.localDir = 'south';
     this.localWeapon = null;
@@ -227,7 +227,7 @@ export class WorldScene extends Phaser.Scene {
       strokeThickness: 3,
     }).setOrigin(0.5, 1);
 
-    const top = 2 - this.localSprite.displayHeight * 0.9;
+    const top = 10 - this.localSprite.displayHeight * 0.9;
     this.localNameText.y = top - 4;
     this.localBarBg.y = top - 1;
     this.localBarFill.y = top - 1;
@@ -531,7 +531,7 @@ export class WorldScene extends Phaser.Scene {
     const shadowScale = isPlayer ? 0.75 : size;
     const ring = this.add.ellipse(0, 3, 32, 17).setStrokeStyle(2, 0xf2c94c, 0.95).setVisible(false);
     const shadow = this.add.ellipse(0, isPlayer ? 7 : 8, 24 * shadowScale, 9 * shadowScale, 0x000000, 0.33);
-    const sprite = this.add.sprite(0, 0, texture).setOrigin(isPlayer ? 0.492 : 0.5, 0.85).setScale(spriteScale);
+    const sprite = this.add.sprite(0, isPlayer ? 8 : 2, texture).setOrigin(isPlayer ? 0.492 : 0.5, 0.85).setScale(spriteScale);
     const handItem = e?.equipment?.mano ?? null;
     const weaponKey = handTextureKey(handItem);
     const isTool = weaponKey === 'tool_axe' || weaponKey === 'tool_pickaxe';
@@ -551,7 +551,7 @@ export class WorldScene extends Phaser.Scene {
       strokeThickness: 3,
     }).setOrigin(0.5, 1);
 
-    const top = 2 - sprite.displayHeight * 0.9;
+    const top = (e.kind === ENTITY_KIND.PLAYER ? 10 : 2) - sprite.displayHeight * 0.9;
     nameText.y = top - 4;
     barBg.y = top - 1;
     barFill.y = top - 1;
@@ -878,7 +878,7 @@ export class WorldScene extends Phaser.Scene {
       const remoteBreathPhase = Math.sin((performance.now() + breathSeed) * 0.0032);
       const remoteBreathOffset = moved ? 0 : (remoteBreathPhase * 1.2);
       if (view.shadow) view.shadow.scaleX = 1 + (moved ? 0 : (remoteBreathPhase * 0.02));
-      if (view.sprite) view.sprite.y = 0;
+      if (view.sprite) view.sprite.y = (view.sprite.texture && view.sprite.texture.key && view.sprite.texture.key.startsWith('player_sprite_')) ? 8 : view.sprite.y;
       if (view.sprite && view.sprite.texture && view.sprite.texture.key) {
         const remoteAnim = `${view.sprite.texture.key}_${moved ? 'walking' : 'idle'}_${view.dir || 'south'}`;
         if (view.sprite.anims.currentAnim?.key !== remoteAnim) view.sprite.play(remoteAnim, true);
