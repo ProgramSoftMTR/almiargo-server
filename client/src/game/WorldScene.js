@@ -22,6 +22,7 @@ import { createWorldTexture, regenerateWorldChunk } from './worldTexture.js';
 import { VirtualJoystick } from '../input/Joystick.js';
 
 const TILE_CENTER = TILE_SIZE / 2;
+function tileHash(x, y) { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n); }
 const toWorld = (tile) => tile * TILE_SIZE + TILE_CENTER;
 
 function handTextureKey(handItem) {
@@ -57,6 +58,7 @@ export class WorldScene extends Phaser.Scene {
     super({ key: 'world' });
     this.entityViews = new Map();
     this.stumpViews = new Map();
+    this.envSprites = new Map();
     this.bagViews = new Map();
     this.stallViews = new Map();
     this.path = [];
@@ -82,8 +84,21 @@ export class WorldScene extends Phaser.Scene {
     this.safeCityBanner = null;
   }
 
+  preload() {
+    // Assets pixel-art (64x64) servidos desde public/assets/sprites/
+    this.load.image('sprite_tile_grass', '/assets/sprites/tile_grass.png');
+    this.load.image('sprite_tree_forest', '/assets/sprites/tree_forest.png.png');
+    this.load.image('sprite_grass_tall', '/assets/sprites/grass_tall.png.png');
+    this.load.image('sprite_rock', '/assets/sprites/rock.png.png');
+    this.load.image('sprite_rockgrass', '/assets/sprites/rockgrass.png.png');
+  }
+
   create() {
     try {
+    // Filtro pixel-art para los sprites cargados.
+    for (const k of ['sprite_tile_grass','sprite_tree_forest','sprite_grass_tall','sprite_rock','sprite_rockgrass']) {
+      if (this.textures.exists(k)) this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    }
     window.__setLoadingProgress?.(85, 'Cargando terreno...');
     this.worldSeed = store.world?.seed ?? 1337;
     this.worldMap = generateWorld(this.worldSeed);
@@ -96,6 +111,7 @@ export class WorldScene extends Phaser.Scene {
     createWeaponTextures(this);
     this.groundChunks = createWorldTexture(this, this.worldMap);
     this.syncResourceStumps();
+    this.createEnvSprites();
 
     addZoneLabels(this, this.worldMap);
 
@@ -1196,6 +1212,48 @@ export class WorldScene extends Phaser.Scene {
     this.nextStepAt = Date.now() + 30;
   }
 
+  createEnvSprites() {
+    const world = this.worldMap;
+    if (!world) return;
+    for (let y = 0; y < world.height; y += 1) {
+      for (let x = 0; x < world.width; x += 1) {
+        const tile = tileAt(world, x, y);
+        const chopped = !!(world.chopped && world.chopped.has(`${x},${y}`));
+        if (tile === TILE.TREE && !chopped) {
+          this.addEnvSprite(x, y, 'tree');
+        } else if (tile === TILE.GRASS) {
+          const h = tileHash(x, y);
+          if (h > 0.92) {
+            const tex = ((x + y) % 2 === 0) ? 'sprite_rock' : 'sprite_rockgrass';
+            this.addEnvSprite(x, y, 'rock', tex);
+          } else if (h > 0.84) {
+            this.addEnvSprite(x, y, 'grass_tall');
+          }
+        }
+      }
+    }
+  }
+
+  addEnvSprite(gx, gy, type, textureKey) {
+    const key = `${gx},${gy}`;
+    const existing = this.envSprites.get(key);
+    if (existing) { try { existing.destroy(); } catch (e) {} this.envSprites.delete(key); }
+    let texKey = textureKey;
+    if (!texKey) {
+      if (type === 'tree') texKey = 'sprite_tree_forest';
+      else if (type === 'grass_tall') texKey = 'sprite_grass_tall';
+    }
+    if (!texKey || !this.textures.exists(texKey)) return;
+    const sprite = this.add.image(toWorld(gx), gy * TILE_SIZE + TILE_SIZE * 0.9, texKey);
+    sprite.setOrigin(0.5, 0.9);
+    if (type === 'tree') sprite.setDisplaySize(52, 64);
+    else if (type === 'rock') sprite.setDisplaySize(34, 34);
+    else if (type === 'grass_tall') sprite.setDisplaySize(30, 32);
+    const baseY = sprite.y;
+    sprite.setDepth(baseY + (sprite.displayHeight ?? 0) * 0.5);
+    this.envSprites.set(key, sprite);
+  }
+
   handleUpdateResource(msg) {
     if (msg?.resource !== 'tree') return;
     const x = Number(msg.x);
@@ -1213,6 +1271,9 @@ export class WorldScene extends Phaser.Scene {
     const texKey = tile === TILE.SAND ? 'palm_stump' : 'tree_stump';
     // Marca el tile como talado y regenera el chunk para quitar el árbol original.
     this.worldMap.chopped.add(`${x},${y}`);
+    const esk = `${x},${y}`;
+    const es = this.envSprites.get(esk);
+    if (es) { try { es.destroy(); } catch (e) {} this.envSprites.delete(esk); }
     const chunkSize = 64;
     regenerateWorldChunk(this, this.worldMap, Math.floor(x / chunkSize), Math.floor(y / chunkSize));
     const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, texKey)
@@ -1231,6 +1292,8 @@ export class WorldScene extends Phaser.Scene {
       this.worldMap.chopped?.delete(`${sx},${sy}`);
       const chunkSize = 64;
       regenerateWorldChunk(this, this.worldMap, Math.floor(sx / chunkSize), Math.floor(sy / chunkSize));
+      const tile = tileAt(this.worldMap, sx, sy);
+      if (tile === TILE.TREE) this.addEnvSprite(sx, sy, 'tree');
     }
   }
 

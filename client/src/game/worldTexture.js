@@ -16,7 +16,7 @@ function contNoise(wx, wy) {
   return (v + 1.95) / 3.9; // ~0..1
 }
 
-function drawTile(ctx, world, x, y, px, py) {
+function drawTile(ctx, scene, world, x, y, px, py) {
   const tile = tileAt(world, x, y);
   const chopped = !!(world?.chopped && world.chopped.has(`${x},${y}`));
   const treeTiles = [TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD];
@@ -35,8 +35,19 @@ function drawTile(ctx, world, x, y, px, py) {
   const wy0 = y * TILE_SIZE;
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
   const baseColor = `#${Number(base).toString(16).padStart(6, '0')}`;
-  ctx.fillStyle = baseColor;
-  ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.FOREST, TILE.TREE];
+  const grassTex = scene?.textures?.get?.('sprite_tile_grass');
+  if (grassBaseTiles.includes(tile) && grassTex && typeof grassTex.getSourceImage === 'function') {
+    try {
+      ctx.drawImage(grassTex.getSourceImage(), px, py, TILE_SIZE, TILE_SIZE);
+    } catch (e) {
+      ctx.fillStyle = baseColor;
+      ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+    }
+  } else {
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+  }
 
   const h = tileHash(x, y);
 
@@ -110,31 +121,7 @@ function drawTile(ctx, world, x, y, px, py) {
       const by = py + ((h * 53 + i * 19) % (TILE_SIZE - 3));
       ctx.fillRect(bx, by, 1, 3);
     }
-    // grupos de hierba alta (tufts) mas expresivos
-    if (contNoise(wx0, wy0) > 0.55) {
-      const groupCount = 1 + Math.floor(contNoise(wx0 + 5, wy0 + 7) * 2);
-      for (let g = 0; g < groupCount; g += 1) {
-        const gx = px + 4 + Math.floor(contNoise(wx0 + g * 11, wy0) * 18);
-        const gy = py + 6 + Math.floor(contNoise(wx0, wy0 + g * 13) * 12);
-        // sombra base
-        ctx.fillStyle = 'rgba(10,25,10,.35)';
-        ctx.fillRect(gx - 1, gy + 7, 8, 2);
-        // hojas con contorno
-        ctx.fillStyle = '#1e3a1e';
-        ctx.fillRect(gx - 1, gy - 1, 7, 10);
-        ctx.fillStyle = '#2f5a2f';
-        ctx.fillRect(gx, gy, 2, 8);
-        ctx.fillRect(gx + 2, gy - 2, 2, 10);
-        ctx.fillRect(gx + 4, gy, 2, 8);
-        ctx.fillStyle = '#4a8a4a';
-        ctx.fillRect(gx + 1, gy + 1, 1, 4);
-        ctx.fillRect(gx + 3, gy - 1, 1, 5);
-        ctx.fillRect(gx + 5, gy + 1, 1, 4);
-        // destello
-        ctx.fillStyle = 'rgba(180,220,140,.5)';
-        ctx.fillRect(gx + 2, gy - 2, 1, 1);
-      }
-    }
+    // (Hierba alta ahora se renderiza como sprite independiente en WorldScene.)
     if (tile === TILE.FLOWERS) {
       ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
       for (let i = 0; i < 3; i += 1) {
@@ -407,54 +394,11 @@ function drawTile(ctx, world, x, y, px, py) {
       ctx.fillRect(bx, by, 3, 2);
     }
   } else if (tile === TILE.TREE) {
-    ctx.fillStyle = '#2f5730';
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    // Sombra suave proyectada en el suelo (volumen).
-    const shGrad = ctx.createRadialGradient(px + 16, py + 29, 2, px + 16, py + 29, 14);
-    shGrad.addColorStop(0, 'rgba(0,0,0,.45)');
-    shGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = shGrad;
+    // Solo sombra de contacto en el suelo; el arbol se renderiza como sprite independiente.
+    ctx.fillStyle = 'rgba(0,0,0,.32)';
     ctx.beginPath();
-    ctx.ellipse(px + 16, py + 29, 14, 6, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + 16, py + 29, 12, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Tronco con contorno oscuro.
-    ctx.fillStyle = '#2a1a10';
-    ctx.fillRect(px + 12, py + 13, 8, 18);
-    ctx.fillStyle = '#3a2817';
-    ctx.fillRect(px + 13, py + 14, 6, 16);
-    ctx.fillStyle = '#4a3220';
-    ctx.fillRect(px + 14, py + 14, 2, 16);
-    ctx.fillStyle = '#2a1a10';
-    ctx.fillRect(px + 19, py + 14, 1, 16);
-    // Copa sombreada con luces/sombras y contorno oscuro.
-    const canopyDark = h > 0.5 ? '#15331a' : '#122d16';
-    const canopyMid = h > 0.5 ? '#1b3f20' : '#16361b';
-    const canopyLight = h > 0.5 ? '#234a28' : '#1d4022';
-    ctx.fillStyle = '#0e2212';
-    ctx.beginPath();
-    ctx.ellipse(px + 16, py + 9, 16, 14, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = canopyDark;
-    ctx.beginPath();
-    ctx.ellipse(px + 16, py + 9, 15, 13, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = canopyMid;
-    ctx.beginPath();
-    ctx.ellipse(px + 11, py + 7, 9, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(px + 21, py + 8, 9, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = canopyLight;
-    ctx.beginPath();
-    ctx.ellipse(px + 16, py + 5, 8, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'rgba(90,150,95,.45)';
-    ctx.fillRect(px + 6, py + 4, 5, 3);
-    ctx.fillRect(px + 20, py + 5, 6, 3);
-    ctx.fillRect(px + 13, py + 2, 4, 2);
-    ctx.fillStyle = 'rgba(0,0,0,.25)';
-    ctx.fillRect(px + 9, py + 14, 14, 3);
   }
 
   // destellos sutiles muy moderados
@@ -487,7 +431,7 @@ export function createWorldTexture(scene, world) {
         for (let lx = 0; lx < tilesW; lx += 1) {
           const gx = cx * chunkSize + lx;
           const gy = cy * chunkSize + ly;
-          drawTile(ctx, world, gx, gy, lx * TILE_SIZE, ly * TILE_SIZE);
+          drawTile(ctx, scene, world, gx, gy, lx * TILE_SIZE, ly * TILE_SIZE);
         }
       }
       texture.refresh();
@@ -513,7 +457,7 @@ export function regenerateWorldChunk(scene, world, cx, cy) {
     for (let lx = 0; lx < tilesW; lx += 1) {
       const gx = cx * chunkSize + lx;
       const gy = cy * chunkSize + ly;
-      drawTile(ctx, world, gx, gy, lx * TILE_SIZE, ly * TILE_SIZE);
+      drawTile(ctx, scene, world, gx, gy, lx * TILE_SIZE, ly * TILE_SIZE);
     }
   }
   texture.refresh();
