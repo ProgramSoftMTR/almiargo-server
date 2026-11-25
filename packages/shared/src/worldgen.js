@@ -225,16 +225,27 @@ export function generateWorld(seed = WORLD_SEED) {
     for (let x = ZONES.safe.x1; x <= ZONES.safe.x2; x += 1) set(x, y, TILE.STONE);
   }
 
-  // Árboles (clusters) fuera de ciudad y arena.
+  // Árboles (clusters) fuera de ciudad y arena, con espaciado para evitar bloques pegados.
   for (let i = 0; i < 420; i += 1) {
     const cx = 1 + Math.floor(rng() * (width - 2));
     const cy = 1 + Math.floor(rng() * (height - 2));
     if (isSafeZone(cx, cy) || isPvPZone(cx, cy)) continue;
-    const cluster = 1 + Math.floor(rng() * 3);
+    const cluster = 1 + Math.floor(rng() * 2);
     for (let j = 0; j < cluster; j += 1) {
       const x = cx + Math.floor(rng() * 3) - 1;
       const y = cy + Math.floor(rng() * 3) - 1;
       if (isSafeZone(x, y) || isPvPZone(x, y)) continue;
+      // Evitar árboles adyacentes (sin espacio).
+      let adjacentTree = false;
+      for (let oy = -1; oy <= 1 && !adjacentTree; oy += 1) {
+        for (let ox = -1; ox <= 1; ox += 1) {
+          if (ox === 0 && oy === 0) continue;
+          if (get(x + ox, y + oy) === TILE.TREE || get(x + ox, y + oy) === TILE.TREE_PALM ||
+              get(x + ox, y + oy) === TILE.TREE_PINE || get(x + ox, y + oy) === TILE.TREE_ACACIA ||
+              get(x + ox, y + oy) === TILE.TREE_DEAD) { adjacentTree = true; break; }
+        }
+      }
+      if (adjacentTree) continue;
       if (get(x, y) === TILE.GRASS || get(x, y) === TILE.DIRT || get(x, y) === TILE.FLOWERS) {
         if (rng() < 0.62) set(x, y, TILE.TREE);
       }

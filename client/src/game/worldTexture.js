@@ -6,6 +6,16 @@ function tileHash(x, y) {
   return n - Math.floor(n);
 }
 
+// Ruido continuo en coordenadas de mundo (suave a traves de varios tiles).
+function contNoise(wx, wy) {
+  const x = wx * 0.05;
+  const y = wy * 0.05;
+  const v = Math.sin(x * 1.7 + y * 0.9)
+          + 0.6 * Math.sin(x * 0.6 - y * 1.3)
+          + 0.35 * Math.sin(x * 2.9 + y * 2.1);
+  return (v + 1.95) / 3.9; // ~0..1
+}
+
 function drawTile(ctx, world, x, y, px, py) {
   const tile = tileAt(world, x, y);
   const chopped = !!(world?.chopped && world.chopped.has(`${x},${y}`));
@@ -20,52 +30,110 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
     return;
   }
+
+  const wx0 = x * TILE_SIZE;
+  const wy0 = y * TILE_SIZE;
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
-  const color = `#${Number(base).toString(16).padStart(6, '0')}`;
-  ctx.fillStyle = color;
+  const baseColor = `#${Number(base).toString(16).padStart(6, '0')}`;
+  ctx.fillStyle = baseColor;
   ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
   const h = tileHash(x, y);
+
+  // --- Capa de ruido organico continuo para evitar cuadricula marcada ---
+  // Parches suaves de sombra/luz posicionados en coords de mundo.
+  if (tile === TILE.GRASS || tile === TILE.FLOWERS || tile === TILE.FOREST ||
+      tile === TILE.DIRT || tile === TILE.SAND || tile === TILE.SAVANNA ||
+      tile === TILE.SWAMP) {
+    for (let i = 0; i < 14; i += 1) {
+      const gx = wx0 + ((h * 97 + i * 13) % TILE_SIZE);
+      const gy = wy0 + ((h * 53 + i * 19) % TILE_SIZE);
+      const n = contNoise(gx, gy);
+      const alpha = 0.06 + n * 0.10;
+      ctx.fillStyle = n > 0.5 ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha})`;
+      const bw = 2 + (i % 3);
+      const bh = 2 + ((i + 1) % 3);
+      ctx.fillRect(px + (gx - wx0), py + (gy - wy0), bw, bh);
+    }
+  }
+
+  // --- Transiciones organicas moteadas entre biomas ---
+  const neighbors = [
+    { dx: 0, dy: -1, side: 'top' },
+    { dx: 0, dy: 1, side: 'bottom' },
+    { dx: -1, dy: 0, side: 'left' },
+    { dx: 1, dy: 0, side: 'right' },
+  ];
+  for (const n of neighbors) {
+    const nt = tileAt(world, x + n.dx, y + n.dy);
+    if (nt === tile) continue;
+    // color aproximado del vecino
+    const nb = tileRenderColor(nt ?? TILE.GRASS, x + n.dx, y + n.dy) ?? 0x3d6b3a;
+    const ncolor = `#${Number(nb).toString(16).padStart(6, '0')}`;
+    ctx.fillStyle = ncolor;
+    // banda dentada: pixeles dispersos que se adelgazan hacia el interior
+    if (n.side === 'top' || n.side === 'bottom') {
+      const edgeY = n.side === 'top' ? 0 : TILE_SIZE - 1;
+      const inward = n.side === 'top' ? 1 : -1;
+      for (let ix = 0; ix < TILE_SIZE; ix += 1) {
+        const depth = 1 + Math.floor(contNoise(wx0 + ix, wy0 + edgeY) * 4);
+        for (let d = 0; d < depth; d += 1) {
+          const yy = edgeY + inward * d;
+          if (yy < 0 || yy >= TILE_SIZE) continue;
+          if (contNoise(wx0 + ix * 3.7, wy0 + yy * 3.7) > 0.42) {
+            ctx.fillRect(px + ix, py + yy, 1, 1);
+          }
+        }
+      }
+    } else {
+      const edgeX = n.side === 'left' ? 0 : TILE_SIZE - 1;
+      const inward = n.side === 'left' ? 1 : -1;
+      for (let iy = 0; iy < TILE_SIZE; iy += 1) {
+        const depth = 1 + Math.floor(contNoise(wx0 + edgeX, wy0 + iy) * 4);
+        for (let d = 0; d < depth; d += 1) {
+          const xx = edgeX + inward * d;
+          if (xx < 0 || xx >= TILE_SIZE) continue;
+          if (contNoise(wx0 + xx * 3.7, wy0 + iy * 3.7) > 0.42) {
+            ctx.fillRect(px + xx, py + iy, 1, 1);
+          }
+        }
+      }
+    }
+  }
+
+  // --- Detalles por bioma ---
   if (tile === TILE.GRASS || tile === TILE.FLOWERS) {
-    // Base con variacion tonal determinista (varias variantes de pasto).
-    // Motitas y briznas pixel art.
-    const dark = h > 0.66 ? 'rgba(18,40,18,.30)' : 'rgba(24,52,24,.24)';
-    const light = h > 0.33 ? 'rgba(95,140,75,.22)' : 'rgba(110,160,90,.18)';
-    ctx.fillStyle = dark;
-    for (let i = 0; i < 6; i += 1) {
+    // briznas suaves
+    ctx.fillStyle = h > 0.5 ? 'rgba(20,45,20,.22)' : 'rgba(90,130,70,.18)';
+    for (let i = 0; i < 5; i += 1) {
       const bx = px + ((h * 97 + i * 13) % (TILE_SIZE - 2));
       const by = py + ((h * 53 + i * 19) % (TILE_SIZE - 3));
-      ctx.fillRect(bx, by, 2, 2);
-    }
-    ctx.fillStyle = light;
-    for (let i = 0; i < 4; i += 1) {
-      const bx = px + ((h * 71 + i * 17) % (TILE_SIZE - 2));
-      const by = py + ((h * 43 + i * 23) % (TILE_SIZE - 3));
       ctx.fillRect(bx, by, 1, 3);
     }
-    // Briznas de hierba alta (tufts) en algunas casillas, sin bloquear paso.
-    if (h > 0.58) {
-      const tuftColor = h > 0.78 ? '#4a8a4a' : '#3f7a3f';
-      ctx.fillStyle = tuftColor;
-      const tx0 = px + 4 + Math.floor(h * 12);
-      const ty0 = py + 6 + Math.floor(h * 8);
-      ctx.fillRect(tx0, ty0, 2, 6);
-      ctx.fillRect(tx0 + 1, ty0 - 2, 1, 3);
-      ctx.fillRect(tx0 + 3, ty0 + 1, 2, 5);
-      // sombra base del tuft
-      ctx.fillStyle = 'rgba(10,25,10,.35)';
-      ctx.fillRect(tx0, ty0 + 6, 6, 1);
-      // destello sutil
-      ctx.fillStyle = 'rgba(180,220,140,.45)';
-      ctx.fillRect(tx0 + 1, ty0, 1, 1);
-    }
-    if (h > 0.82) {
-      // segundo tuft mas pequeno
-      ctx.fillStyle = '#3a6a3a';
-      const tx1 = px + 18 + Math.floor(h * 6);
-      const ty1 = py + 14 + Math.floor(h * 5);
-      ctx.fillRect(tx1, ty1, 2, 4);
-      ctx.fillRect(tx1 + 2, ty1 + 1, 1, 3);
+    // grupos de hierba alta (tufts) mas expresivos
+    if (contNoise(wx0, wy0) > 0.55) {
+      const groupCount = 1 + Math.floor(contNoise(wx0 + 5, wy0 + 7) * 2);
+      for (let g = 0; g < groupCount; g += 1) {
+        const gx = px + 4 + Math.floor(contNoise(wx0 + g * 11, wy0) * 18);
+        const gy = py + 6 + Math.floor(contNoise(wx0, wy0 + g * 13) * 12);
+        // sombra base
+        ctx.fillStyle = 'rgba(10,25,10,.35)';
+        ctx.fillRect(gx - 1, gy + 7, 8, 2);
+        // hojas con contorno
+        ctx.fillStyle = '#1e3a1e';
+        ctx.fillRect(gx - 1, gy - 1, 7, 10);
+        ctx.fillStyle = '#2f5a2f';
+        ctx.fillRect(gx, gy, 2, 8);
+        ctx.fillRect(gx + 2, gy - 2, 2, 10);
+        ctx.fillRect(gx + 4, gy, 2, 8);
+        ctx.fillStyle = '#4a8a4a';
+        ctx.fillRect(gx + 1, gy + 1, 1, 4);
+        ctx.fillRect(gx + 3, gy - 1, 1, 5);
+        ctx.fillRect(gx + 5, gy + 1, 1, 4);
+        // destello
+        ctx.fillStyle = 'rgba(180,220,140,.5)';
+        ctx.fillRect(gx + 2, gy - 2, 1, 1);
+      }
     }
     if (tile === TILE.FLOWERS) {
       ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
@@ -78,39 +146,47 @@ function drawTile(ctx, world, x, y, px, py) {
         ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
       }
     }
-  } else if (tile === TILE.DIRT || tile === TILE.SAND) {
-    const isSand = tile === TILE.SAND;
-    ctx.fillStyle = isSand ? 'rgba(255,235,180,.18)' : 'rgba(30,20,10,.25)';
+    // piedras redondeadas ocasionales
+    if (contNoise(wx0 + 11, wy0 + 17) > 0.86) {
+      const sx = px + 6 + Math.floor(contNoise(wx0, wy0 + 3) * 16);
+      const sy = py + 8 + Math.floor(contNoise(wx0 + 7, wy0) * 12);
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath(); ctx.ellipse(sx + 1, sy + 4, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#8a8a82';
+      ctx.beginPath(); ctx.ellipse(sx, sy, 3.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#b0b0a8';
+      ctx.beginPath(); ctx.ellipse(sx - 1, sy - 1, 1.5, 1.2, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (tile === TILE.DIRT) {
+    ctx.fillStyle = 'rgba(30,20,10,.28)';
     for (let i = 0; i < 6; i += 1) {
       const bx = px + ((h * 83 + i * 29) % TILE_SIZE);
       const by = py + ((h * 61 + i * 11) % TILE_SIZE);
       ctx.fillRect(bx, by, 2, 2);
     }
-    // Parches/pebbles irregulares para tierra.
-    if (!isSand) {
-      ctx.fillStyle = 'rgba(20,12,6,.30)';
-      for (let i = 0; i < 3; i += 1) {
-        const bx = px + ((h * 47 + i * 31) % (TILE_SIZE - 4));
-        const by = py + ((h * 59 + i * 13) % (TILE_SIZE - 4));
-        ctx.fillRect(bx, by, 3, 2);
-      }
-      // Transicion organica hacia pasto en bordes adyacentes.
-      const neighbors = [
-        { dx: 0, dy: -1, side: 'top' },
-        { dx: 0, dy: 1, side: 'bottom' },
-        { dx: -1, dy: 0, side: 'left' },
-        { dx: 1, dy: 0, side: 'right' },
-      ];
-      for (const n of neighbors) {
-        const nt = tileAt(world, x + n.dx, y + n.dy);
-        if (nt === TILE.GRASS || nt === TILE.FLOWERS) {
-          ctx.fillStyle = 'rgba(60,100,50,.35)';
-          if (n.side === 'top') for (let i = 0; i < 4; i += 1) ctx.fillRect(px + 2 + i * 7, py, 3, 2);
-          if (n.side === 'bottom') for (let i = 0; i < 4; i += 1) ctx.fillRect(px + 2 + i * 7, py + TILE_SIZE - 2, 3, 2);
-          if (n.side === 'left') for (let i = 0; i < 4; i += 1) ctx.fillRect(px, py + 2 + i * 7, 2, 3);
-          if (n.side === 'right') for (let i = 0; i < 4; i += 1) ctx.fillRect(px + TILE_SIZE - 2, py + 2 + i * 7, 2, 3);
-        }
-      }
+    ctx.fillStyle = 'rgba(20,12,6,.32)';
+    for (let i = 0; i < 3; i += 1) {
+      const bx = px + ((h * 47 + i * 31) % (TILE_SIZE - 4));
+      const by = py + ((h * 59 + i * 13) % (TILE_SIZE - 4));
+      ctx.fillRect(bx, by, 3, 2);
+    }
+    // piedras en tierra
+    if (contNoise(wx0 + 3, wy0 + 9) > 0.84) {
+      const sx = px + 8 + Math.floor(contNoise(wx0 + 2, wy0) * 12);
+      const sy = py + 10 + Math.floor(contNoise(wx0, wy0 + 4) * 10);
+      ctx.fillStyle = 'rgba(0,0,0,.3)';
+      ctx.beginPath(); ctx.ellipse(sx + 1, sy + 3, 4, 2, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#7a6a52';
+      ctx.beginPath(); ctx.ellipse(sx, sy, 3, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9a8a72';
+      ctx.beginPath(); ctx.ellipse(sx - 1, sy - 1, 1.3, 1, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  } else if (tile === TILE.SAND) {
+    ctx.fillStyle = 'rgba(255,235,180,.18)';
+    for (let i = 0; i < 5; i += 1) {
+      const bx = px + ((h * 83 + i * 29) % TILE_SIZE);
+      const by = py + ((h * 61 + i * 11) % TILE_SIZE);
+      ctx.fillRect(bx, by, 2, 2);
     }
   } else if (tile === TILE.STONE) {
     ctx.strokeStyle = 'rgba(20,20,20,.14)';
@@ -129,6 +205,17 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.fillRect(px + 18, wy + 9, 10, 2);
     ctx.fillStyle = 'rgba(10,30,50,.2)';
     ctx.fillRect(px, py + TILE_SIZE - 6, TILE_SIZE, 6);
+    // borde organico con tierra/arena
+    // foam en orillas
+    for (const n of neighbors) {
+      const nt = tileAt(world, x + n.dx, y + n.dy);
+      if (nt === TILE.WATER) continue;
+      ctx.fillStyle = 'rgba(220,240,255,.35)';
+      if (n.side === 'top') for (let i = 0; i < TILE_SIZE; i += 2) if (contNoise(wx0 + i, wy0) > 0.5) ctx.fillRect(px + i, py, 2, 2);
+      if (n.side === 'bottom') for (let i = 0; i < TILE_SIZE; i += 2) if (contNoise(wx0 + i, wy0 + TILE_SIZE) > 0.5) ctx.fillRect(px + i, py + TILE_SIZE - 2, 2, 2);
+      if (n.side === 'left') for (let i = 0; i < TILE_SIZE; i += 2) if (contNoise(wx0, wy0 + i) > 0.5) ctx.fillRect(px, py + i, 2, 2);
+      if (n.side === 'right') for (let i = 0; i < TILE_SIZE; i += 2) if (contNoise(wx0 + TILE_SIZE, wy0 + i) > 0.5) ctx.fillRect(px + TILE_SIZE - 2, py + i, 2, 2);
+    }
   } else if (tile === TILE.WALL) {
     ctx.fillStyle = 'rgba(0,0,0,.25)';
     ctx.fillRect(px, py + TILE_SIZE - 4, TILE_SIZE, 4);
@@ -178,7 +265,6 @@ function drawTile(ctx, world, x, y, px, py) {
       ctx.fillRect(bx, by, 4, 3);
     }
   } else if (tile === TILE.TREE_PALM) {
-    // Arena seca
     ctx.fillStyle = '#c9b27a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
     ctx.fillStyle = 'rgba(255,235,180,.18)';
@@ -187,12 +273,10 @@ function drawTile(ctx, world, x, y, px, py) {
       const by = py + ((h * 61 + i * 11) % TILE_SIZE);
       ctx.fillRect(bx, by, 2, 2);
     }
-    // Sombra suave en arena
     ctx.fillStyle = 'rgba(0,0,0,0.22)';
     ctx.beginPath();
     ctx.ellipse(px + 16, py + 29, 13, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Tronco curvo determinista
     const lean = h > 0.5 ? -3 : 3;
     ctx.strokeStyle = '#8a5a30';
     ctx.lineWidth = 3;
@@ -210,7 +294,6 @@ function drawTile(ctx, world, x, y, px, py) {
       ctx.lineTo(tx + 2, ty);
       ctx.stroke();
     }
-    // Copa tropical
     ctx.fillStyle = '#2a8a3a';
     for (let i = 0; i < 6; i += 1) {
       const ang = (i / 6) * Math.PI * 2;
@@ -229,7 +312,6 @@ function drawTile(ctx, world, x, y, px, py) {
       ctx.ellipse(lx, ly, 5, 2.5, ang, 0, Math.PI * 2);
       ctx.fill();
     }
-    // Cocos
     ctx.fillStyle = '#3a2410';
     for (let i = 0; i < 3; i += 1) {
       const cx = px + 14 + lean * 2 + i * 3;
@@ -260,7 +342,6 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.ellipse(px + 16, py + 10, 13, 6, 0, 0, Math.PI * 2);
     ctx.fill();
   } else if (tile === TILE.TREE_DEAD) {
-    // Pantano (pasto verde oscuro)
     ctx.fillStyle = '#2f4a3a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
     ctx.fillStyle = 'rgba(20,40,30,.35)';
@@ -271,12 +352,10 @@ function drawTile(ctx, world, x, y, px, py) {
     }
     ctx.fillStyle = 'rgba(80,120,90,.18)';
     ctx.fillRect(px, py + TILE_SIZE - 6, TILE_SIZE, 6);
-    // Sombra humeda
     ctx.fillStyle = 'rgba(0,0,0,0.30)';
     ctx.beginPath();
     ctx.ellipse(px + 16, py + 30, 14, 5, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Raices aereas (zancudas)
     ctx.strokeStyle = '#2a2418';
     ctx.lineWidth = 2;
     for (let i = 0; i < 4; i += 1) {
@@ -286,7 +365,6 @@ function drawTile(ctx, world, x, y, px, py) {
       ctx.quadraticCurveTo(rx, py + 28, rx, py + 31);
       ctx.stroke();
     }
-    // Tronco retorcido/bifurcado
     ctx.strokeStyle = '#3a3228';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -297,7 +375,6 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.moveTo(px + 14, py + 16);
     ctx.lineTo(px + 20, py + 10);
     ctx.stroke();
-    // Copa ancha irregular achatada en 3 tonos verde musgo/oliva
     const greens = ['#3a4a2a', '#4a5a30', '#5a6a38'];
     ctx.fillStyle = greens[0];
     ctx.beginPath();
@@ -314,7 +391,6 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.beginPath();
     ctx.ellipse(px + 16, py + 5, 8, 4, 0, 0, Math.PI * 2);
     ctx.fill();
-    // Musgo colgante
     ctx.fillStyle = 'rgba(60,80,40,.6)';
     for (let i = 0; i < 5; i += 1) {
       const mx = px + 8 + ((h * 67 + i * 17) % 16);
@@ -354,7 +430,6 @@ function drawTile(ctx, world, x, y, px, py) {
     const canopyDark = h > 0.5 ? '#15331a' : '#122d16';
     const canopyMid = h > 0.5 ? '#1b3f20' : '#16361b';
     const canopyLight = h > 0.5 ? '#234a28' : '#1d4022';
-    // contorno
     ctx.fillStyle = '#0e2212';
     ctx.beginPath();
     ctx.ellipse(px + 16, py + 9, 16, 14, 0, 0, Math.PI * 2);
@@ -374,14 +449,18 @@ function drawTile(ctx, world, x, y, px, py) {
     ctx.beginPath();
     ctx.ellipse(px + 16, py + 5, 8, 6, 0, 0, Math.PI * 2);
     ctx.fill();
-    // luces puntuales
     ctx.fillStyle = 'rgba(90,150,95,.45)';
     ctx.fillRect(px + 6, py + 4, 5, 3);
     ctx.fillRect(px + 20, py + 5, 6, 3);
     ctx.fillRect(px + 13, py + 2, 4, 2);
-    // sombra en copa
     ctx.fillStyle = 'rgba(0,0,0,.25)';
     ctx.fillRect(px + 9, py + 14, 14, 3);
+  }
+
+  // destellos sutiles muy moderados
+  if (contNoise(wx0 + 23, wy0 + 29) > 0.93) {
+    ctx.fillStyle = 'rgba(255,255,240,.6)';
+    ctx.fillRect(px + 4 + Math.floor(contNoise(wx0, wy0) * 20), py + 4 + Math.floor(contNoise(wx0 + 1, wy0) * 20), 1, 1);
   }
 }
 
