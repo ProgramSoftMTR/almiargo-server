@@ -37,11 +37,35 @@ function drawTile(ctx, scene, world, x, y, px, py) {
   const wy0 = y * TILE_SIZE;
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
   const baseColor = `#${Number(base).toString(16).padStart(6, '0')}`;
-  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE];
-  const grassTex = scene?.textures?.get?.('sprite_tile_grass');
-  if (grassBaseTiles.includes(tile) && grassTex && typeof grassTex.getSourceImage === 'function') {
+  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE, TILE.ROCK];
+  // Seleccion de textura de suelo para la pradera (mezcla deterministica).
+  let groundKey = null;
+  if (grassBaseTiles.includes(tile)) {
+    if (tile === TILE.TREE || tile === TILE.ROCK) {
+      groundKey = 'sprite_tile_grass_liso';
+    } else {
+      const hr = tileHash(x, y);
+      if (tile === TILE.GRASS && hr > 0.84) {
+        // Debajo de hierba alta / roca procedural: suelo limpio.
+        groundKey = 'sprite_tile_grass_liso';
+      } else if (tile === TILE.GRASS || tile === TILE.DIRT || tile === TILE.FLOWERS) {
+        if (hr < 0.40) groundKey = 'sprite_tile_grass_liso';
+        else if (hr < 0.65) groundKey = 'sprite_tile_grass';
+        else if (hr < 0.85) groundKey = 'sprite_tile_grass2';
+        else if (hr < 0.95) groundKey = 'sprite_tile_grass_rock';
+        else groundKey = 'sprite_tile_grass_rockrock';
+      } else {
+        groundKey = 'sprite_tile_grass';
+      }
+    }
+  }
+  const primaryTex = groundKey ? scene?.textures?.get?.(groundKey) : null;
+  const fallbackTex = scene?.textures?.get?.('sprite_tile_grass');
+  const groundTex = (primaryTex && typeof primaryTex.getSourceImage === 'function') ? primaryTex
+    : (fallbackTex && typeof fallbackTex.getSourceImage === 'function') ? fallbackTex : null;
+  if (groundTex) {
     try {
-      ctx.drawImage(grassTex.getSourceImage(), px, py, TILE_SIZE, TILE_SIZE);
+      ctx.drawImage(groundTex.getSourceImage(), px, py, TILE_SIZE, TILE_SIZE);
     } catch (e) {
       ctx.fillStyle = baseColor;
       ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);

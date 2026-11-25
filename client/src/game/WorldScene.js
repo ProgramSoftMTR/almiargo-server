@@ -87,6 +87,10 @@ export class WorldScene extends Phaser.Scene {
   preload() {
     // Assets pixel-art (64x64) servidos desde public/assets/sprites/
     this.load.image('sprite_tile_grass', '/assets/sprites/tile_grass.png');
+    this.load.image('sprite_tile_grass2', '/assets/sprites/tile_grass2.png');
+    this.load.image('sprite_tile_grass_liso', '/assets/sprites/tile_grassliso.png');
+    this.load.image('sprite_tile_grass_rock', '/assets/sprites/tile_grass_rock.png');
+    this.load.image('sprite_tile_grass_rockrock', '/assets/sprites/tile_grass_rockrock.png');
     this.load.image('sprite_tree_forest', '/assets/sprites/tree_forest.png.png');
     this.load.image('sprite_grass_tall', '/assets/sprites/grass_tall.png.png');
     this.load.image('sprite_rock', '/assets/sprites/rock.png.png');
@@ -96,7 +100,7 @@ export class WorldScene extends Phaser.Scene {
   create() {
     try {
     // Filtro pixel-art para los sprites cargados.
-    for (const k of ['sprite_tile_grass','sprite_tree_forest','sprite_grass_tall','sprite_rock','sprite_rockgrass']) {
+    for (const k of ['sprite_tile_grass','sprite_tile_grass2','sprite_tile_grass_liso','sprite_tile_grass_rock','sprite_tile_grass_rockrock','sprite_tree_forest','sprite_grass_tall','sprite_rock','sprite_rockgrass']) {
       if (this.textures.exists(k)) this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
     window.__setLoadingProgress?.(85, 'Cargando terreno...');

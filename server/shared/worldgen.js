@@ -21,7 +21,7 @@ export const TILE = Object.freeze({
   GRASS: 0,        // Pradera (Grassland)
   DIRT: 1,
   STONE: 2,
-  ROCK: 2,         // alias de STONE (pradera base)
+  ROCK: 17,        // Roca en pradera (base de pradera)
   WATER: 3,
   TREE: 4,         // Árbol normal
   WALL: 5,
@@ -56,6 +56,7 @@ export const TILE_COLORS = Object.freeze({
   14: [0x3a5a2a, 0x335224, 0x426330],  // acacia
   15: [0x3a322a, 0x332c25, 0x42382f],  // dead tree
   16: [0xb9a05a, 0xaf9450, 0xc4aa64],  // savanna
+  17: [0x3d6b3a, 0x356236, 0x447540],  // rock prairie
 });
 
 export function tileAt(world, x, y) {
