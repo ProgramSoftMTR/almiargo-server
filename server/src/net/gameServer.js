@@ -964,7 +964,7 @@ export class GameServer {
     // Tolerancia de lag: un paquete que llega hasta 120 ms antes del
     // proximo movimiento permitido no se rechaza; se procesa y se reprograma
     // el temporizador desde el momento actual para no acumular retraso.
-    if (now < player.nextMoveAt - 600) return;
+    if (now < player.nextMoveAt - 800) return;
 
     const dir = msg.dir;
     if (!Array.isArray(dir) || dir.length !== 2) return;
@@ -1580,6 +1580,10 @@ export class GameServer {
 
     this.lastTickMs = Math.round((performance.now() - started) * 100) / 100;
     this.maxTickMs = Math.max(this.maxTickMs, this.lastTickMs);
+    if ((this.tickLagMs > 100 || this.lastTickMs > 100) && (now - (this._lastLagLogAt ?? 0)) > 5000) {
+      this._lastLagLogAt = now;
+      console.warn(`[lag] tickLag=${this.tickLagMs}ms tick=${this.lastTickMs}ms tickCount=${this.tickCount} players=${this.sessionsByPlayer.size}`);
+    }
     if (this.lastTickMs > this.config.tickMs && this.tickCount % this.config.tickRate === 0) {
       console.warn(`[tick] trabajo ${this.lastTickMs}ms > ${this.config.tickMs}ms (lag ${this.tickLagMs}ms)`);
     }

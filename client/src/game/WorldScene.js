@@ -391,8 +391,10 @@ export class WorldScene extends Phaser.Scene {
     const recent = Date.now() - this.lastStepSentAt < this.moveMs * 1.8;
     const recentInput = Date.now() - this.lastStepSentAt < 400;
 
-    // Reconciliacion suave: evita teletransportes bruscos (snap) salvo
-    // desincronizacion grave (>2.5 tiles) o bloqueo por colision.
+    // Reconciliacion suave: deadzone para evitar ligas por microdesfases,
+    // interpolacion para desfases medios y snap solo para diferencias grandes.
+    const deadzoneTiles = 1.5;   // ~48 px
+    const snapTiles = 5.625;    // ~180 px
     if (force) {
       this.localPred = { x: sx, y: sy };
       this.localVisual = { x: sx, y: sy };
@@ -400,7 +402,7 @@ export class WorldScene extends Phaser.Scene {
       this.path = [];
       this.pending = null;
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
-    } else if (dist > 2.5 && !recentInput) {
+    } else if (dist > snapTiles && !recentInput) {
       // Desincronizacion grave: ajuste directo.
       this.localPred = { x: sx, y: sy };
       this.localVisual = { x: sx, y: sy };
@@ -408,13 +410,12 @@ export class WorldScene extends Phaser.Scene {
       this.path = [];
       this.pending = null;
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
-    } else if (!holding && !recent && dist > 0.05 && dist < 1.5) {
-      // Desviacion pequena (<1.5 tiles): correccion gradual mediante lerp
-      // suave durante 100-150 ms hacia la posicion autoritativa del servidor.
+    } else if (!holding && !recent && dist > deadzoneTiles && dist <= snapTiles) {
+      // Desviacion intermedia: correccion gradual mediante lerp suave.
       this.reconcile = {
         fromX: this.localPred.x, fromY: this.localPred.y,
         toX: sx, toY: sy,
-        start: Date.now(), duration: 120,
+        start: Date.now(), duration: 180,
       };
       if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
     }
@@ -1110,12 +1111,17 @@ export class WorldScene extends Phaser.Scene {
   }
 
   sendStep(dx, dy, now) {
+    // Limita el envio a ~20 Hz y evita paquetes identicos/redundantes.
+    if (now - this.lastStepSentAt < 50) return;
+    if (this._lastSentMove && this._lastSentMove.dx === dx && this._lastSentMove.dy === dy &&
+        now - this._lastSentMove.at < 66) return;
     this.moveSeq += 1;
     // Payload compacto [1, dx, dy, seq] en lugar de un objeto JSON.
     socket.sendMove(dx, dy, this.moveSeq);
     const diagonal = dx !== 0 && dy !== 0;
     this.nextStepAt = now + this.moveMs * (diagonal ? 1.18 : 1) + 45;
     this.lastStepSentAt = now;
+    this._lastSentMove = { dx, dy, at: now };
   }
 
   clientCanWalk(x, y, dx, dy) {
