@@ -176,11 +176,11 @@ export class WorldScene extends Phaser.Scene {
     this.localVisual = { ...this.localPred };
     this.moveMs = p.stats?.moveMs ?? 260;
 
-    const shadow = this.add.ellipse(0, 6, 18, 7, 0x000000, 0.35);
+    const shadow = this.add.ellipse(0, 9, 18, 7, 0x000000, 0.35);
     this.localShadow = shadow;
     const localTexture = ensurePlayerSpriteTexture(this, 'base', p.outfit);
     this.localSprite = this.add.sprite(0, 0, localTexture);
-    this.localSprite.setOrigin(0.5, 0.85).setScale(0.75);
+    this.localSprite.setOrigin(0.492, 0.85).setScale(0.75);
     this.localDir = 'south';
     this.localWeapon = null;
     this.localAxe = this.add.image(10, -4, 'tool_axe').setOrigin(0.5, 0.9).setVisible(false);
@@ -530,8 +530,8 @@ export class WorldScene extends Phaser.Scene {
     const spriteScale = isPlayer ? 0.75 : size;
     const shadowScale = isPlayer ? 0.75 : size;
     const ring = this.add.ellipse(0, 3, 32, 17).setStrokeStyle(2, 0xf2c94c, 0.95).setVisible(false);
-    const shadow = this.add.ellipse(0, isPlayer ? 6 : 8, 24 * shadowScale, 9 * shadowScale, 0x000000, 0.33);
-    const sprite = this.add.sprite(0, 2, texture).setOrigin(0.5, 0.85).setScale(spriteScale);
+    const shadow = this.add.ellipse(0, isPlayer ? 9 : 8, 24 * shadowScale, 9 * shadowScale, 0x000000, 0.33);
+    const sprite = this.add.sprite(0, 2, texture).setOrigin(isPlayer ? 0.492 : 0.5, 0.85).setScale(spriteScale);
     const handItem = e?.equipment?.mano ?? null;
     const weaponKey = handTextureKey(handItem);
     const isTool = weaponKey === 'tool_axe' || weaponKey === 'tool_pickaxe';
@@ -1393,7 +1393,7 @@ export class WorldScene extends Phaser.Scene {
     const sprite = this.add.image(0, 0, texKey).setOrigin(0.5, 0.9);
     if (type === 'tree') {
       sprite.setDisplaySize(52, 64);
-      const shadow = this.add.ellipse(0, 4, 34, 12, 0x000000, 0.32);
+      const shadow = this.add.ellipse(0, 1, 34, 12, 0x000000, 0.32);
       container.addAt(shadow, 0);
     } else if (type === 'rock') sprite.setDisplaySize(34, 34);
     else if (type === 'grass_tall') sprite.setDisplaySize(30, 32);
@@ -1430,8 +1430,8 @@ export class WorldScene extends Phaser.Scene {
     const chunkSize = 64;
     regenerateWorldChunk(this, this.worldMap, Math.floor(x / chunkSize), Math.floor(y / chunkSize));
     this.refreshNavCell(x, y);
-    const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, texKey)
-      .setOrigin(0.5, 0.5).setDepth(-50);
+    const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE * 0.9, texKey)
+      .setOrigin(0.5, 0.8).setDepth(-50);
     this.stumpViews.set(key, { container: null, sprite, cover: null });
   }
 
