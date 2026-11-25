@@ -828,8 +828,12 @@ export class WorldScene extends Phaser.Scene {
     const lx = toWorld(this.localVisual.x);
     const ly = toWorld(this.localVisual.y);
     this.localContainer.setPosition(lx, ly);
-    // Y-sorting: profundidad basada en la posición inferior (pies) de la entidad.
-    this.localContainer.setDepth(toWorld(this.localVisual.y) + (this.localSprite?.displayHeight ?? 0) / 2);
+    // Y-sorting: solo se actualiza si la Y cambió para evitar trabajo por frame.
+    const localDepth = toWorld(this.localVisual.y) + (this.localSprite?.displayHeight ?? 0) / 2;
+    if (Math.abs(localDepth - (this._lastLocalDepth ?? 0)) > 0.5) {
+      this.localContainer.setDepth(localDepth);
+      this._lastLocalDepth = localDepth;
+    }
     this.localMoving = Math.hypot(this.localPred.x - this.localVisual.x, this.localPred.y - this.localVisual.y) > 0.05
       || (this.joystick?.active && this.joystick.dir && now < this.nextStepAt + this.moveMs);
     const localBreathPhase = Math.sin(performance.now() * 0.0032);
@@ -873,7 +877,11 @@ export class WorldScene extends Phaser.Scene {
       if (!view.dir) view.dir = 'south';
       view.lastX = view.container.x; view.lastY = view.container.y;
       // Y-sorting: mayor Y (pies más abajo) se dibuja delante.
-      view.container.setDepth(view.container.y + (view.displayHeight ?? 0) * 0.5);
+      const remoteDepth = view.container.y + (view.displayHeight ?? 0) * 0.5;
+      if (Math.abs(remoteDepth - (view._lastDepth ?? 0)) > 0.5) {
+        view.container.setDepth(remoteDepth);
+        view._lastDepth = remoteDepth;
+      }
       const breathSeed = (view.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0) * 0.37;
       const remoteBreathPhase = Math.sin((performance.now() + breathSeed) * 0.0032);
       const remoteBreathOffset = moved ? 0 : (remoteBreathPhase * 1.2);
@@ -889,8 +897,10 @@ export class WorldScene extends Phaser.Scene {
 
     // Proyectiles de arena (mobs a distancia)
     const pg = this.projectileGraphics;
-    if (pg) {
+    const hasProjectileFx = this.activeProjectiles.length > 0 || this.impactEffects.length > 0;
+    if (pg && hasProjectileFx) {
       pg.clear();
+      this._projectileDirty = true;
       const nowMs = Date.now();
       for (let i = this.activeProjectiles.length - 1; i >= 0; i -= 1) {
         const p = this.activeProjectiles[i];
@@ -947,6 +957,9 @@ export class WorldScene extends Phaser.Scene {
         pg.fillStyle(0xf0d399, alpha * 0.7);
         pg.fillCircle(px - 1, py - 1, 1.5);
       }
+    } else if (pg && this._projectileDirty) {
+      pg.clear();
+      this._projectileDirty = false;
     }
 
     // Anillo de objetivo
