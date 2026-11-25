@@ -176,7 +176,7 @@ export class WorldScene extends Phaser.Scene {
     this.localVisual = { ...this.localPred };
     this.moveMs = p.stats?.moveMs ?? 260;
 
-    const shadow = this.add.ellipse(0, 9, 18, 7, 0x000000, 0.35);
+    const shadow = this.add.ellipse(0, 7, 18, 7, 0x000000, 0.35);
     this.localShadow = shadow;
     const localTexture = ensurePlayerSpriteTexture(this, 'base', p.outfit);
     this.localSprite = this.add.sprite(0, 0, localTexture);
@@ -530,8 +530,8 @@ export class WorldScene extends Phaser.Scene {
     const spriteScale = isPlayer ? 0.75 : size;
     const shadowScale = isPlayer ? 0.75 : size;
     const ring = this.add.ellipse(0, 3, 32, 17).setStrokeStyle(2, 0xf2c94c, 0.95).setVisible(false);
-    const shadow = this.add.ellipse(0, isPlayer ? 9 : 8, 24 * shadowScale, 9 * shadowScale, 0x000000, 0.33);
-    const sprite = this.add.sprite(0, 2, texture).setOrigin(isPlayer ? 0.492 : 0.5, 0.85).setScale(spriteScale);
+    const shadow = this.add.ellipse(0, isPlayer ? 7 : 8, 24 * shadowScale, 9 * shadowScale, 0x000000, 0.33);
+    const sprite = this.add.sprite(0, 0, texture).setOrigin(isPlayer ? 0.492 : 0.5, 0.85).setScale(spriteScale);
     const handItem = e?.equipment?.mano ?? null;
     const weaponKey = handTextureKey(handItem);
     const isTool = weaponKey === 'tool_axe' || weaponKey === 'tool_pickaxe';
@@ -878,6 +878,7 @@ export class WorldScene extends Phaser.Scene {
       const remoteBreathPhase = Math.sin((performance.now() + breathSeed) * 0.0032);
       const remoteBreathOffset = moved ? 0 : (remoteBreathPhase * 1.2);
       if (view.shadow) view.shadow.scaleX = 1 + (moved ? 0 : (remoteBreathPhase * 0.02));
+      if (view.sprite) view.sprite.y = 0;
       if (view.sprite && view.sprite.texture && view.sprite.texture.key) {
         const remoteAnim = `${view.sprite.texture.key}_${moved ? 'walking' : 'idle'}_${view.dir || 'south'}`;
         if (view.sprite.anims.currentAnim?.key !== remoteAnim) view.sprite.play(remoteAnim, true);
