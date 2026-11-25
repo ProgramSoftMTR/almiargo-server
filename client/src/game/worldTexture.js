@@ -27,11 +27,45 @@ function drawTile(ctx, world, x, y, px, py) {
 
   const h = tileHash(x, y);
   if (tile === TILE.GRASS || tile === TILE.FLOWERS) {
-    ctx.fillStyle = h > 0.5 ? 'rgba(20,45,20,.28)' : 'rgba(90,130,70,.22)';
+    // Base con variacion tonal determinista (varias variantes de pasto).
+    // Motitas y briznas pixel art.
+    const dark = h > 0.66 ? 'rgba(18,40,18,.30)' : 'rgba(24,52,24,.24)';
+    const light = h > 0.33 ? 'rgba(95,140,75,.22)' : 'rgba(110,160,90,.18)';
+    ctx.fillStyle = dark;
+    for (let i = 0; i < 6; i += 1) {
+      const bx = px + ((h * 97 + i * 13) % (TILE_SIZE - 2));
+      const by = py + ((h * 53 + i * 19) % (TILE_SIZE - 3));
+      ctx.fillRect(bx, by, 2, 2);
+    }
+    ctx.fillStyle = light;
     for (let i = 0; i < 4; i += 1) {
-      const bx = px + ((h * 97 + i * 13) % TILE_SIZE);
-      const by = py + ((h * 53 + i * 19) % TILE_SIZE);
-      ctx.fillRect(bx, by, 2, 3);
+      const bx = px + ((h * 71 + i * 17) % (TILE_SIZE - 2));
+      const by = py + ((h * 43 + i * 23) % (TILE_SIZE - 3));
+      ctx.fillRect(bx, by, 1, 3);
+    }
+    // Briznas de hierba alta (tufts) en algunas casillas, sin bloquear paso.
+    if (h > 0.58) {
+      const tuftColor = h > 0.78 ? '#4a8a4a' : '#3f7a3f';
+      ctx.fillStyle = tuftColor;
+      const tx0 = px + 4 + Math.floor(h * 12);
+      const ty0 = py + 6 + Math.floor(h * 8);
+      ctx.fillRect(tx0, ty0, 2, 6);
+      ctx.fillRect(tx0 + 1, ty0 - 2, 1, 3);
+      ctx.fillRect(tx0 + 3, ty0 + 1, 2, 5);
+      // sombra base del tuft
+      ctx.fillStyle = 'rgba(10,25,10,.35)';
+      ctx.fillRect(tx0, ty0 + 6, 6, 1);
+      // destello sutil
+      ctx.fillStyle = 'rgba(180,220,140,.45)';
+      ctx.fillRect(tx0 + 1, ty0, 1, 1);
+    }
+    if (h > 0.82) {
+      // segundo tuft mas pequeno
+      ctx.fillStyle = '#3a6a3a';
+      const tx1 = px + 18 + Math.floor(h * 6);
+      const ty1 = py + 14 + Math.floor(h * 5);
+      ctx.fillRect(tx1, ty1, 2, 4);
+      ctx.fillRect(tx1 + 2, ty1 + 1, 1, 3);
     }
     if (tile === TILE.FLOWERS) {
       ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
@@ -41,14 +75,42 @@ function drawTile(ctx, world, x, y, px, py) {
         ctx.fillRect(bx, by, 3, 3);
         ctx.fillStyle = 'rgba(255,255,255,.55)';
         ctx.fillRect(bx, by, 1, 1);
+        ctx.fillStyle = h > 0.5 ? '#e8d26a' : '#d97a9e';
       }
     }
   } else if (tile === TILE.DIRT || tile === TILE.SAND) {
-    ctx.fillStyle = tile === TILE.SAND ? 'rgba(255,235,180,.18)' : 'rgba(30,20,10,.25)';
-    for (let i = 0; i < 5; i += 1) {
+    const isSand = tile === TILE.SAND;
+    ctx.fillStyle = isSand ? 'rgba(255,235,180,.18)' : 'rgba(30,20,10,.25)';
+    for (let i = 0; i < 6; i += 1) {
       const bx = px + ((h * 83 + i * 29) % TILE_SIZE);
       const by = py + ((h * 61 + i * 11) % TILE_SIZE);
       ctx.fillRect(bx, by, 2, 2);
+    }
+    // Parches/pebbles irregulares para tierra.
+    if (!isSand) {
+      ctx.fillStyle = 'rgba(20,12,6,.30)';
+      for (let i = 0; i < 3; i += 1) {
+        const bx = px + ((h * 47 + i * 31) % (TILE_SIZE - 4));
+        const by = py + ((h * 59 + i * 13) % (TILE_SIZE - 4));
+        ctx.fillRect(bx, by, 3, 2);
+      }
+      // Transicion organica hacia pasto en bordes adyacentes.
+      const neighbors = [
+        { dx: 0, dy: -1, side: 'top' },
+        { dx: 0, dy: 1, side: 'bottom' },
+        { dx: -1, dy: 0, side: 'left' },
+        { dx: 1, dy: 0, side: 'right' },
+      ];
+      for (const n of neighbors) {
+        const nt = tileAt(world, x + n.dx, y + n.dy);
+        if (nt === TILE.GRASS || nt === TILE.FLOWERS) {
+          ctx.fillStyle = 'rgba(60,100,50,.35)';
+          if (n.side === 'top') for (let i = 0; i < 4; i += 1) ctx.fillRect(px + 2 + i * 7, py, 3, 2);
+          if (n.side === 'bottom') for (let i = 0; i < 4; i += 1) ctx.fillRect(px + 2 + i * 7, py + TILE_SIZE - 2, 3, 2);
+          if (n.side === 'left') for (let i = 0; i < 4; i += 1) ctx.fillRect(px, py + 2 + i * 7, 2, 3);
+          if (n.side === 'right') for (let i = 0; i < 4; i += 1) ctx.fillRect(px + TILE_SIZE - 2, py + 2 + i * 7, 2, 3);
+        }
+      }
     }
   } else if (tile === TILE.STONE) {
     ctx.strokeStyle = 'rgba(20,20,20,.14)';
@@ -271,29 +333,55 @@ function drawTile(ctx, world, x, y, px, py) {
   } else if (tile === TILE.TREE) {
     ctx.fillStyle = '#2f5730';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.fillStyle = 'rgba(0,0,0,.30)';
+    // Sombra suave proyectada en el suelo (volumen).
+    const shGrad = ctx.createRadialGradient(px + 16, py + 29, 2, px + 16, py + 29, 14);
+    shGrad.addColorStop(0, 'rgba(0,0,0,.45)');
+    shGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = shGrad;
     ctx.beginPath();
-    ctx.ellipse(px + 16, py + 29, 13, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + 16, py + 29, 14, 6, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Tronco con contorno oscuro.
+    ctx.fillStyle = '#2a1a10';
+    ctx.fillRect(px + 12, py + 13, 8, 18);
     ctx.fillStyle = '#3a2817';
     ctx.fillRect(px + 13, py + 14, 6, 16);
     ctx.fillStyle = '#4a3220';
     ctx.fillRect(px + 14, py + 14, 2, 16);
-    const green = h > 0.5 ? '#1b3f20' : '#16361b';
-    ctx.fillStyle = green;
+    ctx.fillStyle = '#2a1a10';
+    ctx.fillRect(px + 19, py + 14, 1, 16);
+    // Copa sombreada con luces/sombras y contorno oscuro.
+    const canopyDark = h > 0.5 ? '#15331a' : '#122d16';
+    const canopyMid = h > 0.5 ? '#1b3f20' : '#16361b';
+    const canopyLight = h > 0.5 ? '#234a28' : '#1d4022';
+    // contorno
+    ctx.fillStyle = '#0e2212';
+    ctx.beginPath();
+    ctx.ellipse(px + 16, py + 9, 16, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = canopyDark;
     ctx.beginPath();
     ctx.ellipse(px + 16, py + 9, 15, 13, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = h > 0.5 ? '#234a28' : '#1d4022';
+    ctx.fillStyle = canopyMid;
     ctx.beginPath();
     ctx.ellipse(px + 11, py + 7, 9, 8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
     ctx.ellipse(px + 21, py + 8, 9, 7, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = 'rgba(40,80,45,.35)';
+    ctx.fillStyle = canopyLight;
+    ctx.beginPath();
+    ctx.ellipse(px + 16, py + 5, 8, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // luces puntuales
+    ctx.fillStyle = 'rgba(90,150,95,.45)';
     ctx.fillRect(px + 6, py + 4, 5, 3);
     ctx.fillRect(px + 20, py + 5, 6, 3);
+    ctx.fillRect(px + 13, py + 2, 4, 2);
+    // sombra en copa
+    ctx.fillStyle = 'rgba(0,0,0,.25)';
+    ctx.fillRect(px + 9, py + 14, 14, 3);
   }
 }
 

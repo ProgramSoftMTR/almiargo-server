@@ -49,6 +49,7 @@ import { GameServer } from './net/gameServer.js';
 // deploy trigger: 2026-11-25 11:00:00 fix capacidad de mochila equipada y ventana de inventario mas amplia
 // deploy trigger: 2026-11-25 13:00:00 fix renderizar visiblemente todos los slots de la mochila equipada
 // deploy trigger: 2026-11-25 15:00:00 feat panel de interaccion al tocar jugador estilo rucoy online
+// deploy trigger: 2026-11-24 22:00:00 feat generar e integrar texturas pixel art de pasto, tierra, hierba alta y arboles con sombra
 
 const store = await createStore();
 const game = new GameServer({ store, config });
