@@ -94,13 +94,14 @@ export class WorldScene extends Phaser.Scene {
     this.load.image('sprite_tree_forest', '/assets/sprites/tree_forest.png.png');
     this.load.image('sprite_grass_tall', '/assets/sprites/grass_tall.png.png');
     this.load.image('sprite_rock', '/assets/sprites/rock.png.png');
+    this.load.image('sprite_rock_moss', '/assets/sprites/rock_moss.png.png');
     this.load.image('sprite_rockgrass', '/assets/sprites/rockgrass.png.png');
   }
 
   create() {
     try {
     // Filtro pixel-art para los sprites cargados.
-    for (const k of ['sprite_tile_grass','sprite_tile_grass2','sprite_tile_grass_liso','sprite_tile_grass_rock','sprite_tile_grass_rockrock','sprite_tree_forest','sprite_grass_tall','sprite_rock','sprite_rockgrass']) {
+    for (const k of ['sprite_tile_grass','sprite_tile_grass2','sprite_tile_grass_liso','sprite_tile_grass_rock','sprite_tile_grass_rockrock','sprite_tree_forest','sprite_grass_tall','sprite_rock','sprite_rock_moss','sprite_rockgrass']) {
       if (this.textures.exists(k)) this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST);
     }
     window.__setLoadingProgress?.(85, 'Cargando terreno...');
@@ -1227,12 +1228,25 @@ export class WorldScene extends Phaser.Scene {
           this.addEnvSprite(x, y, 'tree');
         } else if (tile === TILE.GRASS) {
           const h = tileHash(x, y);
-          if (h > 0.92) {
+          if (h > 0.96) {
             const tex = ((x + y) % 2 === 0) ? 'sprite_rock' : 'sprite_rockgrass';
             this.addEnvSprite(x, y, 'rock', tex);
           } else if (h > 0.84) {
             this.addEnvSprite(x, y, 'grass_tall');
           }
+        } else if (tile === TILE.ROCK) {
+          // Musgo solo cerca de arboles (radio 1-2), con ~55% de probabilidad.
+          let nearTree = false;
+          for (let dy = -2; dy <= 2 && !nearTree; dy += 1) {
+            for (let dx = -2; dx <= 2; dx += 1) {
+              if (dx === 0 && dy === 0) continue;
+              const d = Math.max(Math.abs(dx), Math.abs(dy));
+              if (d < 1 || d > 2) continue;
+              if (tileAt(world, x + dx, y + dy) === TILE.TREE) { nearTree = true; break; }
+            }
+          }
+          const useMoss = nearTree && tileHash(x, y) < 0.55;
+          this.addEnvSprite(x, y, 'rock', useMoss ? 'sprite_rock_moss' : 'sprite_rock');
         }
       }
     }

@@ -273,6 +273,15 @@ export function generateWorld(seed = WORLD_SEED) {
     }
   }
 
+  // Rocas en pradera (densidad reducida).
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const t = get(x, y);
+      if (t !== TILE.GRASS && t !== TILE.DIRT && t !== TILE.FLOWERS) continue;
+      if (isSafeZone(x, y) || isPvPZone(x, y)) continue;
+      if (rng() < 0.032) set(x, y, TILE.ROCK);
+    }
+  }
   // Caminos: conectan ciudad, zonas de farmeo y arena.
   const carve = (x1, y1, x2, y2, widthRoad = 1) => {
     let x = x1;
