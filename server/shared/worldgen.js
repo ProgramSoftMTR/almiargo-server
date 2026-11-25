@@ -39,6 +39,7 @@ export const TILE = Object.freeze({
   CITY: 18,        // Suelo transitable de ciudad
   PATH: 19,        // Camino principal
   PLAZA: 20,       // Plaza transitable
+  STUMP: 21,       // Tocón de árbol talado
 });
 
 export const TILE_COLORS = Object.freeze({
@@ -63,6 +64,7 @@ export const TILE_COLORS = Object.freeze({
   18: [0x3d6b3a, 0x356236, 0x447540],  // city transitable
   19: [0x3d6b3a, 0x356236, 0x447540],  // path
   20: [0x3d6b3a, 0x356236, 0x447540],  // plaza
+  21: [0x3d6b3a, 0x356236, 0x447540],  // stump
 });
 
 export function tileAt(world, x, y) {

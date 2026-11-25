@@ -1289,6 +1289,10 @@ export class WorldScene extends Phaser.Scene {
     const texKey = tile === TILE.SAND ? 'palm_stump' : 'tree_stump';
     // Marca el tile como talado y regenera el chunk para quitar el árbol original.
     this.worldMap.chopped.add(`${x},${y}`);
+    const tileIdx = y * this.worldMap.width + x;
+    if (this.worldMap.tiles && tileIdx >= 0 && tileIdx < this.worldMap.tiles.length) {
+      this.worldMap.tiles[tileIdx] = TILE.STUMP;
+    }
     const esk = `${x},${y}`;
     const es = this.envSprites.get(esk);
     if (es) { try { es.destroy(); } catch (e) {} this.envSprites.delete(esk); }
@@ -1308,6 +1312,10 @@ export class WorldScene extends Phaser.Scene {
     const [sx, sy] = String(key).split(',').map((v) => Number.parseInt(v, 10));
     if (Number.isInteger(sx) && Number.isInteger(sy)) {
       this.worldMap.chopped?.delete(`${sx},${sy}`);
+      const tileIdx = sy * this.worldMap.width + sx;
+      if (this.worldMap.tiles && tileIdx >= 0 && tileIdx < this.worldMap.tiles.length) {
+        this.worldMap.tiles[tileIdx] = TILE.TREE;
+      }
       const chunkSize = 64;
       regenerateWorldChunk(this, this.worldMap, Math.floor(sx / chunkSize), Math.floor(sy / chunkSize));
       const tile = tileAt(this.worldMap, sx, sy);

@@ -16,48 +16,36 @@ function contNoise(wx, wy) {
   return (v + 1.95) / 3.9; // ~0..1
 }
 
+function groundTextureKey(tile, x, y) {
+  if (tile === TILE.ROCK) return 'sprite_tile_grass_liso';
+  const hr = tileHash(x, y);
+  if (tile === TILE.GRASS && hr > 0.84) return 'sprite_tile_grass_liso';
+  if (tile === TILE.GRASS || tile === TILE.DIRT || tile === TILE.FLOWERS ||
+      tile === TILE.FOREST || tile === TILE.TREE || tile === TILE.STUMP ||
+      tile === TILE.STONE || tile === TILE.CITY || tile === TILE.PATH || tile === TILE.PLAZA) {
+    if (hr < 0.40) return 'sprite_tile_grass_liso';
+    if (hr < 0.65) return 'sprite_tile_grass';
+    if (hr < 0.85) return 'sprite_tile_grass2';
+    if (hr < 0.95) return 'sprite_tile_grass_rock';
+    return 'sprite_tile_grass_rockrock';
+  }
+  return 'sprite_tile_grass';
+}
+
 function drawTile(ctx, scene, world, x, y, px, py) {
   const tile = tileAt(world, x, y);
-  const chopped = !!(world?.chopped && world.chopped.has(`${x},${y}`));
-  const treeTiles = [TILE.TREE, TILE.TREE_PALM, TILE.TREE_PINE, TILE.TREE_ACACIA, TILE.TREE_DEAD];
   // Bioma base de pradera: se tratan como el mismo suelo para bordes/transiciones.
-  const prairieBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.TREE, TILE.ROCK, TILE.STONE, TILE.CITY, TILE.PATH, TILE.PLAZA];
-  if (chopped && treeTiles.includes(tile)) {
-    const groundColor = tile === TILE.TREE_PALM ? '#c9b27a'
-      : tile === TILE.TREE_DEAD ? '#2f4a3a'
-      : tile === TILE.TREE_PINE ? '#dfe7f0'
-      : tile === TILE.TREE_ACACIA ? '#b9a05a'
-      : '#2f5730';
-    ctx.fillStyle = groundColor;
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    return;
-  }
+  const prairieBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.TREE, TILE.FOREST, TILE.STUMP, TILE.ROCK, TILE.STONE, TILE.CITY, TILE.PATH, TILE.PLAZA];
 
   const wx0 = x * TILE_SIZE;
   const wy0 = y * TILE_SIZE;
   const base = tileRenderColor(tile ?? TILE.GRASS, x, y) ?? 0x3d6b3a;
   const baseColor = `#${Number(base).toString(16).padStart(6, '0')}`;
-  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE, TILE.ROCK, TILE.STONE, TILE.CITY, TILE.PATH, TILE.PLAZA];
+  const grassBaseTiles = [TILE.GRASS, TILE.FLOWERS, TILE.DIRT, TILE.FOREST, TILE.TREE, TILE.STUMP, TILE.ROCK, TILE.STONE, TILE.CITY, TILE.PATH, TILE.PLAZA];
   // Seleccion de textura de suelo para la pradera (mezcla deterministica).
   let groundKey = null;
   if (grassBaseTiles.includes(tile)) {
-    if (tile === TILE.TREE || tile === TILE.ROCK) {
-      groundKey = 'sprite_tile_grass_liso';
-    } else {
-      const hr = tileHash(x, y);
-      if (tile === TILE.GRASS && hr > 0.84) {
-        // Debajo de hierba alta / roca procedural: suelo limpio.
-        groundKey = 'sprite_tile_grass_liso';
-      } else if (tile === TILE.GRASS || tile === TILE.DIRT || tile === TILE.FLOWERS) {
-        if (hr < 0.40) groundKey = 'sprite_tile_grass_liso';
-        else if (hr < 0.65) groundKey = 'sprite_tile_grass';
-        else if (hr < 0.85) groundKey = 'sprite_tile_grass2';
-        else if (hr < 0.95) groundKey = 'sprite_tile_grass_rock';
-        else groundKey = 'sprite_tile_grass_rockrock';
-      } else {
-        groundKey = 'sprite_tile_grass';
-      }
-    }
+    groundKey = groundTextureKey(tile, x, y);
   }
   const primaryTex = groundKey ? scene?.textures?.get?.(groundKey) : null;
   const fallbackTex = scene?.textures?.get?.('sprite_tile_grass');
