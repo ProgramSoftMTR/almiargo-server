@@ -159,6 +159,7 @@ export class PlayerState {
     this.targetId = null;
     this.partyId = null;
     this.nextMoveAt = 0;
+    this.lastMoveSeq = 0;
     this.nextAttackAt = 0;
     this.nextSpecialAt = 0;
     this.nextPotionAt = 0;

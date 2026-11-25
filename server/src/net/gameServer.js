@@ -973,8 +973,12 @@ export class GameServer {
     if (!Number.isInteger(dx) || !Number.isInteger(dy)) return;
     if (Math.abs(dx) > 1 || Math.abs(dy) > 1 || (dx === 0 && dy === 0)) return;
 
+    const seq = Number.isFinite(Number(msg.seq)) ? Number(msg.seq) : 0;
     const nx = Math.round(player.x) + dx;
     const ny = Math.round(player.y) + dy;
+    // Validacion por paso: solo un tile adyacente (incluida diagonal).
+    if ((nx - Math.round(player.x)) ** 2 + (ny - Math.round(player.y)) ** 2 > 2) return;
+
     let allowed = this.world.canWalk(nx, ny) && !this.world.isTileOccupied(nx, ny, player.id);
     // No atravesar esquinas en diagonal.
     if (allowed && dx !== 0 && dy !== 0) {
@@ -989,6 +993,7 @@ export class GameServer {
     }
 
     this.world.moveEntity(player, nx, ny);
+    if (seq > 0) player.lastMoveSeq = seq;
     player.dir = Math.abs(dx) > Math.abs(dy)
       ? (dx > 0 ? 'right' : 'left')
       : (dy > 0 ? 'down' : 'up');

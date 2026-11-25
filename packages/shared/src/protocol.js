@@ -134,6 +134,7 @@ export function encodeSelf(player) {
     player.nextSpecialAt,
     player.nextSwitchAt,
     player.moveMs,
+    player.lastMoveSeq ?? 0,
   ];
 }
 
@@ -161,5 +162,6 @@ export function decodeSelf(arr) {
     nextSpecialAt: arr[18],
     nextSwitchAt: arr[19],
     moveMs: arr[20],
+    lastMoveSeq: arr[21] ?? 0,
   };
 }

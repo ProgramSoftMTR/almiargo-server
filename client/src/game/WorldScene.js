@@ -69,6 +69,8 @@ export class WorldScene extends Phaser.Scene {
     this.path = [];
     this.pathGoal = null;
     this.pending = null;
+    this.pendingMoves = [];
+    this._rejectedMove = null;
     this.moveSeq = 0;
     this.nextStepAt = 0;
     this.lastStepSentAt = 0;
@@ -386,10 +388,29 @@ export class WorldScene extends Phaser.Scene {
     const p = store.player;
     const sx = Number(self?.x ?? p?.x ?? this.localPred.x);
     const sy = Number(self?.y ?? p?.y ?? this.localPred.y);
+    const ackSeq = Number(self?.lastMoveSeq ?? 0);
+    if (ackSeq > 0) this.pendingMoves = this.pendingMoves.filter((m) => m.seq > ackSeq);
+
+    if (this._rejectedMove) {
+      const r = this._rejectedMove;
+      this._rejectedMove = null;
+      this.pendingMoves = this.pendingMoves.filter((m) => m.seq < r.seq);
+      this.localPred = { x: r.x, y: r.y };
+      this.localVisual = { x: r.x, y: r.y };
+      this.reconcile = null;
+      this.path = [];
+      this.pending = null;
+      if (this.nextStepAt < Date.now()) this.nextStepAt = Date.now() + 40;
+      return;
+    }
+
     const dist = Math.hypot(sx - this.localPred.x, sy - this.localPred.y);
     const holding = (this.joystick?.active && this.joystick.dir) || this.path.length > 0;
     const recent = Date.now() - this.lastStepSentAt < this.moveMs * 1.8;
     const recentInput = Date.now() - this.lastStepSentAt < 400;
+
+    // Si hay pasos pendientes confirmados por secuencia, no sobrescribir con snapshot atrasado.
+    if (!force && this.pendingMoves.length > 0) return;
 
     // Reconciliacion suave: deadzone para evitar ligas por microdesfases,
     // interpolacion para desfases medios y snap solo para diferencias grandes.
@@ -1118,6 +1139,10 @@ export class WorldScene extends Phaser.Scene {
     if (!freshTap && this._lastSentMove && this._lastSentMove.dx === dx && this._lastSentMove.dy === dy &&
         now - this._lastSentMove.at < 66) return;
     this.moveSeq += 1;
+    const expectedX = this.localPred.x + dx;
+    const expectedY = this.localPred.y + dy;
+    this.pendingMoves.push({ seq: this.moveSeq, x: expectedX, y: expectedY, dx, dy, at: now });
+    if (this.pendingMoves.length > 64) this.pendingMoves.splice(0, this.pendingMoves.length - 64);
     // Payload compacto [1, dx, dy, seq] en lugar de un objeto JSON.
     socket.sendMove(dx, dy, this.moveSeq);
     const diagonal = dx !== 0 && dy !== 0;
@@ -1722,6 +1747,8 @@ export class WorldScene extends Phaser.Scene {
   handleMoveReject(msg) {
     const sx = Number(msg.x);
     const sy = Number(msg.y);
+    this._rejectedMove = { seq: Number(msg.seq ?? 0), x: sx, y: sy };
+    this.pendingMoves = this.pendingMoves.filter((m) => m.seq < (Number(msg.seq ?? 0) || this.pendingMoves.length + 1));
     this.localPred = { x: sx, y: sy };
     // Bloqueo por colision: ajuste directo.
     this.localVisual = { x: sx, y: sy };

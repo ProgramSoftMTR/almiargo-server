@@ -28,7 +28,7 @@ test('encodeSelf/decodeSelf conservan el estado del jugador', () => {
   };
 
   const wire = encodeSelf(player);
-  assert.equal(wire.length, 21);
+  assert.equal(wire.length, 22);
   assert.ok(Array.isArray(wire));
   const decoded = decodeSelf(wire);
   assert.equal(decoded.x, 40.12);
